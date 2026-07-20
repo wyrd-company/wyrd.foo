@@ -1,0 +1,16 @@
+name: intentional
+tagline: Intent-driven, polyglot release & versioning.
+blurb: >-
+  Pending intent files declare what the next version should be, Git tags record
+  what has shipped, and manifests are format-preserving projections of that
+  state. It never publishes, commits, or pushes.
+category: Release & Versioning
+language: Rust
+status: stable
+repo: https://github.com/wyrd-company/intentional
+order: 2
+install:
+  - label: Homebrew
+    command: brew install wyrd-company/tools/intentional
+  - label: Cargo
+    command: cargo install intentional-cli --locked

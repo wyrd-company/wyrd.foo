@@ -1,0 +1,18 @@
+name: agent-svgtools
+tagline: Close the loop for agents authoring SVG from images.
+blurb: >-
+  A machine-first Rust CLI that renders, scores, and diffs SVG against a
+  reference image — so a coding agent recreating a logo as SVG can see its own
+  output and iterate. Single static binary, TOON/JSON output.
+category: Agent Tooling
+language: Rust
+status: stable
+repo: https://github.com/wyrd-company/agent-svgtools
+order: 5
+install:
+  - label: Cargo
+    command: cargo install agent-svgtools
+  - label: npm
+    command: npx agent-svgtools --help
+  - label: Homebrew
+    command: brew install wyrd-company/tools/agent-svgtools
