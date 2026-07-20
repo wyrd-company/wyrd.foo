@@ -1,0 +1,49 @@
+name: Deploy to Cloudflare Pages
+description: Build the Astro site with Bun and upload dist/ to a Cloudflare Pages project via wrangler.
+
+inputs:
+  cloudflare-api-token:
+    description: Cloudflare API token with Pages:Edit scope on the target account.
+    required: true
+  cloudflare-account-id:
+    description: Cloudflare account ID that owns the Pages project.
+    required: true
+  cloudflare-project-id:
+    description: Cloudflare Pages project name (the slug, e.g. example-dot-com).
+    required: true
+  preview:
+    description: If 'true', upload as a preview deployment instead of production.
+    required: false
+    default: "false"
+
+outputs:
+  deployment-url:
+    description: Deployment URL returned by wrangler.
+    value: ${{ steps.wrangler.outputs.deployment-url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - name: Install dependencies
+      shell: bash
+      run: bun install
+
+    - name: Build Astro site
+      shell: bash
+      run: bun run build
+
+    - name: Deploy to Cloudflare Pages
+      id: wrangler
+      uses: cloudflare/wrangler-action@v3
+      with:
+        apiToken: ${{ inputs.cloudflare-api-token }}
+        accountId: ${{ inputs.cloudflare-account-id }}
+        command: >-
+          pages deploy ./dist
+          --project-name=${{ inputs.cloudflare-project-id }}
+          ${{ inputs.preview == 'true' && '--branch=preview' || '' }}

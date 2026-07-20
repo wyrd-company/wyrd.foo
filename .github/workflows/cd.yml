@@ -1,0 +1,80 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      preview:
+        description: "Deploy as a preview build (target-specific behavior)"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      target: ${{ steps.target.outputs.value }}
+    steps:
+      - id: target
+        shell: bash
+        env:
+          DEPLOY_TARGET: ${{ vars.DEPLOY_TARGET }}
+        run: |
+          set -euo pipefail
+          case "${DEPLOY_TARGET:-}" in
+            "")
+              echo "::notice title=cd::DEPLOY_TARGET is unset — skipping deploy. Wire this repo to a target via the platform-manager UI (Setup on Cloudflare Pages / Setup on GitHub Pages)."
+              echo "value=none" >> "$GITHUB_OUTPUT"
+              ;;
+            cf_pages|gh_pages)
+              echo "::notice title=cd::DEPLOY_TARGET=${DEPLOY_TARGET}"
+              echo "value=${DEPLOY_TARGET}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error title=cd::Unknown DEPLOY_TARGET '${DEPLOY_TARGET}'. Expected one of: cf_pages, gh_pages, or unset."
+              exit 1
+              ;;
+          esac
+
+  deploy-cf-pages:
+    needs: resolve
+    if: needs.resolve.outputs.target == 'cf_pages'
+    runs-on: ubuntu-latest
+    environment:
+      name: cloudflare-pages
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: deploy
+        uses: ./.github/actions/deploy-cf-pages
+        with:
+          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          cloudflare-project-id: ${{ secrets.CLOUDFLARE_PROJECT_ID }}
+          preview: ${{ inputs.preview && 'true' || 'false' }}
+
+  deploy-gh-pages:
+    needs: resolve
+    if: needs.resolve.outputs.target == 'gh_pages'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: deploy
+        uses: ./.github/actions/deploy-gh-pages

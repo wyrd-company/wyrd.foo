@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  dev:
+    desc: Start Astro development server
+    cmds:
+      - astro dev
+
+  install:
+    desc: Install dependencies
+    cmds:
+      - pnpm install

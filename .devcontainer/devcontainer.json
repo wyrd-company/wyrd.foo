@@ -1,0 +1,94 @@
+{
+  "name": "<site name> Devcontainer",
+  "image": "mcr.microsoft.com/devcontainers/base:noble",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers-extra/features/apt-get-packages:1": {
+        "packages": "imagemagick,librsvg2-bin"
+    }
+  },
+  "mounts": [
+    {
+        "source": "claude",
+        "target": "/home/vscode/.claude",
+        "type": "volume"
+    },
+    {
+        "source": "codex",
+        "target": "/home/vscode/.codex",
+        "type": "volume"
+    },
+    {
+        "source": "gemini",
+        "target": "/home/vscode/.gemini",
+        "type": "volume"
+    },
+    {
+        "source": "gemini",
+        "target": "/home/vscode/.gemini",
+        "type": "volume"
+    },
+    {
+        "source": "gemini-auth",
+        "target": "/home/vscode/.cache/google-vscode-extension",
+        "type": "volume"
+    },
+    {
+        "source": "agents",
+        "target": "/home/vscode/.agents",
+        "type": "volume"
+    },
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Data and formats
+        "redhat.vscode-yaml",
+
+        // Markdown and documentation
+        "yzhang.markdown-all-in-one",
+        "bierner.markdown-mermaid",
+
+        //Stack
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "astro-build.astro-vscode",
+
+        // General productivity
+        "Gruntfuggly.todo-tree",
+        "eamodio.gitlens",
+        "github.vscode-github-actions",
+        "GitHub.vscode-pull-request-github",
+
+        // AI assistants
+        "anthropic.claude-code",
+        "google.geminicodeassist",
+        "google.gemini-cli-vscode-ide-companion",
+        "openai.chatgpt",
+        "kilocode.Kilo-Code"
+      ],
+      "settings": {
+      }
+    }
+  },
+
+  "remoteEnv": {
+  },
+
+  "forwardPorts": [4321],
+  "portsAttributes": {
+    "4321": {
+      "label": "Astro App",
+      "onAutoForward": "openBrowser"
+    }
+  },
+
+  "postCreateCommand": {
+    "own-cache": "mkdir -p /home/vscode/.cache && sudo chown -R vscode:vscode /home/vscode/.cache",
+    "task": "npm install -g @go-task/cli",
+    "claude-code": "curl -fsSL https://claude.ai/install.sh | bash",
+    "gemini": "npm install -g @google/gemini-cli",
+    "codex": "npm i -g @openai/codex",
+    "skills": "npx -y skills list"
+  }
+}
