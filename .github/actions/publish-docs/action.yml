@@ -1,0 +1,190 @@
+name: Publish tool docs to wyrd.foo
+description: >-
+  Publishes a tool repository's docs/ (a docs.yml manifest + docs/*.md pages
+  marked `docs: true`) into the wyrd.foo content tap. Deletes and recreates the
+  tool's content directory each run, so adds, updates, and removals all sync.
+
+inputs:
+  app-id:
+    description: WYRD_TOOLS_DOCS_PUBLISHER App ID.
+    required: true
+  private-key:
+    description: WYRD_TOOLS_DOCS_PUBLISHER private key (PEM).
+    required: true
+  site-repo:
+    description: The wyrd.foo repository, "owner/name".
+    required: false
+    default: wyrd-company/wyrd.foo
+  branch:
+    description: Branch of the site repo to publish to.
+    required: false
+    default: main
+  docs-dir:
+    description: Directory in the calling repo holding docs.yml and the pages.
+    required: false
+    default: docs
+  content-dir:
+    description: Content tap directory within the site repo.
+    required: false
+    default: content
+
+outputs:
+  published:
+    description: "'true' if a commit was pushed, 'false' if a no-op."
+    value: ${{ steps.push.outputs.published }}
+  slug:
+    description: The tool slug that was published (empty on no-op).
+    value: ${{ steps.gate.outputs.slug }}
+
+runs:
+  using: composite
+  steps:
+    # 1. Gate + validate against the CALLER's checked-out workspace.
+    - id: gate
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # Split "owner/name" for the token step (Actions expressions have no split()).
+        SITE_REPO='${{ inputs.site-repo }}'
+        echo "site_owner=${SITE_REPO%%/*}" >> "$GITHUB_OUTPUT"
+        echo "site_name=${SITE_REPO##*/}" >> "$GITHUB_OUTPUT"
+
+        DOCS_DIR='${{ inputs.docs-dir }}'
+        MANIFEST="$DOCS_DIR/docs.yml"
+
+        if [ ! -f "$MANIFEST" ]; then
+          echo "::notice title=publish-docs::No $MANIFEST — nothing to publish."
+          echo "should_publish=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        # Collect docs/*.md whose frontmatter contains `docs: true`.
+        mapfile -t PAGES < <(
+          for f in "$DOCS_DIR"/*.md; do
+            [ -e "$f" ] || continue
+            awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm{print}' "$f" \
+              | grep -Eq '^docs:[[:space:]]*true[[:space:]]*$' && echo "$f"
+          done
+        )
+        if [ "${#PAGES[@]}" -eq 0 ]; then
+          echo "::notice title=publish-docs::No $DOCS_DIR/*.md marked 'docs: true' — nothing to publish."
+          echo "should_publish=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        # yq for reading manifest scalars (install if the runner lacks it).
+        if ! command -v yq >/dev/null 2>&1; then
+          sudo wget -qO /usr/local/bin/yq \
+            https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+        fi
+
+        NAME="$(yq -r '.name // ""' "$MANIFEST")"
+        STATUS="$(yq -r '.status // ""' "$MANIFEST")"
+        TAGLINE="$(yq -r '.tagline // ""' "$MANIFEST")"
+        CATEGORY="$(yq -r '.category // ""' "$MANIFEST")"
+
+        fail() { echo "::error title=publish-docs::$1"; exit 1; }
+        [ -n "$NAME" ] || fail "docs.yml is missing 'name'."
+        [[ "$NAME" =~ ^[a-z0-9][a-z0-9-]*$ ]] || fail "name '$NAME' must be a URL-safe slug (lowercase, digits, hyphens)."
+        [ -n "$TAGLINE" ] || fail "docs.yml is missing 'tagline'."
+        [ -n "$CATEGORY" ] || fail "docs.yml is missing 'category'."
+        case "$STATUS" in
+          stable|preview|planned) : ;;
+          *) fail "status '$STATUS' must be one of: stable, preview, planned." ;;
+        esac
+
+        # Every published page needs title + order (the site schema requires them).
+        for f in "${PAGES[@]}"; do
+          fm="$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm{print}' "$f")"
+          printf '%s\n' "$fm" | grep -Eq '^title:' || fail "$f is missing frontmatter 'title'."
+          printf '%s\n' "$fm" | grep -Eq '^order:' || fail "$f is missing frontmatter 'order'."
+        done
+
+        echo "should_publish=true" >> "$GITHUB_OUTPUT"
+        echo "slug=$NAME" >> "$GITHUB_OUTPUT"
+        printf '%s\n' "${PAGES[@]}" > "$RUNNER_TEMP/publish_pages.txt"
+        echo "::notice title=publish-docs::Publishing '$NAME' (${#PAGES[@]} page(s))."
+
+    # 2. Mint a token scoped to the site repo.
+    - id: app-token
+      if: steps.gate.outputs.should_publish == 'true'
+      uses: actions/create-github-app-token@v3
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+        owner: ${{ steps.gate.outputs.site_owner }}
+        repositories: ${{ steps.gate.outputs.site_name }}
+
+    # 3. Check out the site repo.
+    - if: steps.gate.outputs.should_publish == 'true'
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.site-repo }}
+        ref: ${{ inputs.branch }}
+        token: ${{ steps.app-token.outputs.token }}
+        path: _site
+        fetch-depth: 0
+        persist-credentials: true
+
+    # 4. Clean + copy this tool's content, then commit and push (rebase-retry).
+    - id: push
+      if: steps.gate.outputs.should_publish == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        SLUG: ${{ steps.gate.outputs.slug }}
+        DOCS_DIR: ${{ inputs.docs-dir }}
+        CONTENT_DIR: ${{ inputs.content-dir }}
+        BRANCH: ${{ inputs.branch }}
+      run: |
+        set -euo pipefail
+        DEST="_site/$CONTENT_DIR/$SLUG"
+        rm -rf "$DEST"
+        mkdir -p "$DEST/docs"
+
+        # Manifest: docs.yml -> tool.yaml (the name the site loader expects).
+        cp "$DOCS_DIR/docs.yml" "$DEST/tool.yaml"
+
+        # Pages: copy each, stripping the `docs: true` gate line from frontmatter.
+        while IFS= read -r f; do
+          [ -n "$f" ] || continue
+          base="$(basename "$f")"
+          awk '
+            NR==1 && $0=="---" {fm=1; print; next}
+            fm && $0=="---" {fm=0; print; next}
+            fm && $0 ~ /^docs:[[:space:]]*true[[:space:]]*$/ {next}
+            {print}
+          ' "$f" > "$DEST/docs/$base"
+        done < "$RUNNER_TEMP/publish_pages.txt"
+
+        cd _site
+        git add -A
+        if git diff --cached --quiet; then
+          echo "::notice title=publish-docs::No content changes — skipping commit."
+          echo "published=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        # Commit as the App bot.
+        BOT_ID="$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)"
+        git config user.name "${APP_SLUG}[bot]"
+        git config user.email "${BOT_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
+        git commit -m "docs: publish ${SLUG} (${GITHUB_REPOSITORY}@${GITHUB_SHA:0:7})"
+
+        pushed=false
+        for attempt in 1 2 3; do
+          if git push origin "HEAD:${BRANCH}"; then pushed=true; break; fi
+          echo "::warning title=publish-docs::push rejected (attempt ${attempt}), rebasing…"
+          git fetch origin "$BRANCH"
+          git rebase "origin/${BRANCH}" || git rebase --abort
+          sleep $((attempt * 2))
+        done
+        if [ "$pushed" != true ]; then
+          echo "::error title=publish-docs::Failed to push after retries."
+          exit 1
+        fi
+        echo "published=true" >> "$GITHUB_OUTPUT"
+        echo "::notice title=publish-docs::Published ${SLUG} to ${GITHUB_REPOSITORY%/*}/${{ inputs.site-repo }}."
