@@ -1,0 +1,1053 @@
+---
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+import GitHub from "../../../components/icons/GitHub.astro";
+import { getDocTools, getToolPages, getCatalog, STATUS_LABEL } from "../../../lib/catalog";
+import { render } from "astro:content";
+
+export async function getStaticPaths() {
+  const docTools = await getDocTools();
+  const paths: { params: { tool: string; page: string | undefined } }[] = [];
+  for (const t of docTools) {
+    const pages = await getToolPages(t.slug);
+    // Default page (…/docs/<tool>) renders the first page.
+    paths.push({ params: { tool: t.slug, page: undefined } });
+    for (const p of pages) paths.push({ params: { tool: t.slug, page: p.slug } });
+  }
+  return paths;
+}
+
+const { tool: toolSlug, page: pageParam } = Astro.params;
+const catalog = await getCatalog();
+const tool = catalog.find((t) => t.slug === toolSlug)!;
+const docTools = await getDocTools();
+const pages = await getToolPages(toolSlug!);
+const page = pages.find((p) => p.slug === pageParam) ?? pages[0];
+
+const { Content } = await render(page.entry);
+
+const href = (slug: string) =>
+  slug === pages[0].slug ? `/docs/${tool.slug}` : `/docs/${tool.slug}/${slug}`;
+
+const idx = pages.findIndex((p) => p.slug === page.slug);
+const prev = pages[idx - 1];
+const next = pages[idx + 1];
+const num = (n: number) => String(n).padStart(2, "0");
+---
+
+<SiteLayout
+  title={`${tool.name} · ${page.title} — Wyrd Tools docs`}
+  description={tool.tagline}
+>
+  <Fragment slot="head">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Red+Hat+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </Fragment>
+
+  <div class="blueprint docs">
+    <!-- Masthead -->
+    <header class="mast">
+      <a class="wordmark" href="/">
+        <span class="wm-glyph" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+            <rect x="1.5" y="1.5" width="21" height="21" stroke="currentColor" stroke-width="1" />
+            <path d="M12 1.5v21M1.5 12h21M4 4l16 16M20 4L4 20" stroke="currentColor" stroke-width="0.6" opacity="0.5" />
+            <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1" />
+          </svg>
+        </span>
+        <span class="wm-text">WYRD<span class="wm-slash">/</span>TOOLS</span>
+      </a>
+      <nav class="mast-nav">
+        <a href="/#catalog">Tools</a>
+        <a href={`/docs/${docTools[0].slug}`} class="cur">Docs</a>
+      </nav>
+    </header>
+
+    <!-- Top nav: switch which tool's docs you are reading -->
+    <div class="toolbar">
+      <div class="toolbar-inner">
+        <span class="tb-label">Docs for</span>
+        <nav class="tb-tabs" aria-label="Select a tool">
+          {
+            docTools.map((t) => (
+              <a
+                href={`/docs/${t.slug}`}
+                class={`tb-tab ${t.slug === tool.slug ? "active" : ""}`}
+                aria-current={t.slug === tool.slug ? "page" : undefined}
+              >
+                {t.name}
+              </a>
+            ))
+          }
+        </nav>
+      </div>
+    </div>
+
+    <div class="shell">
+      <!-- Sidebar: this tool's identity + its pages -->
+      <aside class="side">
+        <a class="side-back" href="/">← All tools</a>
+
+        <div class="side-tool">
+          <div class="st-corner st-tl"></div>
+          <div class="st-corner st-br"></div>
+          <div class="st-head">
+            <h2>{tool.name}</h2>
+            <span class={`badge badge-${tool.status}`}>{STATUS_LABEL[tool.status]}</span>
+          </div>
+          <p class="st-tag">{tool.tagline}</p>
+          <div class="st-meta">
+            <span class="stm-key">LANG</span>
+            <span class="stm-val">{tool.language}</span>
+          </div>
+          <div class="st-cta">
+            <a class="btn btn-solid" href={href("install")}>Install</a>
+            <a class="btn btn-ghost" href={tool.repo} target="_blank" rel="noopener">
+              <GitHub size={13} />
+              {tool.name}
+            </a>
+          </div>
+        </div>
+
+        <p class="side-head">
+          <span class="sh-tick" aria-hidden="true"></span>
+          Sheets
+        </p>
+        <ul class="side-pages">
+          {
+            pages.map((p, i) => (
+              <li>
+                <a
+                  href={href(p.slug)}
+                  class={p.slug === page.slug ? "active" : ""}
+                  aria-current={p.slug === page.slug ? "page" : undefined}
+                >
+                  <span class="sp-num">{num(i + 1)}</span>
+                  <span class="sp-title">{p.title}</span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </aside>
+
+      <!-- Main -->
+      <main class="doc">
+        <p class="crumbs">
+          <a href="/">Tools</a> <span class="cr-sep">/</span>
+          <a href={`/docs/${tool.slug}`}>{tool.name}</a> <span class="cr-sep">/</span>
+          <span class="cur">{page.title}</span>
+        </p>
+
+        <h1>{page.title}</h1>
+
+        {
+          page.install && (
+            <section class="install-block">
+              <div class="ib-corner ib-tl" />
+              <div class="ib-corner ib-tr" />
+              <div class="ib-corner ib-bl" />
+              <div class="ib-corner ib-br" />
+              <p class="ib-label">Install {tool.name}</p>
+              {tool.install.map((opt) => (
+                <div class="ib-row">
+                  <span class="ib-tag">{opt.label}</span>
+                  <code>{opt.command}</code>
+                  <button
+                    class="copy"
+                    type="button"
+                    data-copy={opt.command}
+                    aria-label={`Copy ${opt.label} install command`}
+                  >
+                    copy
+                  </button>
+                </div>
+              ))}
+            </section>
+          )
+        }
+
+        <div class="prose">
+          <Content />
+        </div>
+
+        <!-- Prev / next within this tool -->
+        <nav class="pager">
+          {
+            prev ? (
+              <a class="pg pg-prev" href={href(prev.slug)}>
+                <span>← Previous</span>
+                <strong>{prev.title}</strong>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            next ? (
+              <a class="pg pg-next" href={href(next.slug)}>
+                <span>Next →</span>
+                <strong>{next.title}</strong>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+        </nav>
+
+        <footer class="doc-foot">
+          <a class="df-repo" href={tool.repo} target="_blank" rel="noopener">
+            <GitHub size={14} />
+            Star {tool.name} on GitHub
+          </a>
+        </footer>
+      </main>
+    </div>
+
+    <div class="foot-wrap">
+      <footer class="foot">
+        <div class="foot-block foot-title">
+          <p class="ft-name">WYRD COMPANY</p>
+          <a class="ft-link" href="https://wyrd.company" target="_blank" rel="noopener"
+            >wyrd.company</a
+          >
+        </div>
+        <div class="foot-block">
+          <span class="ft-key">Notes</span>
+          <p class="ft-val">
+            Built to streamline our own work — offered to anyone who shares the friction.
+          </p>
+        </div>
+        <div class="foot-block">
+          <span class="ft-key">License</span>
+          <p class="ft-val">© Wyrd Company. Tools released under open-source licenses.</p>
+        </div>
+      </footer>
+    </div>
+  </div>
+</SiteLayout>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>(".copy[data-copy]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy || "");
+        const prev = btn.textContent;
+        btn.textContent = "copied";
+        btn.classList.add("is-copied");
+        setTimeout(() => {
+          btn.textContent = prev;
+          btn.classList.remove("is-copied");
+        }, 1400);
+      } catch {
+        /* clipboard unavailable */
+      }
+    });
+  });
+</script>
+
+<style>
+  .blueprint {
+    --bg: #0b121c;
+    --bg-2: #0e1826;
+    --panel: #101d2e;
+    --panel-2: #0d1826;
+    --ink: #dce8f2;
+    --ink-soft: #93a9bf;
+    --faint: #62798f;
+    --line: rgba(120, 165, 205, 0.055);
+    --line-strong: rgba(120, 165, 205, 0.09);
+    --rule: rgba(130, 175, 215, 0.22);
+    --rule-soft: rgba(130, 175, 215, 0.11);
+    --accent: #3fd2e6;
+    --accent-deep: #22aec2;
+    --accent-dim: rgba(63, 210, 230, 0.13);
+    --accent-glow: rgba(63, 210, 230, 0.28);
+    --display: "Archivo", system-ui, sans-serif;
+    --body: "Red Hat Text", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px),
+      linear-gradient(var(--line-strong) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-strong) 1px, transparent 1px);
+    background-size:
+      28px 28px,
+      28px 28px,
+      140px 140px,
+      140px 140px;
+  }
+  .blueprint :where(h1, h2, h3, h4) {
+    font-family: var(--display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  /* Masthead */
+  .mast {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px clamp(18px, 4vw, 44px);
+    border-bottom: 1px solid var(--rule);
+    max-width: 1300px;
+    margin-inline: auto;
+  }
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+    text-decoration: none;
+    color: var(--ink);
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 0.02em;
+  }
+  .wm-glyph {
+    display: inline-flex;
+    color: var(--accent);
+  }
+  .wm-slash {
+    color: var(--accent);
+    margin-inline: 1px;
+  }
+  .mast-nav {
+    display: flex;
+    gap: 26px;
+    font-family: var(--mono);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .mast-nav a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    padding-bottom: 3px;
+    border-bottom: 1px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .mast-nav a:hover,
+  .mast-nav a.cur {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* Toolbar — the tool switcher */
+  .toolbar {
+    border-bottom: 1px solid var(--rule-soft);
+    background: var(--panel-2);
+  }
+  .toolbar-inner {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    max-width: 1300px;
+    margin-inline: auto;
+    padding: 0 clamp(18px, 4vw, 44px);
+  }
+  .tb-label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--faint);
+    flex: none;
+  }
+  .tb-tabs {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+  }
+  .tb-tab {
+    font-family: var(--mono);
+    font-size: 13.5px;
+    text-decoration: none;
+    color: var(--ink-soft);
+    padding: 15px 14px;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .tb-tab:hover {
+    color: var(--ink);
+    background: var(--accent-dim);
+  }
+  .tb-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 500;
+  }
+  .tb-more {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--faint);
+    flex: none;
+  }
+
+  /* Shell */
+  .shell {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: clamp(24px, 4vw, 56px);
+    max-width: 1300px;
+    margin-inline: auto;
+    padding: 0 clamp(18px, 4vw, 44px);
+  }
+
+  /* Sidebar */
+  .side {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 30px 24px 40px 0;
+    border-right: 1px solid var(--rule-soft);
+  }
+  .side-back {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    margin-bottom: 24px;
+  }
+  .side-back:hover {
+    color: var(--accent);
+  }
+  .side-tool {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--rule-soft);
+    padding: 20px 18px;
+    margin-bottom: 26px;
+  }
+  .st-corner {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--accent);
+  }
+  .st-tl {
+    top: -1px;
+    left: -1px;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  .st-br {
+    bottom: -1px;
+    right: -1px;
+    border-left: 0;
+    border-top: 0;
+  }
+  .st-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .st-head h2 {
+    font-family: var(--mono) !important;
+    font-weight: 500 !important;
+    font-size: 1.4rem !important;
+    letter-spacing: -0.01em !important;
+    color: var(--ink);
+  }
+  .st-tag {
+    margin: 10px 0 12px;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+  .st-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--rule-soft);
+  }
+  .stm-key {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--faint);
+  }
+  .stm-val {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .st-cta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 3px 8px;
+    border-radius: 2px;
+    border: 1px solid currentColor;
+  }
+  .badge-stable {
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .badge-preview {
+    color: #d9a441;
+  }
+  .badge-planned {
+    color: var(--faint);
+  }
+
+  .side-head {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--faint);
+    margin: 0 0 12px;
+  }
+  .sh-tick {
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    transform: rotate(45deg);
+  }
+  .side-pages {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .side-pages a {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 12px;
+    margin-left: -12px;
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 13px;
+    text-decoration: none;
+    color: var(--ink-soft);
+    border-left: 2px solid transparent;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+  }
+  .sp-num {
+    font-size: 10.5px;
+    color: var(--faint);
+  }
+  .side-pages a:hover {
+    color: var(--ink);
+    background: var(--panel);
+  }
+  .side-pages a.active {
+    color: var(--accent);
+    background: var(--accent-dim);
+    border-left-color: var(--accent);
+    font-weight: 500;
+  }
+  .side-pages a.active .sp-num {
+    color: var(--accent);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-size: 12px;
+    text-decoration: none;
+    padding: 9px 15px;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+  .btn-solid {
+    background: var(--accent);
+    color: #06222a;
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+  .btn-solid:hover {
+    box-shadow: 0 0 0 1px var(--accent), 0 6px 18px -8px var(--accent-glow);
+  }
+  .btn-ghost {
+    background: var(--panel-2);
+    color: var(--ink);
+  }
+  .btn-ghost:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Main doc column */
+  /* The reading column is a clean "drawing sheet" lifted off the gridded
+     table, so body text never sits directly on the engineering grid. */
+  .doc {
+    position: relative;
+    background: var(--panel-2);
+    border: 1px solid var(--rule-soft);
+    padding: 40px clamp(24px, 3.2vw, 52px) 64px;
+    margin: 22px 0 64px;
+  }
+  .doc::before,
+  .doc::after {
+    content: "";
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    border: 1px solid var(--accent);
+    opacity: 0.7;
+  }
+  .doc::before {
+    top: -1px;
+    left: -1px;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  .doc::after {
+    bottom: -1px;
+    right: -1px;
+    border-left: 0;
+    border-top: 0;
+  }
+  .doc > * {
+    max-width: 760px;
+  }
+  .crumbs {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--faint);
+    margin: 0 0 22px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .crumbs a {
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .crumbs a:hover {
+    color: var(--accent);
+  }
+  .cr-sep {
+    color: var(--faint);
+  }
+  .crumbs .cur {
+    color: var(--accent);
+  }
+  .doc h1 {
+    font-size: clamp(2.1rem, 4.4vw, 2.9rem);
+    letter-spacing: -0.03em;
+    margin-bottom: 24px;
+  }
+
+  /* Install block */
+  .install-block {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--rule-soft);
+    border-radius: 3px;
+    padding: 22px 24px;
+    margin: 0 0 36px;
+  }
+  .ib-corner {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--accent);
+  }
+  .ib-tl {
+    top: -1px;
+    left: -1px;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  .ib-tr {
+    top: -1px;
+    right: -1px;
+    border-left: 0;
+    border-bottom: 0;
+  }
+  .ib-bl {
+    bottom: -1px;
+    left: -1px;
+    border-right: 0;
+    border-top: 0;
+  }
+  .ib-br {
+    bottom: -1px;
+    right: -1px;
+    border-left: 0;
+    border-top: 0;
+  }
+  .ib-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+  .ib-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+  }
+  .ib-row + .ib-row {
+    border-top: 1px dashed var(--rule-soft);
+  }
+  .ib-tag {
+    flex: none;
+    width: 96px;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+  }
+  .ib-row code {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+    overflow-x: auto;
+  }
+  .copy {
+    flex: none;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 5px 9px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .copy.is-copied {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  /* Prose — styles markdown output from <Content />. Uses :global() so the
+     scoped block reaches the collection-rendered HTML. */
+  .prose :global(:where(p, ul, ol, pre, table)) {
+    margin: 0 0 18px;
+  }
+  .prose :global(p) {
+    color: var(--ink);
+    max-width: 66ch;
+  }
+  .prose :global(h2) {
+    font-family: var(--display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: 1.55rem;
+    color: var(--ink);
+    margin: 38px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .prose :global(h3) {
+    font-family: var(--display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: 1.22rem;
+    color: var(--ink);
+    margin: 28px 0 12px;
+  }
+  .prose :global(a) {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: var(--accent-deep);
+  }
+  .prose :global(a:hover) {
+    text-decoration-color: var(--accent);
+  }
+  .prose :global(:where(p, li) code) {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    background: var(--panel);
+    border: 1px solid var(--rule-soft);
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: var(--accent);
+  }
+  .prose :global(pre) {
+    background: #060c15;
+    border: 1px solid var(--rule-soft);
+    border-radius: 5px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .prose :global(pre code) {
+    font-family: var(--mono);
+    white-space: pre;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    font-size: 13px;
+  }
+  .prose :global(ol),
+  .prose :global(ul) {
+    padding-left: 0;
+    list-style: none;
+    counter-reset: step;
+  }
+  .prose :global(ol li) {
+    counter-increment: step;
+    position: relative;
+    padding: 0 0 12px 42px;
+    max-width: 64ch;
+    color: var(--ink);
+  }
+  .prose :global(ol li)::before {
+    content: counter(step, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 1px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 2px 5px;
+    background: var(--panel);
+  }
+  .prose :global(ul li) {
+    position: relative;
+    padding: 0 0 10px 24px;
+    max-width: 64ch;
+    color: var(--ink);
+  }
+  .prose :global(ul li)::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 9px;
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    transform: rotate(45deg);
+  }
+  .prose :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.94rem;
+    border: 1px solid var(--rule-soft);
+  }
+  .prose :global(th) {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    padding: 9px 12px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--rule);
+  }
+  .prose :global(td) {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+    color: var(--ink-soft);
+  }
+  .prose :global(td:first-child) {
+    white-space: nowrap;
+    width: 1%;
+  }
+  .prose :global(td code) {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--accent);
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+  .prose :global(blockquote) {
+    margin: 0 0 18px;
+    padding: 4px 0 4px 18px;
+    border-left: 2px solid var(--accent);
+    color: var(--ink-soft);
+  }
+  .prose :global(hr) {
+    border: 0;
+    border-top: 1px dashed var(--rule-soft);
+    margin: 28px 0;
+  }
+
+  /* Pager */
+  .pager {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 44px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule-soft);
+  }
+  .pg {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    text-decoration: none;
+    padding: 13px 16px;
+    background: var(--panel-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 3px;
+    min-width: 170px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .pg:hover {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .pg-next {
+    text-align: right;
+    align-items: flex-end;
+  }
+  .pg span {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+  }
+  .pg strong {
+    font-family: var(--display);
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .pg:hover strong {
+    color: var(--accent);
+  }
+
+  .doc-foot {
+    margin-top: 40px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule-soft);
+  }
+  .df-repo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .df-repo:hover {
+    color: var(--accent);
+  }
+  /* Shared title-block footer (matches the landing) */
+  .foot-wrap {
+    max-width: 1300px;
+    margin: 8px auto 0;
+    padding: 0 clamp(18px, 4vw, 44px) 48px;
+  }
+  .foot {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    gap: 0;
+    border: 1px solid var(--rule);
+  }
+  .foot-block {
+    padding: 22px 24px;
+    border-right: 1px solid var(--rule-soft);
+  }
+  .foot-block:last-child {
+    border-right: 0;
+  }
+  .foot-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: var(--panel);
+    min-width: 190px;
+  }
+  .ft-name {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+  }
+  .ft-link {
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .ft-key {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--faint);
+  }
+  .ft-val {
+    margin: 8px 0 0;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 880px) {
+    .shell {
+      grid-template-columns: 1fr;
+    }
+    .side {
+      position: static;
+      height: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--rule-soft);
+      padding: 24px 0;
+    }
+    .foot {
+      grid-template-columns: 1fr;
+    }
+    .foot-block {
+      border-right: 0;
+      border-bottom: 1px solid var(--rule-soft);
+    }
+    .foot-block:last-child {
+      border-bottom: 0;
+    }
+  }
+</style>

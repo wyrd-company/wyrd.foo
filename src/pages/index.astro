@@ -1,17 +1,864 @@
 ---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import GitHub from "../components/icons/GitHub.astro";
+import { getCatalogByCategory, getCatalog, getDocTools, STATUS_LABEL } from "../lib/catalog";
 
+const groups = await getCatalogByCategory();
+const catalog = await getCatalog();
+const docTools = await getDocTools();
+const stableCount = catalog.filter((t) => t.status === "stable").length;
+const totalTools = catalog.length;
+const firstDoc = docTools[0].slug;
+const ORG = "https://github.com/wyrd-company";
+const num = (n: number) => String(n).padStart(2, "0");
+let counter = 0;
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<SiteLayout
+  title="Wyrd Tools — precision command-line instruments"
+  description="A drafting table of sharp, single-purpose tools for developers and the agents that work alongside them."
+>
+  <Fragment slot="head">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Red+Hat+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </Fragment>
+
+  <div class="blueprint">
+    <div class="sheet">
+      <!-- Masthead -->
+      <header class="mast">
+        <a class="wordmark" href="/">
+          <span class="wm-glyph" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+              <rect x="1.5" y="1.5" width="21" height="21" stroke="currentColor" stroke-width="1" />
+              <path d="M12 1.5v21M1.5 12h21M4 4l16 16M20 4L4 20" stroke="currentColor" stroke-width="0.6" opacity="0.5" />
+              <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1" />
+            </svg>
+          </span>
+          <span class="wm-text">WYRD<span class="wm-slash">/</span>TOOLS</span>
+        </a>
+        <nav class="mast-nav">
+          <a href="#catalog">Tools</a>
+          <a href={`/docs/${firstDoc}`}>Docs</a>
+        </nav>
+      </header>
+
+      <!-- Hero -->
+      <section class="hero">
+        <div class="hero-grid" aria-hidden="true"></div>
+        <div class="hero-body">
+          <p class="tag-row">
+            <span class="tag">DWG&nbsp;·&nbsp;WYRD-0001</span>
+            <span class="tag-sep">/</span>
+            <span class="tag-dim">SHEET 1 OF 1</span>
+            <span class="tag-sep">/</span>
+            <span class="tag-dim">REV A</span>
+          </p>
+          <h1>
+            Small, sharp tools<br />for the people<br /><em>and agents</em> who ship.
+          </h1>
+          <p class="deck">
+            Single-purpose command-line instruments, each machined to do one thing exactly.
+            Drafted because we needed them, tolerance-tested because we run them every day.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-solid" href={`/docs/${firstDoc}`}>
+              Browse the docs <span class="btn-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="btn btn-ghost" href={ORG} target="_blank" rel="noopener">
+              <GitHub size={15} />
+              wyrd-company
+            </a>
+          </div>
+        </div>
+
+        <aside class="spec" aria-label="Ready to use">
+          <div class="spec-corner spec-tl"></div>
+          <div class="spec-corner spec-tr"></div>
+          <div class="spec-corner spec-bl"></div>
+          <div class="spec-corner spec-br"></div>
+          <p class="spec-title">Ready to use</p>
+          <ul class="spec-index">
+            {
+              docTools.map((t, i) => (
+                <li>
+                  <a href={`/docs/${t.slug}`}>
+                    <span class="si-num">{num(i + 1)}</span>
+                    <span class="si-name">{t.name}</span>
+                    <span class="si-lead" aria-hidden="true" />
+                    <span class="si-lang">{t.language}</span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+          <p class="spec-foot">{num(totalTools - docTools.length)} more in preview</p>
+        </aside>
+      </section>
+
+      <!-- Catalog -->
+      <section class="catalog" id="catalog">
+        <div class="cat-head">
+          <div class="cat-head-left">
+            <span class="ch-label">Drawing index</span>
+            <h2>The toolbox</h2>
+          </div>
+          <p class="ch-meta">{num(totalTools)} tools&nbsp;·&nbsp;{num(stableCount)} stable</p>
+        </div>
+
+        {
+          groups.map((group) => (
+            <div class="group">
+              <h3 class="group-title">
+                <span class="gt-tick" aria-hidden="true" />
+                <span class="gt-name">{group.category}</span>
+                <span class="gt-rule" />
+                <span class="gt-count">{num(group.tools.length)}</span>
+              </h3>
+              <ul class="rows">
+                {group.tools.map((t) => {
+                  counter += 1;
+                  return (
+                    <li class={`row ${t.status !== "stable" ? "row-muted" : ""}`}>
+                      <div class="row-ref">
+                        <span class="row-num">{num(counter)}</span>
+                        <span class="row-vrule" aria-hidden="true" />
+                      </div>
+                      <div class="row-main">
+                        <div class="row-headline">
+                          <h4>{t.name}</h4>
+                          <span class={`badge badge-${t.status}`}>{STATUS_LABEL[t.status]}</span>
+                        </div>
+                        <p class="row-tag">{t.tagline}</p>
+                        <p class="row-blurb">{t.blurb}</p>
+                        <div class="row-install">
+                          <span class="ri-prompt" aria-hidden="true">$</span>
+                          <code>{t.install[0].command}</code>
+                          <button
+                            class="copy"
+                            type="button"
+                            data-copy={t.install[0].command}
+                            aria-label={`Copy install command for ${t.name}`}
+                          >
+                            copy
+                          </button>
+                        </div>
+                      </div>
+                      <div class="row-actions">
+                        {t.hasDocs ? (
+                          <a class="ra ra-primary" href={`/docs/${t.slug}`}>
+                            Docs <span aria-hidden="true">→</span>
+                          </a>
+                        ) : (
+                          <span class="ra ra-disabled">Docs pending</span>
+                        )}
+                        <a
+                          class="ra ra-gh"
+                          href={t.repo}
+                          target="_blank"
+                          rel="noopener"
+                          title={`${t.name} on GitHub`}
+                        >
+                          <GitHub size={13} />
+                          {t.name}
+                        </a>
+                        <span class="row-lang">{t.language}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))
+        }
+      </section>
+
+      <!-- Footer -->
+      <footer class="foot">
+        <div class="foot-block foot-title">
+          <p class="ft-name">WYRD COMPANY</p>
+          <a class="ft-link" href="https://wyrd.company" target="_blank" rel="noopener"
+            >wyrd.company</a
+          >
+        </div>
+        <div class="foot-block">
+          <span class="ft-key">Notes</span>
+          <p class="ft-val">
+            Built to streamline our own work — offered to anyone who shares the friction.
+          </p>
+        </div>
+        <div class="foot-block">
+          <span class="ft-key">License</span>
+          <p class="ft-val">© Wyrd Company. Tools released under open-source licenses.</p>
+        </div>
+      </footer>
+    </div>
+  </div>
+</SiteLayout>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>(".copy[data-copy]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy || "");
+        const prev = btn.textContent;
+        btn.textContent = "copied";
+        btn.classList.add("is-copied");
+        setTimeout(() => {
+          btn.textContent = prev;
+          btn.classList.remove("is-copied");
+        }, 1400);
+      } catch {
+        /* clipboard unavailable */
+      }
+    });
+  });
+</script>
+
+<style>
+  .blueprint {
+    --bg: #0b121c;
+    --bg-2: #0e1826;
+    --panel: #101d2e;
+    --panel-2: #0d1826;
+    --ink: #dce8f2;
+    --ink-soft: #93a9bf;
+    --faint: #62798f;
+    --line: rgba(120, 165, 205, 0.055);
+    --line-strong: rgba(120, 165, 205, 0.09);
+    --rule: rgba(130, 175, 215, 0.22);
+    --rule-soft: rgba(130, 175, 215, 0.11);
+    --accent: #3fd2e6;
+    --accent-deep: #22aec2;
+    --accent-dim: rgba(63, 210, 230, 0.13);
+    --accent-glow: rgba(63, 210, 230, 0.28);
+    --display: "Archivo", system-ui, sans-serif;
+    --body: "Red Hat Text", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    /* Fine engineering grid + heavier 5-square grid */
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px),
+      linear-gradient(var(--line-strong) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-strong) 1px, transparent 1px);
+    background-size:
+      28px 28px,
+      28px 28px,
+      140px 140px,
+      140px 140px;
+  }
+  .blueprint :where(h1, h2, h3, h4) {
+    font-family: var(--display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  .sheet {
+    max-width: 1180px;
+    margin-inline: auto;
+    padding-inline: clamp(18px, 4vw, 44px);
+  }
+
+  /* Masthead */
+  .mast {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 20px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 11px;
+    text-decoration: none;
+    color: var(--ink);
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 0.02em;
+  }
+  .wm-glyph {
+    display: inline-flex;
+    color: var(--accent);
+  }
+  .wm-slash {
+    color: var(--accent);
+    margin-inline: 1px;
+  }
+  .mast-nav {
+    display: flex;
+    gap: 26px;
+    font-family: var(--mono);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .mast-nav a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    padding-bottom: 3px;
+    border-bottom: 1px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .mast-nav a:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.62fr 1fr;
+    gap: clamp(28px, 5vw, 68px);
+    padding-block: clamp(48px, 8vw, 92px) clamp(40px, 6vw, 72px);
+    align-items: center;
+  }
+  .hero-grid {
+    position: absolute;
+    inset: -1px;
+    pointer-events: none;
+    background-image:
+      linear-gradient(90deg, var(--accent) 0 1px, transparent 1px),
+      linear-gradient(var(--accent) 0 1px, transparent 1px);
+    background-size: 100% 100%;
+    background-position: 0 0, 0 0;
+    -webkit-mask-image: none;
+    opacity: 0;
+  }
+  .hero-body {
+    position: relative;
+  }
+  .tag-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 26px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+  }
+  .tag {
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+    padding: 3px 8px;
+    background: var(--accent-dim);
+  }
+  .tag-sep {
+    color: var(--faint);
+  }
+  .tag-dim {
+    color: var(--ink-soft);
+  }
+  .hero h1 {
+    font-size: clamp(2.5rem, 6.2vw, 5rem);
+    line-height: 0.99;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+  .hero h1 em {
+    font-style: normal;
+    color: var(--accent);
+    text-shadow: 0 0 26px var(--accent-glow);
+  }
+  .deck {
+    margin: 28px 0 34px;
+    max-width: 40ch;
+    font-size: clamp(1.02rem, 1.5vw, 1.22rem);
+    line-height: 1.55;
+    color: var(--ink-soft);
+  }
+  .cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.03em;
+    text-decoration: none;
+    padding: 13px 20px;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    transition: transform 0.12s ease, background 0.15s, color 0.15s, border-color 0.15s,
+      box-shadow 0.15s;
+  }
+  .btn:hover {
+    transform: translateY(-1px);
+  }
+  .btn-solid {
+    background: var(--accent);
+    color: #06222a;
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+  .btn-solid:hover {
+    box-shadow: 0 0 0 1px var(--accent), 0 8px 24px -8px var(--accent-glow);
+  }
+  .btn-arrow {
+    transition: transform 0.15s;
+  }
+  .btn-solid:hover .btn-arrow {
+    transform: translateX(3px);
+  }
+  .btn-ghost {
+    background: var(--panel-2);
+    color: var(--ink);
+  }
+  .btn-ghost:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Spec sheet panel */
+  .spec {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    padding: 26px 24px 20px;
+  }
+  .spec-corner {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    border: 1px solid var(--accent);
+  }
+  .spec-tl {
+    top: -1px;
+    left: -1px;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  .spec-tr {
+    top: -1px;
+    right: -1px;
+    border-left: 0;
+    border-bottom: 0;
+  }
+  .spec-bl {
+    bottom: -1px;
+    left: -1px;
+    border-right: 0;
+    border-top: 0;
+  }
+  .spec-br {
+    bottom: -1px;
+    right: -1px;
+    border-left: 0;
+    border-top: 0;
+  }
+  .spec-title {
+    margin: 0 0 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+  }
+  .spec-index {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .spec-index a {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px dashed var(--rule-soft);
+    text-decoration: none;
+    color: var(--ink);
+    transition: color 0.15s;
+  }
+  .spec-index a:hover {
+    color: var(--accent);
+  }
+  .si-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+  }
+  .si-name {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .si-lead {
+    flex: 1;
+    align-self: center;
+    border-bottom: 1px dashed var(--rule-soft);
+    transform: translateY(-2px);
+  }
+  .si-lang {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+  }
+  .spec-index a:hover .si-lang {
+    color: var(--accent);
+  }
+  .spec-foot {
+    margin: 16px 0 0;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+    text-align: right;
+  }
+
+  /* Statement */
+  .statement {
+    position: relative;
+    display: flex;
+    gap: 22px;
+    align-items: flex-start;
+    padding-block: clamp(34px, 6vw, 60px);
+    border-top: 1px solid var(--rule-soft);
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .st-mark {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 2.6rem;
+    line-height: 1;
+    color: var(--accent);
+    flex: none;
+  }
+  .statement p {
+    max-width: 62ch;
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: clamp(1.15rem, 2vw, 1.55rem);
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+
+  /* Catalog */
+  .catalog {
+    padding-block: clamp(46px, 7vw, 82px);
+  }
+  .cat-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 42px;
+  }
+  .ch-label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .cat-head h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    letter-spacing: -0.03em;
+  }
+  .ch-meta {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+  }
+  .group {
+    margin-bottom: 42px;
+  }
+  .group-title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+    font-family: var(--mono) !important;
+    font-weight: 500 !important;
+    font-size: 11.5px !important;
+    letter-spacing: 0.16em !important;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .gt-tick {
+    width: 7px;
+    height: 7px;
+    background: var(--accent);
+    transform: rotate(45deg);
+    flex: none;
+  }
+  .gt-rule {
+    flex: 1;
+    height: 1px;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--rule) 0 6px,
+      transparent 6px 12px
+    );
+  }
+  .gt-count {
+    color: var(--faint);
+  }
+  .rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    gap: clamp(12px, 2.6vw, 30px);
+    padding: 26px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    transition: background 0.15s;
+  }
+  .row:hover {
+    background: linear-gradient(90deg, var(--accent-dim), transparent 60%);
+  }
+  .row-muted {
+    opacity: 0.66;
+  }
+  .row-ref {
+    display: flex;
+    gap: 12px;
+    padding-top: 5px;
+  }
+  .row-num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .row-vrule {
+    width: 1px;
+    align-self: stretch;
+    background: repeating-linear-gradient(
+      var(--rule-soft) 0 4px,
+      transparent 4px 8px
+    );
+  }
+  .row-headline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .row-headline h4 {
+    font-size: 1.45rem;
+    font-family: var(--mono) !important;
+    font-weight: 500 !important;
+    letter-spacing: -0.01em !important;
+    color: var(--ink);
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 3px 8px;
+    border-radius: 2px;
+    border: 1px solid currentColor;
+  }
+  .badge-stable {
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .badge-preview {
+    color: #d9a441;
+  }
+  .badge-planned {
+    color: var(--faint);
+  }
+  .row-lang {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+  }
+  .row-tag {
+    margin: 9px 0 0;
+    font-size: 1.1rem;
+    color: var(--ink);
+  }
+  .row-blurb {
+    margin: 6px 0 0;
+    max-width: 64ch;
+    font-size: 0.96rem;
+    color: var(--ink-soft);
+  }
+  .row-install {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 7px 8px 7px 12px;
+    background: var(--panel-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 3px;
+  }
+  .ri-prompt {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--accent);
+  }
+  .row-install code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--ink);
+  }
+  .copy {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .copy.is-copied {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .row-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 11px;
+    padding-top: 5px;
+  }
+  .ra {
+    font-family: var(--mono);
+    font-size: 12px;
+    text-decoration: none;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    transition: color 0.15s;
+  }
+  .ra:hover {
+    color: var(--accent);
+  }
+  .ra-primary {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .ra-gh {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ra-gh svg {
+    opacity: 0.7;
+  }
+  .ra-disabled {
+    color: var(--faint);
+    cursor: default;
+  }
+
+  /* Footer — title block */
+  .foot {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    gap: 0;
+    margin-top: 24px;
+    border: 1px solid var(--rule);
+  }
+  .foot-block {
+    padding: 22px 24px;
+    border-right: 1px solid var(--rule-soft);
+  }
+  .foot-block:last-child {
+    border-right: 0;
+  }
+  .foot-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: var(--panel);
+    min-width: 190px;
+  }
+  .ft-name {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+  }
+  .ft-link {
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .ft-key {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--faint);
+  }
+  .ft-val {
+    margin: 8px 0 0;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 880px) {
+    .hero {
+      grid-template-columns: 1fr;
+    }
+    .row {
+      grid-template-columns: 40px 1fr;
+    }
+    .row-actions {
+      grid-column: 2;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 20px;
+      padding-top: 4px;
+    }
+    .row-lang {
+      margin-left: 0;
+    }
+    .foot {
+      grid-template-columns: 1fr;
+    }
+    .foot-block {
+      border-right: 0;
+      border-bottom: 1px solid var(--rule-soft);
+    }
+    .foot-block:last-child {
+      border-bottom: 0;
+    }
+  }
+</style>
