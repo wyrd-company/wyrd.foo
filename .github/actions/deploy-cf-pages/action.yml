@@ -1,5 +1,5 @@
 name: Deploy to Cloudflare Pages
-description: Build the Astro site with Bun and upload dist/ to a Cloudflare Pages project via wrangler.
+description: Build the Astro site with pnpm and upload dist/ to a Cloudflare Pages project via wrangler.
 
 inputs:
   cloudflare-api-token:
@@ -24,18 +24,22 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Setup Bun
-      uses: oven-sh/setup-bun@v2
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
       with:
-        bun-version: latest
+        node-version: 22
+        cache: pnpm
 
     - name: Install dependencies
       shell: bash
-      run: bun install
+      run: pnpm install --frozen-lockfile
 
     - name: Build Astro site
       shell: bash
-      run: bun run build
+      run: pnpm build
 
     - name: Deploy to Cloudflare Pages
       id: wrangler
