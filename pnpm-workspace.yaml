@@ -1,6 +1,10 @@
 allowBuilds:
   esbuild: true
   sharp: true
+  workerd: true
 onlyBuiltDependencies:
   - esbuild
   - sharp
+  # workerd is pulled in by wrangler during the Cloudflare Pages deploy; allow
+  # its build so `pnpm add wrangler` doesn't abort on ignored build scripts.
+  - workerd
