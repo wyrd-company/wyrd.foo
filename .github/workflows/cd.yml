@@ -58,7 +58,7 @@ jobs:
       - id: deploy
         uses: ./.github/actions/deploy-cf-pages
         with:
-          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare-api-token: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           cloudflare-account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           cloudflare-project-id: ${{ secrets.CLOUDFLARE_PROJECT_ID }}
           preview: ${{ inputs.preview && 'true' || 'false' }}
