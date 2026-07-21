@@ -407,6 +407,10 @@ const num = (n: number) => String(n).padStart(2, "0");
     margin-inline: auto;
     padding: 0 clamp(18px, 4vw, 44px);
   }
+  .doc,
+  .prose {
+    min-width: 0;
+  }
 
   /* Sidebar */
   .side {
@@ -808,6 +812,8 @@ const num = (n: number) => String(n).padStart(2, "0");
     background: #060c15;
     border: 1px solid var(--rule-soft);
     border-radius: 5px;
+    box-sizing: border-box;
+    max-width: 100%;
     padding: 16px 18px;
     overflow-x: auto;
     font-size: 13px;
