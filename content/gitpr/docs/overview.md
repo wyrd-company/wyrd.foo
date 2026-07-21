@@ -14,6 +14,8 @@ prefix; list output and the TUI show a shortened prefix.
 Because everything is a Git ref, review state travels with the repository and is
 visible to every worktree and clone — no server, no remote, no forge.
 
+![gitpr local review demo](assets/demo.gif)
+
 ```text
 refs/gitpr/pr/<ulid>/meta
 refs/gitpr/pr/<ulid>/head
