@@ -10,43 +10,62 @@ projection.
 
 A `docs/` directory containing a manifest and one Markdown file per page:
 
-```
+```text
 docs/
 ├── docs.yml          # catalogue metadata for the tool
 ├── overview.md       # a page (frontmatter: title, order, docs: true)
 ├── install.md        # …
+├── assets/
+│   └── demo.gif      # published because docs.yml lists it
 └── internal-notes.md # NOT published (no `docs: true`)
 ```
 
-Only pages whose frontmatter sets `docs: true` are published — anything else in
-`docs/` is ignored, so a repo can keep internal notes alongside public pages.
+Only pages whose frontmatter sets `docs: true` and assets listed in `docs.yml`
+are published. Everything else in `docs/` is ignored, so a repo can keep
+internal notes and source files alongside public content.
 
 ### `docs/docs.yml`
 
 ```yaml
-name: gitpr                 # URL-safe slug (lowercase, digits, hyphens) — the docs path
+name: gitpr # URL-safe slug (lowercase, digits, hyphens) — the docs path
 tagline: Review worktree branches as local pull requests.
 blurb: >-
   A local Go CLI and TUI that turns worktree branches into lightweight pull
   requests against your local default branch — no server, no remote, no forge.
-category: Git & Review      # groups the tool on the front page
+category: Git & Review # groups the tool on the front page
 language: Go
-status: stable              # stable | preview | planned
+status: stable # stable | preview | planned
 repo: https://github.com/wyrd-company/gitpr
-order: 1                    # sort position in the catalogue (optional; defaults last)
+order: 1 # sort position in the catalogue (optional; defaults last)
 install:
   - label: Homebrew
     command: brew install wyrd-company/tools/gitpr
+assets:
+  - assets/demo.gif
 ```
+
+`assets` is optional. Each entry is an exact file path relative to `docs/`;
+globs and directories are not supported. The Action preserves each relative
+path beneath the published `docs/` directory, so a page can use ordinary
+relative Markdown references:
+
+```markdown
+![Command-line demo](assets/demo.gif)
+```
+
+Only listed assets are published. Paths that are missing, absolute, resolve
+outside `docs/`, name a directory, or appear more than once fail validation.
+The `assets` field controls publication and is removed from the generated
+catalogue manifest.
 
 ### A page — `docs/overview.md`
 
 ```markdown
 ---
-title: Overview        # sidebar + heading label (required)
-order: 1               # page order within this tool; lowest is the default page (required)
-docs: true             # publish gate — omit and the page stays private
-install: true          # optional: render the install block at the top of this page
+title: Overview # sidebar + heading label (required)
+order: 1 # page order within this tool; lowest is the default page (required)
+docs: true # publish gate — omit and the page stays private
+install: true # optional: render the install block at the top of this page
 ---
 
 Markdown body. Code fences get syntax highlighting; ordered lists, tables, and
@@ -88,11 +107,11 @@ Pin to a released tag (`@v1`), not `@main`.
 
 1. **No-ops** if `docs/docs.yml` is absent or no page is marked `docs: true`.
 2. Validates the manifest (slug-safe `name`, `status` enum, `tagline`,
-   `category`) and each page (`title`, `order`) — failing in the tool repo
-   rather than breaking the site build.
+   `category`, and optional asset paths) and each page (`title`, `order`) —
+   failing in the tool repo rather than breaking the site build.
 3. Mints a token from the publisher GitHub App scoped to wyrd.foo, checks it out,
-   then **deletes and recreates** `content/<name>/` — so adds, edits, and page
-   removals all sync on every publish.
+   then **deletes and recreates** `content/<name>/` — so adds, edits, page
+   removals, and asset removals all sync on every publish.
 4. Commits as the App bot and pushes (with fetch-rebase-retry for concurrent
    publishes). If nothing changed, it skips the commit.
 
