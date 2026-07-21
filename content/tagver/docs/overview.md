@@ -11,6 +11,8 @@ It reads your Git history and computes a SemVer 2.0.0 version from the nearest
 tag plus commit height. Merge commits are handled cleanly via first-parent
 traversal, and output is available as JSON for scripting.
 
+![tagver command-line demo](demo.gif)
+
 tagver is inspired by [MinVer](https://github.com/adamralph/minver) and built
 on the pure-Rust [gitoxide](https://github.com/GitoxideLabs/gitoxide) Git
 implementation.

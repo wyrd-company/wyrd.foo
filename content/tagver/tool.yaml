@@ -1,9 +1,7 @@
 name: tagver
 tagline: SemVer from your Git tags. Zero dependencies.
 blurb: >-
-  A fast Rust CLI and library that calculates version numbers from Git tags and
-  commit height. MinVer-inspired, built on gitoxide, a single static binary with
-  JSON output and a GitHub Action.
+  A fast Rust CLI and library that calculates version numbers from Git tags and commit height. MinVer-inspired, built on gitoxide, a single static binary with JSON output and a GitHub Action.
 category: Release & Versioning
 language: Rust
 status: stable
