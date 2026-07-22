@@ -1,33 +1,36 @@
 ---
 title: Configuration
 order: 4
+relationships:
+  implements: intent-driven-polyglot-release
 ---
 
-intentional keeps all of its state in one directory, `.intentional/`, at the
+Intentional keeps its durable working state in `.intentional/` at the
 workspace root:
 
 | Path | Purpose |
 | --- | --- |
-| `.intentional/config.yml` | Package inventory and release settings. |
+| `.intentional/config.yml` | Release-unit inventory and interpretation contract. |
 | `.intentional/intents/` | Pending change-intent Markdown files. |
+| `.intentional/init-plan.yml` | Transient discovery or adoption decisions. |
 
-`intentional init` scans for supported manifests and writes both. There are no
-environment variables and no other config file. The only global command-line
-option is `-C` / `--directory`, which sets the workspace root (default `.`).
+Configuration uses kebab-case YAML keys and rejects unknown fields. `init`
+produces explicit candidates before it writes canonical configuration.
 
 ## Configuration file
 
-`.intentional/config.yml` uses kebab-case keys and rejects unknown keys. Its
-top-level shape is:
-
 ```yaml
 $schema: https://intentional.foo/schemas/config.yml
+contract: contract-1
 settings:
-  global-tag: false
   internal-dependency-bump: patch
-packages:
-  sample-runtime:
-    path: packages/runtime
+  pre-1-0-bump-mapping: compatibility
+workspace-tags:
+  release:
+    template: "{version}"
+release-units:
+  sample-library:
+    path: packages/library
     projections:
       - adapter: npm
         file: package.json
@@ -35,124 +38,128 @@ packages:
       - adapter: pub
         file: pubspec.yaml
         mode: committed
-    tag: "{id}@{version}"
+    tags:
+      primary:
+        role: primary
+        template: "{id}@{version}"
+      pub:
+        role: projection
+        template: "sample-library-pub@{version}"
+        require-phase: before-publication
   sample-application:
     path: packages/application
+    depends-on: [ sample-library ]
     projections:
       - adapter: npm
         file: package.json
         mode: committed
-    depends-on: [sample-runtime]
+    tags:
+      primary:
+        role: primary
+        template: "{id}@{version}"
 ```
 
-### Top-level keys
+### Top-level model
 
-| Key | Required | Default | Meaning |
-| --- | --- | --- | --- |
-| `$schema` | No | — | Schema URL for editor validation. |
-| `settings` | No | see below | Workspace-wide release behavior. |
-| `packages` | Yes | — | Logical package inventory; at least one entry. |
+| Key | Purpose |
+| --- | --- |
+| `$schema` | Schema URL for editor validation. |
+| `contract` | Versioned interpretation semantics used by plans and tags. |
+| `settings` | Workspace-wide bump behavior. |
+| `release-units` | Logical version and changelog inventory. |
+| `workspace-tags` | Repository-level release records and triggers. |
+| `fixed` | Groups whose managed members release at one shared version. |
+| `linked` | Groups whose releasing members share a version calculation. |
+| `discovery` | Managed and excluded candidate receipts. |
 
-### `settings`
+### Settings
 
-| Key | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `global-tag` | boolean | `false` | Also create a plain `X.Y.Z` tag for the release. |
-| `internal-dependency-bump` | `major` \| `minor` \| `patch` | `patch` | Minimum bump propagated to internal dependents. Cannot be `none`. |
+| Key | Values | Meaning |
+| --- | --- | --- |
+| `internal-dependency-bump` | `major`, `minor`, `patch` | Minimum bump propagated to internal dependents. |
+| `pre-1-0-bump-mapping` | `component`, `compatibility` | Interpretation of bump names before 1.0.0. |
 
-### `packages`
+New workspaces use `compatibility`: before 1.0.0, `major` advances the minor
+component while `minor` and `patch` advance the patch component. `component`
+always applies the named Semantic Versioning component directly.
 
-`packages` is a map keyed by a stable package id. Ids may contain ASCII
-letters, digits, and the characters `-`, `_`, `.`, `@`, and `/`.
+### Release units
 
-| Key | Required | Default | Meaning |
-| --- | --- | --- | --- |
-| `path` | Yes | — | Package directory relative to the workspace root. Must be relative and contain no `..`. |
-| `projections` | Yes | — | Version projections; at least one. |
-| `tag` | No | `{id}@{version}` | Tag template for this package. |
-| `depends-on` | No | `[]` | Ids of internal packages this one depends on. |
+`release-units` is keyed by stable logical ids. An id need not match an
+ecosystem package name.
 
-### `projections`
+| Key | Required | Meaning |
+| --- | --- | --- |
+| `path` | Yes | Release-unit directory relative to the workspace root. |
+| `projections` | No | Files in which a version may be materialized. |
+| `tags` | Yes | Exactly one primary tag and optional projection tags. |
+| `depends-on` | No | Internal release-unit dependencies. |
+| `disposition` | No | `managed` by default; `suspended` keeps identity while blocking a required release. |
 
-Each projection maps one file to one version location.
-
-| Key | Required | Default | Meaning |
-| --- | --- | --- | --- |
-| `adapter` | Yes | — | Ecosystem or generic format adapter (see below). |
-| `file` | Yes | — | File relative to the package `path`. |
-| `mode` | Yes | — | How the version is materialized. |
-| `pointer` | Only for `json` / `toml` / `yaml` | — | JSON Pointer or dotted key path to the version field. |
-
-Adapters:
-
-- Ecosystem-aware: `npm`, `cargo`, `pub`, `python`, `msbuild`, `go`. These know
-  where the version lives and participate in internal dependency-range
-  rewriting.
-- Generic: `json`, `toml`, `yaml`. These target an arbitrary field and require
-  a `pointer`, such as `/metadata/version`.
-
-Projection `mode` values:
+Each projection has an adapter, relative file path, and mode. Generic `json`,
+`toml`, and `yaml` projections also require a pointer to the version field.
 
 | Mode | Behavior |
 | --- | --- |
-| `committed` | `apply` writes the release version into the manifest. |
-| `injected` | `stamp` writes the computed build version; `apply` leaves it alone. |
-| `none` | No manifest version is written. Go modules use this mode, since their version is carried by tags. |
+| `committed` | `apply` writes the release version. |
+| `injected` | `stamp` writes a computed build version. |
+| `none` | The listed manifest is not written; tags remain authoritative. |
 
-### Tag templates
+The ecosystem adapters are `npm`, `cargo`, `pub`, `python`, `msbuild`, and
+`go`. The generic adapters are `json`, `toml`, and `yaml`.
 
-The `tag` template controls the Git tag written for a package. It must contain
-exactly one `{version}` placeholder and at most one `{id}` placeholder, and it
-must not prefix the version with `v` (intentional tags never use a `v` prefix).
-Resolved tag templates must be unique across packages, and must not collide with
-the plain `{version}` tag when `global-tag` is enabled.
+### Tags, phases, and order
 
-Common forms:
+Each release unit has one tag with `role: primary` and may have tags with
+`role: projection`. Named workspace tags live under `workspace-tags`. Every
+template contains `{version}`, may contain `{id}` where supported, and must not
+prefix the version with `v`.
 
-- `{id}@{version}` — the default, e.g. `sample-runtime@1.4.0`.
-- `{version}` — a single-package repository tagged with a plain SemVer value.
+Common templates are:
+
+- `{id}@{version}` for a release-unit namespace, such as
+  `sample-library@1.4.0`;
+- `{version}` for a single-release-unit repository or workspace release record.
+
+Set `require-phase` to `before-publication` or `after-publication` when the
+executor must declare the external phase before creating a tag. Set
+`tag-after` to tag ids that must already exist and agree with the planned
+commit, version, contract, and digest. Intentional rejects cycles and emits the
+resulting order in the canonical release plan.
 
 ## Intent files
 
-Pending intents live in `.intentional/intents/` as Markdown files. Each file's
-name stem is its intent id; `intentional add` generates a memorable slug such as
-`swift-otter-1a2b.md`. A file has YAML frontmatter mapping package ids to bumps,
-followed by the changelog prose:
+An intent filename stem is its stable id. YAML frontmatter maps release-unit
+ids to `major`, `minor`, or `patch`; the body is changelog prose:
 
 ```markdown
 ---
-sample-runtime: minor
+sample-library: minor
 sample-application: patch
 ---
 
 Add a user-visible capability.
 ```
 
-Rules enforced when an intent is authored or read:
+Intentional rejects unknown release units, invalid bumps, and empty prose.
 
-- The frontmatter must reference at least one package.
-- Every referenced package id must exist in `config.yml`.
-- Each bump must be `major`, `minor`, or `patch` (never `none`).
-- The changelog message must not be empty.
+## Discovery and initialization
 
-Before `1.0.0`, `major` advances `0.x.y` to `0.(x+1).0`, while `minor` and
-`patch` both advance it to `0.x.(y+1)`. Reaching `1.0.0` is a deliberate human
-act — tag `1.0.0` explicitly — after which strict SemVer rules apply.
-
-## Initializing configuration
-
-`intentional init` scans the workspace (skipping `.git`, `.intentional`,
-`node_modules`, and `target`) and maps discovered manifests to adapters:
+`init` recognizes these manifests:
 
 | Manifest | Adapter | Default mode |
 | --- | --- | --- |
 | `package.json` | `npm` | `committed` |
-| `Cargo.toml` (package-bearing) | `cargo` | `committed` |
+| package-bearing `Cargo.toml` | `cargo` | `committed` |
 | `pubspec.yaml` | `pub` | `committed` |
 | `pyproject.toml` | `python` | `committed` |
 | `*.csproj` | `msbuild` | `committed` |
 | `go.mod` | `go` | `none` |
+| `devcontainer-feature.json` | `json` | `committed` |
+| `devcontainer-template.json` | `json` | `committed` |
 
-Each discovered package gets the default `{id}@{version}` tag template. Edit the
-generated file to adjust ids, tag templates, projection modes, `pointer` values,
-and `depends-on` edges before your first release.
+Each candidate contains source evidence, extracted identity and version when
+available, and only the projection or tag suggestions supported by that
+evidence. Set its `resolution` to `independent`, `projection`, or `excluded`,
+then rerun `init`. Managed and excluded receipts let later runs distinguish
+unchanged evidence from a manifest that needs a new decision.
