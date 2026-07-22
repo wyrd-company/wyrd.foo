@@ -1,4 +1,10 @@
 ---
+/*
+---
+relationships:
+  implements: concept
+---
+*/
 import SiteLayout from "../../../layouts/SiteLayout.astro";
 import GitHub from "../../../components/icons/GitHub.astro";
 import { getDocTools, getToolPages, getCatalog, STATUS_LABEL } from "../../../lib/catalog";
@@ -871,7 +877,10 @@ const num = (n: number) => String(n).padStart(2, "0");
     transform: rotate(45deg);
   }
   .prose :global(table) {
+    display: block;
     width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
     border-collapse: collapse;
     font-size: 0.94rem;
     border: 1px solid var(--rule-soft);
@@ -1054,6 +1063,10 @@ const num = (n: number) => String(n).padStart(2, "0");
     }
     .foot-block:last-child {
       border-bottom: 0;
+    }
+    .pg {
+      flex: 1;
+      min-width: 0;
     }
   }
 </style>
