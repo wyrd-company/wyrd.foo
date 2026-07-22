@@ -1,9 +1,7 @@
 name: seek
 tagline: Agent-friendly web search, research & scraping.
 blurb: >-
-  One CLI over many provider APIs — Parallel, Exa, Brave, Perplexity, Gemini,
-  Firecrawl. Commands group providers by intent so an agent or human picks the
-  right trade-off between speed, cost, and output type.
+  One CLI over many provider APIs — Parallel, Exa, Brave, Perplexity, Gemini, Firecrawl. Commands group providers by intent so an agent or human picks the right trade-off between speed, cost, and output type.
 category: Agent Tooling
 language: TypeScript
 status: stable

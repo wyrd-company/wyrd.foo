@@ -26,7 +26,9 @@ The most versatile provider — used by all three commands.
   keyword searches with a single call for broad or complex queries.
 - **research** — Parallel Deep Research with tunable processor depth
   (`core-fast` … `ultra`) and optional strict JSON output via a schema file.
-  Best for B2B and data-ops work where output must be auditable.
+  Best for B2B and data-ops work where output must be auditable. Supports
+  resumable `--async` submission plus later `research status` and `research
+  get` calls.
 - **scrape** — the `/v1/extract` endpoint returns clean markdown excerpts (and
   optional full content) plus publish dates, and can authenticate through
   logins and paywalls.
@@ -49,7 +51,8 @@ Brave exposes two separate APIs, provisioned and keyed independently.
   optional freshness and country filters.
 - **Brave Answers** (`web brave answers`, `research brave`) — AI-generated
   answers backed by verifiable sources. The same endpoint powers deep research
-  when the research flag is enabled.
+  when the research flag is enabled. Research remains synchronous because the
+  streaming endpoint does not expose a resumable job id.
 
 ## Perplexity
 
@@ -59,12 +62,24 @@ Synthesizes the web into cited answers.
   search mode (`web`/`academic`), and domain filters are configurable.
 - **research** — Sonar Deep Research (async job) for polished long-form
   briefings with inline citations and a tunable reasoning-effort level.
+  Supports resumable submission and later status/result retrieval.
 
 ## Google (Gemini)
 
 - **research google** — the Gemini Deep Research Agent autonomously plans,
   executes, and synthesizes multi-step research into a detailed, cited report.
-  Runs can take several minutes; an interactive plan-approval mode is available.
+  Runs can take several minutes; resumable submission and an interactive
+  plan-approval mode are available. With `--interactive --async`, the plan is
+  approved before the provider job is submitted.
+
+## Resumable provider jobs
+
+Google, Parallel, and Perplexity expose durable provider jobs. `seek research
+<provider> <query> --async` returns a provider-qualified locator without
+polling. `seek research status <provider> <job-id>` and `seek research get
+<provider> <job-id>` reconnect directly to that remote job; no local daemon or
+job-history database is involved. See [Research](research) for command examples
+and the JSON lifecycle contract.
 
 ## Firecrawl
 
