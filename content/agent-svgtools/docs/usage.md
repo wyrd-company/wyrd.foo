@@ -1,49 +1,47 @@
 ---
-title: The agent loop
+title: The reconstruction workflow
 order: 3
+relationships:
+  uses: agent-svgtools-skill
+  demonstrates: owl-reconstruction-demo
 ---
 
-The tool is built around a tight iterate-and-improve loop: read the target
-colors, author or revise the SVG, score it, attack the worst region, repeat.
-
-1. `agent-svgtools colors <reference>` — read the exact hex values to target.
-2. *(optional)* `agent-svgtools trace <reference> start.svg` — a starting-point SVG.
-3. Author or revise `candidate.svg`.
-4. `agent-svgtools judge <reference> candidate.svg --diff-image diff.png --grid` — score it and localize the errors.
-5. Read the scores and `regions`, open `diff.png`, attack the worst region, and return to step 3. Stop when `combined` clears your target (or `--threshold` passes).
-
-Run `agent-svgtools skill > SKILL.md` to install the full, agent-facing workflow
-guide into a project.
-
-## Quick start
+Start by installing the complete agent-facing workflow in the working project:
 
 ```bash
-# Score an SVG against a reference image (TOON by default).
-agent-svgtools judge logo.png candidate.svg
-
-# With artifacts and a coordinate grid for a vision model.
-agent-svgtools judge logo.png candidate.svg \
-  --diff-image diff.png --side-by-side sbs.png --grid
-
-# CI gate: exit code 2 if the combined score is below 95.
-agent-svgtools judge logo.png candidate.svg --threshold 95
+agent-svgtools skill > SKILL.md
 ```
 
-Example `judge` output:
+Then use a component-first reconstruction loop.
 
-```toon
-reference:
-  path: logo.png
-  width: 512
-  height: 512
-candidate: candidate.svg
-scores:
-  pixel_match: 96.4
-  ssim: 88.1
-  combined: 92.25
-regions[2]{x,y,width,height,error}:
-  192,64,128,96,41.2
-  0,416,96,96,33.7
-artifacts:
-  diff_image: diff.png
+1. Inspect the reference and run `agent-svgtools colors <reference>`.
+2. Write down the silhouette, major semantic components, layer order, palette,
+   and a complexity budget.
+3. Author a complete SVG from deliberate primitives and Bézier curves.
+4. Run `agent-svgtools inspect candidate.svg` and correct structural,
+   naming, palette, or resource-safety problems.
+5. Render and visually inspect the candidate.
+6. Run a foreground-scoped judge with comparison artifacts.
+7. Revise one named defect, rerun the audit and comparison, and keep the
+   revision only when the evidence improves.
+
+```bash
+agent-svgtools colors reference.png
+agent-svgtools inspect candidate.svg
+agent-svgtools render candidate.svg rendered.png
+agent-svgtools judge reference.png candidate.svg --foreground \
+  --side-by-side side-by-side.png --diff-image diff.png --blend blend.png
 ```
+
+Foreground scope scores the union of pixels that are non-transparent in either
+image and includes alpha agreement. This prevents a large shared transparent
+canvas—or an opaque replacement background—from receiving similarity credit.
+
+Use `trace` only when the task explicitly permits it, only on an isolated crop
+or binary silhouette, and only as diagnostic evidence. Do not copy, simplify,
+or edit traced geometry into the final SVG.
+
+Stop when the major visible defects are resolved, the SVG is structurally
+clean and editable, and further score changes no longer represent meaningful
+visual improvement. Expect a human or vision-capable agent to direct or finish
+the last subtle edits.

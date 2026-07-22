@@ -1,22 +1,34 @@
 ---
 title: Overview
 order: 1
+relationships:
+  demonstrates: owl-reconstruction-demo
+  references: README
 ---
 
-Coding agents write clean, semantic SVG but cannot *see* their output. When an
-agent recreates a logo as SVG from a raster reference, it has no way to tell how
-close it got. `agent-svgtools` closes that loop: it renders the SVG, scores it
-against the reference, localizes the errors, and produces comparison images a
-vision model can read — all machine-first, so the result drops straight back
-into an iterate-and-improve cycle.
+`agent-svgtools` gives coding agents a measurable feedback loop for
+reconstructing raster artwork as clean, maintainable SVG. It renders candidate
+SVGs, compares them with a reference image, localizes visible differences, and
+audits the vector structure that scores alone cannot evaluate.
 
-- **Pure Rust, single static binary** — no C dependencies.
-- **Machine-first output** — TOON by default (token-efficient for LLMs), with
-  JSON, JSONL, and pretty-printing on tap.
-- **Scoring engine** — pixel match %, SSIM, a combined score, and ranked error
-  regions with pixel-coordinate bounding boxes.
-- **Artifacts** — diff heatmaps, labeled side-by-side panels, onion-skin blends,
-  and coordinate grids, written only to the paths you ask for.
+![Agent reconstructing an owl with agent-svgtools](assets/demo.gif)
 
-Prebuilt binaries for macOS (arm64/x64), Linux (x64/arm64, musl static), and
-Windows (x64) are attached to every release.
+The recommended workflow is component-first: identify the silhouette and
+semantic parts, author deliberate vector geometry, inspect the structure, then
+use visual artifacts and scores to guide focused revisions. Automatic tracing
+is a disposable diagnostic for an isolated shape when explicitly allowed; it
+is not the source of final geometry.
+
+- **Pure Rust executable** — self-contained, with no C runtime dependencies.
+- **Machine-first output** — TOON by default, with JSON, JSONL, and optional
+  pretty-printed JSON.
+- **Structural inspection** — viewBox, authored graphics, path complexity,
+  semantic IDs, palette size, and unsafe or external resources.
+- **Alpha-aware scoring** — foreground scope excludes shared transparency and
+  penalizes alpha disagreement.
+- **Visual artifacts** — diff heatmaps, side-by-side panels, onion-skin blends,
+  and coordinate grids, written only to explicit paths.
+
+The tool gets an agent close and makes the remaining work observable. A person
+or vision-capable agent still decides whether the result is visually finished;
+the numeric score is evidence, not acceptance.
