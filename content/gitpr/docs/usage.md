@@ -3,24 +3,113 @@ title: Usage
 order: 3
 ---
 
-A review moves through four steps: snapshot a branch, list what is open, review
-it in the TUI, and merge once it is approved.
+## Review flow
 
-1. Create a PR from your current worktree branch against the local default
-   branch. A `--title` is required.
-2. List open PRs to grab a ULID prefix.
-3. Review the change: launch the TUI for a side-by-side diff and inline
-   comments, or inspect it from the CLI with `show` and `comments`.
-4. Merge the approved work back into its base branch. Add `--cleanup` to also
-   remove the source worktree and branch.
+Create a PR for the current worktree branch, review its live basis, and use the
+exact reported pair for a verdict:
 
 ```bash
-gitpr create --title "Add diff viewer"
+gitpr create --title "Improve validation"
 gitpr list
-gitpr show <ulid-prefix>
-gitpr tui
-gitpr merge <ulid-prefix>
+gitpr review <pr-id>
+gitpr comment <pr-id> --file internal/example.go --line-start 20 \
+  --text "Handle the empty value here."
+gitpr approve <pr-id> --basis <source-head>:<base-head>
+gitpr merge <pr-id>
 ```
 
-The CLI accepts a full ULID or any unique prefix. Commands that take a PR ID but
-are given none — `show` and `comments` — open an interactive picker instead.
+`--description` passes its value through the invoking shell, so backticks,
+`$()`, and mixed quoting in a multiline body can be consumed or mangled by the
+shell before gitpr sees them. Use `--description-file <path>` (or `-` for
+standard input) instead; it is read verbatim, byte-for-byte, with no shell
+interpretation or trimming, and is mutually exclusive with `--description`:
+
+```bash
+gitpr create --title "Improve validation" --description-file description.txt
+```
+
+To correct title or description on an open PR without creating a second
+record — for example after a shell-mangled description — use `gitpr edit`.
+It refuses closed or merged PRs without writing, and never changes anything
+but the fields given:
+
+```bash
+gitpr edit <pr-id> --description-file description.txt
+```
+
+Approve records an accepted event and does not merge. Merge reads the latest
+event and refuses rejected verdicts, head drift, deleted source branches,
+divergent histories, and equal source/base heads. Reject records a rejected
+event for the reviewed pair:
+
+```bash
+gitpr reject <pr-id> --basis <source-head>:<base-head>
+```
+
+Comments can be anchored, PR-level, or replies:
+
+```bash
+gitpr comment <pr-id> --pr-level --text "Ready for another review."
+gitpr comment <pr-id> --thread <thread-id> --text "Addressed."
+gitpr resolve <pr-id> <thread-id>
+gitpr reopen <pr-id> <thread-id>
+```
+
+Comments are allowed while a PR is open, merged, or closed. A post-closure
+comment is marked in the record.
+
+End work without merging through gitpr:
+
+```bash
+gitpr close <pr-id> --reason abandoned
+gitpr close <pr-id> --reason superseded --superseded-by <replacement-id>
+gitpr close <pr-id> --reason integrated --destination main \
+  --commit <landed-commit-sha>
+```
+
+Records remain retained after merge or closure. `gitpr delete <id>` previews the
+destructive operation; `--force` performs it and may make pinned commits
+collectable.
+
+The CLI accepts a full ULID or a unique prefix. `show` and `comments` open a
+picker without an ID. The TUI lists records and provides a read-only detail
+view; actions use the CLI review and basis flow.
+
+## Legacy records
+
+A record without a `schema` field is a legacy snapshot from the prior model.
+gitpr does not read, list, mutate, merge, export, or delete one: every command
+that takes its ID refuses and carries the commands below, and `gitpr list` skips
+it with a count.
+
+There is no migration. Recreate in-flight work with `gitpr create` and remove
+the old record by hand. A legacy record is self-describing YAML behind plain
+Git refs, so no tool is needed to retrieve it.
+
+List the legacy records in a repository:
+
+```bash
+for ref in $(git for-each-ref --format='%(refname)' 'refs/gitpr/pr/*/meta'); do
+  git show "$ref:pr.yaml" | grep -q '^schema:' || echo "$ref"
+done
+```
+
+Read one, read its history, and export it before removal:
+
+```bash
+git show refs/gitpr/pr/<id>/meta:pr.yaml
+git log --patch refs/gitpr/pr/<id>/meta
+git show refs/gitpr/pr/<id>/meta:pr.yaml > <id>.pr.yaml
+```
+
+Remove every ref belonging to one record. The first pattern is a
+prefix, not a glob, so it also reaches nested event and anchor pins:
+
+```bash
+git for-each-ref --format='%(refname)' \
+  refs/gitpr/pr/<id> 'refs/gitpr/index/*/<id>' |
+  while read -r ref; do git update-ref -d "$ref"; done
+```
+
+Removal is irreversible, and the commits the record pinned become collectable
+by Git.
