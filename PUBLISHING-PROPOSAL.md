@@ -105,9 +105,13 @@ install:
 | `default` | no       | `true` on at most one entry: the command shown in the hero. Otherwise the first entry. |
 
 The site derives the platform tabs from `os` (macOS, Linux, Windows, plus
-Containers when a `docker` entry exists); a method listed for several systems
+Docker when a `docker` entry exists); a method listed for several systems
 appears under each. A method may appear more than once with different `os`
 values when the command differs per system.
+
+`install` is for products you install and run (CLIs, MCP servers, apps).
+Dev container features and images get their own kind-specific block instead
+(`devcontainer.json` reference, options, tags), not a Docker tab.
 
 `nav` lives in `docs.yml` (no second config file):
 
