@@ -7,6 +7,7 @@ relationships:
 */
 import SiteLayout from "../../../layouts/SiteLayout.astro";
 import GitHub from "../../../components/icons/GitHub.astro";
+import Search from "../../../components/Search.astro";
 import { getDocTools, getToolPages, getCatalog, STATUS_LABEL } from "../../../lib/catalog";
 import { render } from "astro:content";
 
@@ -35,6 +36,9 @@ const href = (slug: string) =>
   slug === pages[0].slug ? `/docs/${tool.slug}` : `/docs/${tool.slug}/${slug}`;
 
 const idx = pages.findIndex((p) => p.slug === page.slug);
+// The first page is also built at /docs/<tool>; index only that URL so search
+// doesn't return the same page twice.
+const indexable = pageParam === undefined || idx !== 0;
 const prev = pages[idx - 1];
 const next = pages[idx + 1];
 const num = (n: number) => String(n).padStart(2, "0");
@@ -69,6 +73,7 @@ const num = (n: number) => String(n).padStart(2, "0");
       <nav class="mast-nav">
         <a href="/#catalog">Tools</a>
         <a href={`/docs/${docTools[0].slug}`} class="cur">Docs</a>
+        <Search product={tool.slug} productName={tool.name} />
       </nav>
     </header>
 
@@ -141,8 +146,13 @@ const num = (n: number) => String(n).padStart(2, "0");
       </aside>
 
       <!-- Main -->
-      <main class="doc">
-        <p class="crumbs">
+      <main
+        class="doc"
+        data-pagefind-body={indexable ? "" : undefined}
+        data-pagefind-filter={`product:${tool.slug}`}
+        data-pagefind-meta={`productName:${tool.name}`}
+      >
+        <p class="crumbs" data-pagefind-ignore>
           <a href="/">Tools</a> <span class="cr-sep">/</span>
           <a href={`/docs/${tool.slug}`}>{tool.name}</a> <span class="cr-sep">/</span>
           <span class="cur">{page.title}</span>
@@ -152,7 +162,7 @@ const num = (n: number) => String(n).padStart(2, "0");
 
         {
           page.install && (
-            <section class="install-block">
+            <section class="install-block" data-pagefind-ignore>
               <div class="ib-corner ib-tl" />
               <div class="ib-corner ib-tr" />
               <div class="ib-corner ib-bl" />
@@ -165,6 +175,7 @@ const num = (n: number) => String(n).padStart(2, "0");
                   <button
                     class="copy"
                     type="button"
+                    data-pagefind-ignore
                     data-copy={opt.command}
                     aria-label={`Copy ${opt.label} install command`}
                   >
@@ -181,7 +192,7 @@ const num = (n: number) => String(n).padStart(2, "0");
         </div>
 
         <!-- Prev / next within this tool -->
-        <nav class="pager">
+        <nav class="pager" data-pagefind-ignore>
           {
             prev ? (
               <a class="pg pg-prev" href={href(prev.slug)}>
@@ -204,7 +215,7 @@ const num = (n: number) => String(n).padStart(2, "0");
           }
         </nav>
 
-        <footer class="doc-foot">
+        <footer class="doc-foot" data-pagefind-ignore>
           <a class="df-repo" href={tool.repo} target="_blank" rel="noopener">
             <GitHub size={14} />
             Star {tool.name} on GitHub
@@ -332,6 +343,7 @@ const num = (n: number) => String(n).padStart(2, "0");
   }
   .mast-nav {
     display: flex;
+    align-items: center;
     gap: 26px;
     font-family: var(--mono);
     font-size: 12px;
