@@ -37,9 +37,9 @@ release published
 Opt-in is an **organization custom repository property**, not a file in
 wyrd.foo.
 
-| Property        | Type    | Meaning                                  |
-| --------------- | ------- | ---------------------------------------- |
-| `wyrd-publish`  | boolean | `true` lets wyrd.foo ingest this repo.   |
+| Property           | Type    | Meaning                                  |
+| ------------------ | ------- | ---------------------------------------- |
+| `wyrd-foo-publish` | boolean | `true` lets wyrd.foo ingest this repo.   |
 
 - Define it once at the org level with **"Allow repository actors to set this
   property" turned off**, so only org owners (or a role granted to manage
@@ -50,7 +50,7 @@ wyrd.foo.
 
 Adding a tool is then:
 
-1. Set `wyrd-publish: true` on the repo.
+1. Set `wyrd-foo-publish: true` on the repo.
 2. Add the `request-publish` workflow call to its release workflow.
 3. Commit `docs/docs.yml` and pages.
 
@@ -154,7 +154,7 @@ full resync). It runs in a single `concurrency` group, so ingests are
 serialized and the old push-retry loop goes away.
 
 1. **Authorize.** Read the repo's custom property values via the API. Reject
-   unless the repo is in the org and `wyrd-publish` is `true`. The payload's
+   unless the repo is in the org and `wyrd-foo-publish` is `true`. The payload's
    `repo` is caller-supplied; this check is what makes it safe to trust.
 2. **Check out** the tool repo at `ref`.
 3. **Download** `wyrd-manifest.json` from the release, if present.
@@ -174,7 +174,7 @@ serialized and the old push-retry loop goes away.
 
 `workflow_dispatch` on the ingest workflow with no repo re-ingests every
 opted-in repo at its latest release. The list comes from searching the org
-for repos with `wyrd-publish` set to `true`; repos with content but no longer
+for repos with `wyrd-foo-publish` set to `true`; repos with content but no longer
 opted in are removed. Use it after schema or layout changes, and to clean up
 after a tool is renamed.
 
@@ -229,7 +229,7 @@ so `request-publish` can mint its dispatch token.
 
 1. Ship the schema endpoint and the ingest workflow alongside the existing
    `publish-docs` action.
-2. Set `wyrd-publish: true` on the current tool repos.
+2. Set `wyrd-foo-publish: true` on the current tool repos.
 3. Switch each tool repo from `publish-docs` to `request-publish`; existing
    `docs.yml` files are valid once `language` is dropped and `kind` added.
 4. Run a full resync, then retire the `publish-docs` action.
