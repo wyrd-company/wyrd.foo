@@ -1,6 +1,7 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
 import GitHub from "../components/icons/GitHub.astro";
+import Search from "../components/Search.astro";
 import { getCatalogByCategory, getCatalog, getDocTools, STATUS_LABEL } from "../lib/catalog";
 
 const groups = await getCatalogByCategory();
@@ -44,6 +45,7 @@ let counter = 0;
         <nav class="mast-nav">
           <a href="#catalog">Tools</a>
           <a href={`/docs/${firstDoc}`}>Docs</a>
+          <Search />
         </nav>
       </header>
 
@@ -301,6 +303,7 @@ let counter = 0;
   }
   .mast-nav {
     display: flex;
+    align-items: center;
     gap: 26px;
     font-family: var(--mono);
     font-size: 12px;
