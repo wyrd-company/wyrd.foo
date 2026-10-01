@@ -133,7 +133,7 @@ jobs:
 ## The dispatch
 
 `request-publish` mints a token from the publisher App scoped to wyrd.foo and
-sends a `repository_dispatch` with `event_type: wyrd-publish`:
+sends a `repository_dispatch` with `event_type: wyrd-foo-publish`:
 
 ```json
 {
@@ -149,7 +149,7 @@ requested. (GitHub limits `client_payload` to 10 top-level keys.)
 
 ## The ingest workflow (wyrd.foo)
 
-Runs on `repository_dispatch: wyrd-publish` and on `workflow_dispatch` (for a
+Runs on `repository_dispatch: wyrd-foo-publish` and on `workflow_dispatch` (for a
 full resync). It runs in a single `concurrency` group, so ingests are
 serialized and the old push-retry loop goes away.
 
