@@ -62,6 +62,9 @@ Unchanged from today in shape: `docs/docs.yml`, Markdown pages gated by
 `docs: true`, and listed assets. New fields in `docs.yml`:
 
 - `kind` — `cli` | `mcp-server` | `devcontainer-feature` | `devcontainer-image` | `app`.
+- `install` — every install method, with the operating systems it supports
+  (see below). Replaces today's `install: [{label, command}]`.
+- `highlights` — up to six one-line statements for "What it does".
 - `nav` — sections, groups and page order for the docs sidebar (see below).
 - `media` — the product's hero media (each `src` must be listed in `assets`).
 - A kind-specific block, including the primary "get it" command shown in the
@@ -70,6 +73,41 @@ Unchanged from today in shape: `docs/docs.yml`, Markdown pages gated by
 - `schemaVersion` — the major version of the site schema the file targets.
 
 Language is no longer shown on the site and is dropped from the schema.
+
+`install` describes each method once; the site generates the product page's
+install section and the hero's default command from it:
+
+```yaml
+install:
+  - method: homebrew
+    os: [macos, linux]
+    command: brew install wyrd-company/tools/toha
+  - method: apt
+    os: [linux]
+    label: Debian, Ubuntu        # optional; shown beside the method
+    command: |
+      curl -fsSL https://[APT HOST]/key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/wyrd.gpg
+      echo "deb [signed-by=/etc/apt/keyrings/wyrd.gpg] https://[APT HOST] stable main" | sudo tee /etc/apt/sources.list.d/wyrd.list
+      sudo apt update && sudo apt install toha
+  - method: cargo
+    os: [macos, linux, windows]
+    command: cargo install toha
+  - method: docker
+    command: docker run --rm -it ghcr.io/wyrd-company/toha
+```
+
+| Field     | Required | Meaning |
+| --------- | -------- | ------- |
+| `method`  | yes      | One of `homebrew`, `apt`, `rpm`, `aur`, `nix`, `cargo`, `npm`, `pipx`, `go`, `winget`, `scoop`, `docker`, `archive`, `script`. The site owns each method's display name and icon. |
+| `os`      | yes, except `docker` | Any of `macos`, `linux`, `windows`. |
+| `command` | yes      | One line, or several (YAML block scalar). Shown as one code block with one Copy button. |
+| `label`   | no       | Short qualifier, e.g. "Debian, Ubuntu". |
+| `default` | no       | `true` on at most one entry: the command shown in the hero. Otherwise the first entry. |
+
+The site derives the platform tabs from `os` (macOS, Linux, Windows, plus
+Containers when a `docker` entry exists); a method listed for several systems
+appears under each. A method may appear more than once with different `os`
+values when the command differs per system.
 
 `nav` lives in `docs.yml` (no second config file):
 
