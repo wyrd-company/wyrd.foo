@@ -8,8 +8,8 @@ relationships:
 ---
 
 Policy lives on the controller. Agents receive the policies that match their
-containers and cache them so a controller restart does not interrupt running
-containers.
+containers and cache resolved assignments. A controller outage can be tolerated
+while the current tokens remain valid.
 
 ## Policy document
 
@@ -18,8 +18,9 @@ name: teal-devcontainer
 openbao:
   policy: |
     path "kv/data/teams/teal/*" { capabilities = ["read"] }
-  token-ttl: 1h
-  token-max-ttl: 8h
+    path "auth/token/lookup-self" { capabilities = ["read"] }
+    path "auth/token/renew-self" { capabilities = ["update"] }
+    path "auth/token/revoke-self" { capabilities = ["update"] }
 ssh:
   transit-keys:
     - teal-github
@@ -30,8 +31,6 @@ contract:
   env:
     SSH_AUTH_SOCK: "{mount-target}/ssh-agent.sock"
     VAULT_ADDR: "unix://{mount-target}/vault.sock"
-  access-group: 1000
-  enforcement: report
 ```
 
 The controller validates the HCL through OpenBao before saving and writes it
@@ -39,9 +38,42 @@ as `wyrwood-teal-devcontainer`. Every Transit key and SSH role the policy
 names must exist under the controller's configured mounts and must also be
 permitted by the HCL.
 
+## Policy editor
+
+The graphical editor adds paths and selects their capabilities. **Browse KV
+paths** lists names in the configured KV v2 mounts. Select a secret to add its
+`data/` path, or a directory to add its subtree. **Add LIST path for this
+directory** adds a `metadata/` grant for the workload. Custom paths accept
+wildcards and paths outside the browsed mounts. KV names with ACL wildcard
+or template meaning cannot generate automatic grants; enter their intended scope
+manually in raw HCL. Graphical path fields direct template syntax to the raw editor.
+
+**Raw HCL** exposes the full document. Switching views preserves its text.
+HCL with constructs the graphical controls cannot represent, including
+parameter constraints, legacy policy attributes, or inline comments inside a
+path block, opens as raw HCL. It remains editable and is validated by OpenBao
+on save. Graphical edits change only the selected path or capability span;
+other text and comments are retained. Advisory warnings appear beside either
+view and do not block saving.
+
+**Add token self-operation preset** adds explicit lookup-self, renew-self, and
+revoke-self paths in the graphical subset. Binding tokens carry no default
+policy. When editing other HCL constructs, include those grants in the raw
+text. OpenBao decides their effective permissions, including deny rules.
+
+Transit keys and SSH-engine roles have independent **offered** and
+**not-forwardable** selections. Saved names remain visible when an item is
+missing or OpenBao cannot list it. **Add identity name** accepts a name that
+is not in the list, including a forwarding selector for an identity another
+policy offers. An offered identity must exist in OpenBao.
+
+Environment requirements use name/value rows. TTL fields use an amount and a
+unit: minutes or hours on a binding, seconds/minutes/hours for SSH role creation.
+
 ## Access group
 
-`contract.access-group` is effectively required for non-root containers whose
+The binding's `settings.access-group` is effectively required for non-root
+containers whose
 processes run as a different UID from the host agent user. Set it to a numeric
 host GID that the container processes have as a primary or supplementary group.
 With an access group, the consumer directory is `0750` and sockets are `0660`.
@@ -49,8 +81,8 @@ Without one, they are `0700` and `0600`, owned by the agent user. A container
 running as another non-root UID cannot use those owner-only sockets.
 
 The agent user must belong to the host group so it can assign that group to
-the directory and sockets. Packages add `wyrwood` to `docker` only; they do
-not add it to your container's access group. For example, if the contract uses
+the directory and sockets. Add `wyrwood` to the consumer access group;
+`docker` cannot serve as that group. For example, if the binding uses
 GID 1000, find its host group name, add the agent user, and restart the agent
 so it receives the new membership:
 
@@ -62,7 +94,7 @@ sudo systemctl restart wyrwood-agent
 
 Replace `<host-group-name>` with the name returned by `getent`. If the GID has
 no host group, create one with that GID first. Repeat on each bound host.
-For a custom service account, use that account instead of `wyrwood`.
+The packaged service identity is `wyrwood`; the proxy accepts that UID and root.
 
 Membership grants access: members of that host group who can reach the
 consumer directory can use its sockets with the binding's OpenBao and SSH
@@ -79,23 +111,64 @@ controller outage can last before workloads lose secret access.
 
 ## Bindings
 
-A binding attaches one policy to one container key on one agent. Keys are
-tried in order: devcontainer identity labels, compose project and service
-labels, container name. The controller creates one AppRole per binding with
-the policy attached. Changing the policy updates the AppRole, and the agent
-obtains a new token on the push. The agent reports each new token's accessor
-to the controller. Deleting the binding deletes the AppRole and revokes the
-container's token by that accessor, whether or not the agent is connected. If
-OpenBao refuses the revocation, or the agent is not connected and has not yet
-reported an accessor, the deletion says so, and the token stays valid until
-the agent revokes it or it expires.
+A binding attaches one or more policies to one container key on one agent.
+Keys are tried in order: devcontainer identity labels, compose project and
+service labels, container name. Token lifetime, access group, and enforcement
+are binding settings, independent of the reusable policies:
+
+```json
+{
+  "policies": ["teal-devcontainer", "shared-read"],
+  "settings": {
+    "token-ttl": "1h",
+    "token-max-ttl": "8h",
+    "access-group": 1000,
+    "enforcement": "report"
+  }
+}
+```
+
+The web interface selects policies with checkboxes. **Preview effective
+policy** shows source names and revisions, combined HCL, offered identities,
+forwarding restrictions, contract, and settings before saving. Binding edits
+submit the current revision; a stale edit must be reloaded.
+
+HCL remains in separate OpenBao policies. OpenBao evaluates their union with
+its normal path priority and deny rules; the displayed HCL includes each
+source in stable name order. Transit keys and SSH roles are deduplicated
+separately. A not-forwardable selector in any source restricts the selected
+identity. Sources must require the same mount target. Environment entries
+are merged after expanding `{mount-target}`; different values for one name
+are rejected. A conflicting source edit is rejected before saving.
+
+The controller creates one AppRole per binding carrying exactly the selected
+`wyrwood-<policy-name>` policies. It disables the implicit `default` policy;
+there is no managed lifecycle policy. Each author must include the three
+self-operation paths shown above. The policy editor starts with those lines.
+The editor, preview, and saved effective view warn when there is no explicit
+`renew-self` update grant. This is advisory so deliberately non-renewing tokens
+remain supported; OpenBao decides actual capabilities, including wildcards and
+deny rules. A token without renewal permission can expire during a controller
+outage.
+
+Changing the selected policies, a source revision, or binding settings creates
+a new assignment. The controller updates the AppRole and revokes the reported
+old token before issuing fresh credentials. An offline agent's containers lose
+access until the agent reconnects. A failed transition remains pending and
+blocks fresh issuance; startup and subsequent credential requests attempt the
+pending transition. An unreported token remains bounded by its maximum TTL.
+Late old-assignment accessor reports are revoked rather than saved as current.
+
+Deleting a binding deletes its AppRole and revokes the reported token even
+while the agent is offline. If revocation fails, the response says that the
+token can remain valid until the agent revokes it or it expires.
 
 ## Contract enforcement
 
 `report` is the default. The agent checks the mount, the environment names and
 values, and the access group on every reconcile and reports what is missing.
 
-`recreate` makes the agent apply the contract once, when the policy is first
+`recreate` makes the agent apply the contract once, when the binding is first
 bound to a container. The agent stops, removes, and creates the container from
 its inspected definition with the mount and environment merged in. Later drift
 is reported, not recreated. The host's agent configuration must also allow
@@ -112,8 +185,17 @@ controller:
   url: ssh://controller.example.internal:2222
 engine:
   socket: /var/run/docker.sock
+  proxy-socket: /run/wyrwood-engine/engine.sock
   allow-recreate: false
 ```
+
+`engine.socket` is the proxy's upstream; the agent uses `engine.proxy-socket`.
+The proxy reads the root-controlled file itself. Set `allow-recreate: true`
+only when arbitrary create/start authority on this host is acceptable: a
+compromised agent can still take over a recreate-enabled host. Activate any
+change with `sudo systemctl restart wyrwood-agent.service`, which restarts
+the proxy too. Both configuration paths and custom proxy socket directories
+must meet the protected ownership rules described in [Installation](install.md).
 
 The agent key, accepted controller fingerprint, cached policy, events, and
 the journal of each recreate in progress live under `/var/lib/wyrwood`. No
@@ -140,6 +222,11 @@ openbao:
     secret-id-file: /run/secrets/openbao-secret-id
   transit-mount: transit
   ssh-mount: ssh
+  secret-mounts:
+    - path: kv
+      type: kv-v2
+    - path: certificates
+      type: other
 oidc:
   provider-name: Pocket ID
   issuer: https://id.example.internal
@@ -151,6 +238,15 @@ oidc:
     - wyrwood-operators
 ```
 
+`openbao.secret-mounts` is an optional catalog of expected secret engines,
+empty by default. Each entry has a unique `path` inside the namespace, without
+slashes, and a `type` of `kv-v2` or `other`. Paths use letters, digits, dot,
+dash, and underscore; dot-only and double-dot paths are invalid. OpenBao's
+reserved roots `sys`, `auth`, `identity`, `cubbyhole`, and `audit` cannot be
+secret mounts. The catalog
+supports policy warnings and editor path pickers. It creates no mounts and
+changes no OpenBao permissions.
+
 Register the controller with the provider as a confidential client using the
 authorization-code flow with PKCE, with the redirect URL above. The URL is the
 public address behind your reverse proxy, not the loopback listen address.
@@ -158,6 +254,64 @@ The provider must include group membership in the ID token, which Wyrwood
 requests with the `groups` scope. An account is admitted only when one of its
 groups is listed under `allowed-groups`; the web interface cannot change the
 list.
+
+## Release checks
+
+The **Agents** page shows the controller build version and each approved
+agent's version. An agent older than the controller is marked **Out of date**.
+An agent that omits its version can still connect and shows **unknown** with
+**Update available**. Development builds remain visible; they are not compared
+as release versions.
+
+![Controller and agent versions with update status](assets/web-versions.png)
+
+Release checks are disabled by default. To enable outbound HTTPS requests from
+the controller to GitHub, add this to `controller.yml` and restart the controller:
+
+```yaml
+update-checks:
+  enabled: true
+  interval: 24h
+  timeout: 10s
+```
+
+`interval` and `timeout` are configurable positive Go durations, such as `6h`
+and `20s`. There is no additional interval floor or timeout ceiling beyond a
+positive duration that Go can represent. Choose an interval appropriate for
+external release checks; very short intervals increase requests to GitHub.
+The defaults are 24 hours and 10 seconds. An enabled controller checks
+at startup, then waits the configured interval after each attempt. The timeout
+bounds each complete check. Checks run in the background, without blocking
+startup, agent sessions, or pages. Failed checks wait for the same interval;
+there is no immediate retry.
+
+The controller reads the public `wyrd-company/wyrwood/releases/latest` redirect
+using an HTTP client, without the GitHub API or a credential. It compares the
+release tag with its build version using SemVer, including prereleases and build
+metadata. The page shows **Update available** with the release link when a newer
+release exists. **Up to date** requires a successful check and a comparable build
+version.
+
+For an offline or air-gapped controller, leave `enabled` false or omit
+`update-checks`. No release request is made. If an enabled check fails, the page
+shows **Update check unavailable**, writes a fixed failure category to the
+controller journal, and retains the last successful result with
+its age. Observations are held in memory and start empty after a restart.
+
+## Policy path warnings
+
+The policy editor checks HCL path stanzas against the configured AppRole,
+Transit, SSH, and secret-engine mounts, plus the exact `auth/token/lookup-self`,
+`auth/token/renew-self`, and `auth/token/revoke-self` paths. A path such as `kv/*`
+or `kv/data/+/entry` stays inside a configured `kv` mount; `kv*`, `+/data/*`,
+`auth/+/role/*`, and `sys/*` can reach outside the configured mounts and produce
+an advisory warning. The check reads path stanzas, including deny stanzas; it
+does not evaluate effective OpenBao capabilities or path priority.
+
+Checks run when the editor opens and when you leave the HCL field. A warning,
+unreadable HCL, or an unavailable warning check never blocks saving. OpenBao
+validates the HCL on save. An outside grant can be intentional; list a secret
+engine in `openbao.secret-mounts` when it is part of the expected scope.
 
 ## OpenBao namespace
 
@@ -181,10 +335,10 @@ all send it.
 Name the controller's own policy and AppRole outside the `wyrwood-` prefix,
 for example `controller`. The controller writes only `wyrwood-` names, so it
 cannot rewrite its own policy or AppRole. Every binding AppRole carries only
-its own `wyrwood-` policy.
+its selected `wyrwood-` policies and no implicit `default` policy.
 
-The controller's policy, for the default `approle`, `transit`, and `ssh`
-mounts:
+The controller's policy, for a `kv-v2` secret-mount entry at `kv` and the
+default `approle`, `transit`, and `ssh` mounts:
 
 ```hcl
 path "sys/policies/acl/wyrwood-*" {
@@ -198,6 +352,8 @@ path "auth/approle/role/wyrwood-*/secret-id" {
   capabilities = ["create", "update"]
 }
 path "sys/wrapping/wrap" { capabilities = ["update"] }
+path "kv/metadata" { capabilities = ["list"] }
+path "kv/metadata/*" { capabilities = ["list"] }
 path "transit/keys" { capabilities = ["list"] }
 path "transit/keys/*" { capabilities = ["create", "read", "update", "list"] }
 path "ssh/roles" { capabilities = ["list"] }
@@ -208,3 +364,12 @@ path "auth/token/revoke-accessor" { capabilities = ["update"] }
 
 Change the mount names in the paths when you configure other mounts. The
 controller revokes only the token accessors its agents report.
+
+The editor browses only `kv-v2` entries from `openbao.secret-mounts`. The list
+is empty by default; free-text paths and raw HCL remain available. Browsing
+requires a non-root namespace. Grant only `list` on each configured KV v2
+mount's `metadata` and `metadata/*` paths in that namespace, as shown for `kv`
+above. Entries of type `other` do not get KV LIST grants or appear in the
+picker. The controller does not read KV metadata or data values, write KV
+data, or list `sys/mounts` for the editor. A denied or unavailable list shows
+a warning without blocking manual editing.
