@@ -131,6 +131,20 @@ runs:
           printf '%s\n' "$fm" | grep -Eq '^order:' || fail "$f is missing frontmatter 'order'."
         done
 
+        # Every local image a published page references must be a listed asset,
+        # so that the site build never meets an image that was not copied.
+        for f in "${PAGES[@]}"; do
+          while IFS= read -r ref; do
+            ref="${ref%% *}"
+            ref="${ref#./}"
+            case "$ref" in
+              ''|/*|'#'*|*://*|data:*) continue ;;
+            esac
+            [ -n "${SEEN_ASSETS[$ref]+x}" ] \
+              || fail "$f references image '$ref', which is not listed in docs.yml 'assets'."
+          done < <(grep -oE '!\[[^]]*\]\([^)]+\)' "$f" | sed -E 's/^!\[[^]]*\]\(<?([^)>]*)>?\)$/\1/')
+        done
+
         echo "should_publish=true" >> "$GITHUB_OUTPUT"
         echo "slug=$NAME" >> "$GITHUB_OUTPUT"
         printf '%s\n' "${PAGES[@]}" > "$RUNNER_TEMP/publish_pages.txt"
