@@ -1,6 +1,8 @@
 ---
 title: Web UI
 order: 8
+relationships:
+  references: accounts
 ---
 
 `xolotl serve` serves an admin web UI at `/`. It does what the CLI does.
@@ -47,8 +49,8 @@ server log has the details.
 
 | Screen | What you can do |
 |---|---|
-| Overview | OpenBao and SQLite health, accounts that need attention (each with a **Review account** link), account pools and usage windows, the Codex reset credit total, totals for the last 24 hours, gateway providers, recent failed requests |
-| Accounts | Accounts by provider with their state and cooldown reason: refresh usage, refresh models, enable or disable. Details: set priority, **Retry**, log in again (OAuth accounts) or replace the key (API-key accounts), remove, last error, Codex reset credits |
+| Overview | Fixable failures with **Replace key** or **Log in again** links, OpenBao and SQLite health, configured account pools with state bars and usage windows, Claude and Codex reset credit totals, traffic and provider split for the last 24 hours, configured gateway providers, recent failed requests |
+| Accounts | Accounts by provider with their state and cooldown reason: refresh usage, refresh models, enable or disable. Details: set priority, **Retry**, log in again (OAuth accounts) or replace the key (API-key accounts), remove, last error, Claude and Codex reset credits |
 | Add account | Codex device or browser login, Claude login, OpenCode Go key, import of a CLI credential file |
 | Policies | Providers and the accounts of each subscription provider, scopes, MCP access, rate limits (in total, per provider and per account) with the policy's consumption, and the model list (below). Each section folds away |
 | Client keys | Issue, rotate with a grace period, enable or disable, revoke. Consumption against the policy's rate limits. Shows the OpenBao path, the `bao` command and the OpenBao policy the client needs. Never shows the key |
@@ -57,6 +59,42 @@ server log has the details.
 | Usage | The request log grouped by client, account, provider or model, and a link to `telemetry.dashboard_url` |
 
 Every member of the admin group has full access.
+
+Use **Repository / report issues** in the sidebar to open the
+[Xolotl repository](https://github.com/wyrd-company/xolotl) in a new tab.
+Select **Issues** there to report a problem. The link is available on every
+screen after sign-in and can be reached with Tab and opened with Enter.
+
+### Overview
+
+**Needs action** lists enabled accounts whose credentials were refused, plus
+OpenBao and SQLite failures. Account actions open that account's details.
+Cooling accounts and credentials waiting to save appear under **Health**;
+xolotl retries saving refreshed credentials.
+
+Health shows subscription providers with accounts and gateway providers with a
+saved key or no authentication requirement. Disabled providers remain visible
+with their state. Each account has a state bar that opens its details. Quota
+windows come from the least-used available account with reported usage.
+Providers without accounts or keys share a compact **Not set up** line.
+
+**Traffic, last 24h** shows requests, the error rate and failed count, input and
+output tokens, and requests by provider. **All errors in Usage** opens Usage
+with **Errors only** selected. Remove that filter to include successful requests.
+
+#### Restore OpenBao
+
+Check that the configured OpenBao address is reachable, OpenBao is unsealed,
+and xolotl's vault credentials can access its configured mount and prefix.
+See [Configuration](configuration). Refreshed credentials stay in memory while
+xolotl retries saving them. Avoid restarting until they are saved.
+
+#### Restore SQLite
+
+Check that the configured database directory exists, its filesystem has free
+space, and the xolotl process can read and write it. See
+[Configuration](configuration) for the database path. The server log contains
+the storage error. Restore storage access without deleting the database.
 
 ### Account states
 
@@ -121,3 +159,5 @@ old the catalog is, and each provider's model count or discovery error.
 The UI has a light and a dark theme. By default it follows the browser's color
 scheme. The three buttons above **Sign out** in the sidebar pick the system, light or
 dark theme. The browser keeps the choice.
+
+Model catalog rows show context, maximum output, input/output and cache prices per million tokens, with the LiteLLM key or override and last successful fetch age. Failed refreshes retain cached data. Usage and Traffic show API-equivalent USD with priced-request coverage; subscription value is not billed spend.
