@@ -194,6 +194,40 @@ package and release archive installations. `sudo wyrwood agent service stop`
 stops the agent without disabling startup at boot. To disable startup at
 boot, run `sudo systemctl disable wyrwood-agent`.
 
+## Upgrade order
+
+Use a stopped rollout. Finish active recreations before stopping agents. Resolve
+an interrupted recreation with the [recovery procedure](configuration.md#contract-enforcement)
+before continuing. Secret and signing socket access is unavailable while an
+agent is stopped.
+
+1. Stop every agent:
+
+   ```bash
+   sudo wyrwood agent service stop
+   ```
+
+2. Upgrade the controller.
+3. Upgrade every agent package or executable while its service is stopped.
+   Package upgrades leave inactive agents stopped.
+4. Start the upgraded agents:
+
+   ```bash
+   sudo wyrwood agent service start
+   ```
+
+Do not reconnect agents until both peers are upgraded. Agents report the host
+consumer directory as `consumer-directory`; the controller sends the resolved
+`agent-token-renewal` setting. Older peers reject these unknown fields and
+close the session. Neither an agent-first nor a controller-first rolling
+upgrade keeps mixed versions connected.
+
+Keep agent keys, policy caches, bindings and consumer directories. Stored
+inventories and policies need no data migration. Updated agents accept cached
+assignments without the renewal field and infer their existing choice. Setup
+examples remain unavailable until the agent reports both the consumer
+directory and image.
+
 ## Verify
 
 ```bash

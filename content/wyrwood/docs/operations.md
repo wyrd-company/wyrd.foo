@@ -25,7 +25,7 @@ fingerprint failures by exit status without parsing error text.
 ## Web interface
 
 The controller's web interface shows agents with pending approvals,
-containers per agent with binding and conformance state, policies, OpenBao
+all reported containers with binding and conformance state, policies, OpenBao
 keys under the managed mounts, and events. Bind it to loopback and place it
 behind a reverse proxy that terminates TLS.
 
@@ -44,6 +44,34 @@ from the group in the provider to revoke their access at their next sign-in;
 their open session ends at the session time-to-live or when an operator ends
 it from **Security**. While the provider is unreachable the interface cannot
 be used, but agents keep serving containers.
+
+## Container setup
+
+**Containers** shows all approved agents’ last reported containers. Filter by
+agent or text, sort by container, agent, image or binding state, and choose
+ascending or descending order. Disconnected rows retain the last report and
+show its age. Selecting a container keeps the current filters and order.
+Filtering out the selected container closes its detail panel.
+
+In **Containers**, select a bound container and open **Container setup**. Copy
+the host source, container target, Docker Compose fragment, or `docker run`
+example. The examples use the saved effective contract, including its
+environment values and custom mount target. Run them on the selected agent
+host when creating the container, and keep your application's other options.
+
+The host source comes from the agent's configured consumers root and the
+actual container name. The agent manages this directory. Let the agent create
+it before starting the container; the Compose fragment disables automatic
+host-path creation. The examples do not include application commands, ports,
+networks, or unrelated mounts. They do not change an existing container.
+
+![Container setup examples in the binding panel](assets/web-container-setup.png)
+
+If the report lacks the consumer directory or image, setup examples are
+unavailable. An agent that omits the directory must be updated. Follow the
+[stopped controller-first rollout](install.md#upgrade-order) before updating
+peers. If clipboard access is unavailable, select and copy the displayed
+text.
 
 ## Operational events
 
