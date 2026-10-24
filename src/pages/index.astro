@@ -1,175 +1,104 @@
 ---
+/*
+ * The home page (REDESIGN.md, "Home page"): headline, the featured card
+ * beside Recent releases, then the catalog with kind tabs.
+ */
+import { getCollection } from "astro:content";
+import HomeCatalog from "../components/home/HomeCatalog.astro";
+import HomeFeatured from "../components/home/HomeFeatured.astro";
+import HomeReleases from "../components/home/HomeReleases.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
-import GitHub from "../components/icons/GitHub.astro";
-import { getCatalogByCategory, getCatalog, getDocTools, STATUS_LABEL } from "../lib/catalog";
+import { pickFeatured } from "../lib/featured";
+import { catalogRows, featuredCandidates, featuredCards, recentReleases, type HomeEntry } from "../lib/home";
 
-const groups = await getCatalogByCategory();
-const catalog = await getCatalog();
-const docTools = await getDocTools();
-const stableCount = catalog.filter((t) => t.status === "stable").length;
-const totalTools = catalog.length;
-const firstDoc = docTools[0].slug;
-const ORG = "https://github.com/wyrd-company";
-const num = (n: number) => String(n).padStart(2, "0");
-let counter = 0;
+const [products, pages] = await Promise.all([getCollection("products"), getCollection("pages")]);
+const withDocs = new Set(pages.map((page) => page.data.product));
+const entries: HomeEntry[] = products.map((product) => ({
+  key: product.id,
+  data: product.data,
+  hasDocs: withDocs.has(product.id),
+}));
+
+const candidates = featuredCandidates(entries);
+const pick = pickFeatured(candidates, Date.now());
 ---
 
 <SiteLayout
   nav="catalog"
-  title="Wyrd Tools — precision command-line instruments"
-  description="A drafting table of sharp, single-purpose tools for developers and the agents that work alongside them."
+  title="Wyrd Tools — small, sharp tools for the people and agents who ship"
+  description="Single-purpose tools for developers and the agents that work alongside them."
 >
-  <div class="blueprint">
-    <div class="sheet">
-      <!-- Hero -->
-      <section class="hero">
-        <div class="hero-grid" aria-hidden="true"></div>
-        <div class="hero-body">
-          <p class="tag-row">
-            <span class="tag">DWG&nbsp;·&nbsp;WYRD-0001</span>
-            <span class="tag-sep">/</span>
-            <span class="tag-dim">SHEET 1 OF 1</span>
-            <span class="tag-sep">/</span>
-            <span class="tag-dim">REV A</span>
-          </p>
-          <h1>
-            Small, sharp tools<br />for the people<br /><em>and agents</em> who ship.
-          </h1>
-          <p class="deck">
-            Single-purpose command-line instruments, each machined to do one thing exactly.
-            Drafted because we needed them, tolerance-tested because we run them every day.
-          </p>
-          <div class="cta-row">
-            <a class="btn btn-solid" href={`/docs/${firstDoc}`}>
-              Browse the docs <span class="btn-arrow" aria-hidden="true">→</span>
-            </a>
-            <a class="btn btn-ghost" href={ORG} target="_blank" rel="noopener">
-              <GitHub size={15} />
-              wyrd-company
-            </a>
-          </div>
-        </div>
+  <section class="home-hero site-width">
+    <h1>Small, sharp tools for the people <em>and agents</em> who ship.</h1>
+    <p>
+      Single-purpose instruments, each machined to do one thing exactly. Drafted because we needed them,
+      tolerance-tested because we run them every day.
+    </p>
+  </section>
 
-        <aside class="spec" aria-label="Ready to use">
-          <div class="spec-corner spec-tl"></div>
-          <div class="spec-corner spec-tr"></div>
-          <div class="spec-corner spec-bl"></div>
-          <div class="spec-corner spec-br"></div>
-          <p class="spec-title">Ready to use</p>
-          <ul class="spec-index">
-            {
-              docTools.map((t, i) => (
-                <li>
-                  <a href={`/docs/${t.slug}`}>
-                    <span class="si-num">{num(i + 1)}</span>
-                    <span class="si-name">{t.name}</span>
-                    <span class="si-lead" aria-hidden="true" />
-                    <span class="si-lang">{t.language}</span>
-                  </a>
-                </li>
-              ))
-            }
-          </ul>
-          <p class="spec-foot">{num(totalTools - docTools.length)} more in preview</p>
-        </aside>
-      </section>
+  <section class="home-spotlight site-width" aria-label="Featured and recent releases">
+    <HomeFeatured cards={featuredCards(entries)} candidates={candidates} pick={pick} />
+    <HomeReleases releases={recentReleases(entries)} />
+  </section>
 
-      <!-- Catalog -->
-      <section class="catalog" id="catalog">
-        <div class="cat-head">
-          <div class="cat-head-left">
-            <span class="ch-label">Drawing index</span>
-            <h2>The toolbox</h2>
-          </div>
-          <p class="ch-meta">{num(totalTools)} tools&nbsp;·&nbsp;{num(stableCount)} stable</p>
-        </div>
-
-        {
-          groups.map((group) => (
-            <div class="group">
-              <h3 class="group-title">
-                <span class="gt-tick" aria-hidden="true" />
-                <span class="gt-name">{group.category}</span>
-                <span class="gt-rule" />
-                <span class="gt-count">{num(group.tools.length)}</span>
-              </h3>
-              <ul class="rows">
-                {group.tools.map((t) => {
-                  counter += 1;
-                  return (
-                    <li class={`row ${t.status !== "stable" ? "row-muted" : ""}`}>
-                      <div class="row-ref">
-                        <span class="row-num">{num(counter)}</span>
-                        <span class="row-vrule" aria-hidden="true" />
-                      </div>
-                      <div class="row-main">
-                        <div class="row-headline">
-                          <h4>{t.name}</h4>
-                          <span class={`badge badge-${t.status}`}>{STATUS_LABEL[t.status]}</span>
-                        </div>
-                        <p class="row-tag">{t.tagline}</p>
-                        <p class="row-blurb">{t.blurb}</p>
-                        <div class="row-install">
-                          <span class="ri-prompt" aria-hidden="true">$</span>
-                          <code>{t.install[0].command}</code>
-                          <button
-                            class="copy"
-                            type="button"
-                            data-copy={t.install[0].command}
-                            aria-label={`Copy install command for ${t.name}`}
-                          >
-                            copy
-                          </button>
-                        </div>
-                      </div>
-                      <div class="row-actions">
-                        {t.hasDocs ? (
-                          <a class="ra ra-primary" href={`/docs/${t.slug}`}>
-                            Docs <span aria-hidden="true">→</span>
-                          </a>
-                        ) : (
-                          <span class="ra ra-disabled">Docs pending</span>
-                        )}
-                        <a
-                          class="ra ra-gh"
-                          href={t.repo}
-                          target="_blank"
-                          rel="noopener"
-                          title={`${t.name} on GitHub`}
-                        >
-                          <GitHub size={13} />
-                          {t.name}
-                        </a>
-                        <span class="row-lang">{t.language}</span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))
-        }
-      </section>
-
-    </div>
-  </div>
+  <HomeCatalog rows={catalogRows(entries)} />
 </SiteLayout>
 
-<script>
-  document.querySelectorAll<HTMLButtonElement>(".copy[data-copy]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(btn.dataset.copy || "");
-        const prev = btn.textContent;
-        btn.textContent = "copied";
-        btn.classList.add("is-copied");
-        setTimeout(() => {
-          btn.textContent = prev;
-          btn.classList.remove("is-copied");
-        }, 1400);
-      } catch {
-        /* clipboard unavailable */
-      }
-    });
-  });
-</script>
+<style>
+  .home-hero {
+    padding-top: 72px;
+    padding-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .home-hero h1 {
+    margin: 0;
+    max-width: 960px;
+    font-size: clamp(36px, 5.2vw, 56px);
+    line-height: 1.04;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+  }
+  .home-hero em {
+    font-style: normal;
+    color: var(--accent);
+  }
+  .home-hero p {
+    margin: 0;
+    max-width: 56ch;
+    font-size: 19px;
+    color: var(--text-2);
+  }
+  .home-hero > * {
+    animation: home-rise 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .home-hero > :nth-child(2) {
+    animation-delay: 90ms;
+  }
+  .home-spotlight {
+    display: grid;
+    grid-template-columns: minmax(0, 9fr) minmax(0, 3.4fr);
+    gap: 24px;
+    align-items: stretch;
+    animation: home-rise 520ms 160ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  @media (max-width: 1100px) {
+    .home-spotlight {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @keyframes home-rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .home-hero > *,
+    .home-spotlight {
+      animation: none;
+    }
+  }
+</style>

@@ -1,0 +1,11 @@
+# A feature entry, with a release newer than every product's.
+kinds:
+  - { kind: devcontainer-feature, ref: "ghcr.io/example-org/features/feature-three:1" }
+source: src/feature-three
+category: Dev Containers
+release-unit: feature-three
+owner: example-org/features
+name: Feature three
+description: Adds sample tool three to a dev container.
+version: 1.0.0
+release: { version: 1.0.0, date: 2026-10-20 }

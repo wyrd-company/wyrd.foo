@@ -1,0 +1,23 @@
+# An MCP server, featured for a long window, so the build-time pick is fixed.
+name: cinder-mcp
+version: 2.0.0
+docs-version: 2.0.0
+release-unit: cinder-mcp
+owner: example-org/cinder
+tagline: Let an agent keep a fire going in a stove.
+blurb: A sample MCP server for the home page fixtures. It is featured.
+status: stable
+category: Agent Tooling
+order: 2
+logo: assets/logo.svg
+logo-dark: assets/logo-dark.svg
+kinds:
+  - kind: mcp-server
+    install:
+      - { method: claude-code, command: claude mcp add cinder -- npx -y cinder-mcp }
+    tools:
+      - { name: add_log, description: Adds a log to the stove., effect: Writes }
+highlights: [Keeps the fire]
+media: [{ src: assets/demo.png, caption: An agent session }]
+release: { version: 2.0.0, date: 2026-08-01 }
+featured: { from: 2020-01-01, until: 2099-01-01, reason: Fixture feature, version: 2.0.0 }

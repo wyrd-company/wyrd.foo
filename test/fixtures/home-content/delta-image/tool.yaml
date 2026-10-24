@@ -1,0 +1,15 @@
+# A dev container image with no release and no docs pages.
+name: delta-image
+version: 1.0.0
+docs-version: 1.0.0
+release-unit: delta-image
+owner: example-org/images
+tagline: A base image with the room already furnished.
+blurb: A sample dev container image.
+status: stable
+category: Dev Containers
+kinds:
+  - kind: devcontainer-image
+    ref: ghcr.io/example-org/images/delta:1
+highlights: [Furnished]
+media: [{ src: assets/demo.png, caption: The image in use }]

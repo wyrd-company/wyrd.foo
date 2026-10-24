@@ -1,0 +1,178 @@
+---
+/*
+ * The featured card: mark, name, kind, status, tagline, one "Get started"
+ * button and the product's media. Clicking anywhere else on the card opens
+ * the product page.
+ */
+import ProductMark from "../ProductMark.astro";
+import { productUrl, type FeaturedCard } from "../../lib/home";
+import HomeKindChip from "./HomeKindChip.astro";
+import HomeStatus from "./HomeStatus.astro";
+
+interface Props {
+  card: FeaturedCard;
+  /** Load the media lazily: the card is a browser-side alternative. */
+  lazy?: boolean;
+}
+const { card, lazy = false } = Astro.props;
+---
+
+<article class="featured-card" data-featured-key={card.key}>
+  <div class="featured-body">
+    <span class="featured-label">Featured</span>
+    <div class="featured-title">
+      <ProductMark name={card.name} logo={card.logo} logoDark={card.logoDark} size="card" />
+      <h2><a class="featured-link" href={productUrl(card.key)}>{card.name}</a></h2>
+    </div>
+    <div class="featured-meta">
+      <HomeKindChip kind={card.kind} />
+      <HomeStatus status={card.status} />
+    </div>
+    <p class="featured-tagline">{card.tagline}</p>
+    <p class="featured-blurb">{card.blurb}</p>
+    <div class="featured-actions">
+      <a class="featured-cta" href={card.getStarted}>Get started <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+  <div class="featured-media">
+    <div class="featured-frame">
+      <img src={card.media.src} alt={card.media.alt} loading={lazy ? "lazy" : "eager"} decoding="async" />
+    </div>
+  </div>
+</article>
+
+<style>
+  .featured-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    transition: border-color 160ms ease;
+  }
+  .featured-card:hover {
+    border-color: var(--header-line);
+  }
+  .featured-body {
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+  }
+  .featured-label {
+    font-family: var(--font-code);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .featured-title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+  .featured-title h2 {
+    margin: 0;
+    font-family: var(--font-code);
+    font-size: clamp(28px, 3vw, 40px);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+  .featured-link {
+    color: var(--text);
+  }
+  .featured-link:hover {
+    text-decoration: none;
+  }
+  /* The name's link covers the card; the button sits above it. */
+  .featured-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+  .featured-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .featured-tagline {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .featured-blurb {
+    margin: 0;
+    color: var(--text-2);
+    font-size: 15.5px;
+  }
+  .featured-actions {
+    margin-top: auto;
+    padding-top: 6px;
+  }
+  .featured-cta {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 18px;
+    border-radius: 8px;
+    background: var(--button);
+    color: var(--button-text);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .featured-cta:hover {
+    text-decoration: none;
+    filter: brightness(1.08);
+  }
+  .featured-media {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    background: var(--surface-2);
+  }
+  .featured-frame {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #000;
+    box-shadow:
+      0 1px 0 var(--divider),
+      0 12px 32px -16px rgba(17, 21, 28, 0.4);
+  }
+  .featured-frame img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 400ms ease;
+  }
+  .featured-card:hover .featured-frame img {
+    transform: scale(1.015);
+  }
+  @media (max-width: 900px) {
+    .featured-card {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .featured-media {
+      order: -1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .featured-frame img {
+      transition: none;
+    }
+  }
+</style>

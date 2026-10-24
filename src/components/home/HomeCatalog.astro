@@ -1,0 +1,383 @@
+---
+/*
+ * The catalog (#catalog): kind tabs, a filter box and one row per product. A
+ * product shows under the tab of each of its kinds, and once under All. The
+ * row shows the primary kind's badge and "get it" command. Clicking anywhere
+ * else on a row opens the product page. Without JavaScript, every row shows.
+ */
+import ProductMark from "../ProductMark.astro";
+import { docsUrl, filterText, kindTabs, productUrl, type CatalogRow } from "../../lib/home";
+import HomeKindChip from "./HomeKindChip.astro";
+import HomeStatus from "./HomeStatus.astro";
+
+interface Props {
+  rows: CatalogRow[];
+}
+const { rows } = Astro.props;
+const tabs = kindTabs(rows);
+---
+
+<section class="home-catalog site-width" id="catalog" aria-labelledby="home-catalog-title">
+  <div class="home-catalog-head">
+    <h2 id="home-catalog-title">The catalog</h2>
+    <label class="home-catalog-filter">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path>
+      </svg>
+      <input type="search" data-catalog-filter aria-label="Filter catalog" placeholder="Filter by name or category" autocomplete="off" />
+    </label>
+  </div>
+
+  <div class="home-catalog-tabs" role="group" aria-label="Kind">
+    {
+      tabs.map((tab) => (
+        <button type="button" class="home-catalog-tab" data-catalog-tab={tab.id} aria-pressed={tab.id === "all" ? "true" : "false"}>
+          {tab.label}
+          <span class="home-catalog-count" data-catalog-count>{tab.count}</span>
+        </button>
+      ))
+    }
+  </div>
+
+  <ul class="home-catalog-rows">
+    {
+      rows.map((row) => (
+        <li
+          class="home-row"
+          data-catalog-row={row.key}
+          data-kinds={row.kinds.join(" ")}
+          data-filter={filterText(row)}
+          data-feature={row.isFeature ? "" : undefined}
+        >
+          <div class="home-row-id">
+            <ProductMark name={row.name} logo={row.logo} logoDark={row.logoDark} size="row" />
+            <div class="home-row-name">
+              <a class="home-row-link" href={productUrl(row.key)}>{row.name}</a>
+              <HomeKindChip kind={row.primaryKind} />
+            </div>
+          </div>
+          <div class="home-row-text">
+            <span class="home-row-tagline">{row.tagline}</span>
+            <span class="home-row-meta">
+              {row.category}
+              {row.status && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <HomeStatus status={row.status} />
+                </>
+              )}
+            </span>
+          </div>
+          <div class="home-row-getit">
+            <code title={row.getIt}>{row.getIt}</code>
+            <button type="button" class="home-copy" data-copy={row.getIt} aria-label={`Copy the command for ${row.name}`}>
+              Copy
+            </button>
+          </div>
+          <div class="home-row-docs">
+            {row.hasDocs && (
+              <a class="home-row-docs-link" href={docsUrl(row.key)} aria-label={`${row.name} docs`}>
+                Docs <span aria-hidden="true">→</span>
+              </a>
+            )}
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+  <p class="home-catalog-empty" data-catalog-empty hidden>No products match.</p>
+</section>
+
+<script>
+  import { inTab, matchesFilter } from "../../lib/catalog-filter";
+  import type { Kind } from "../../schema/vocabulary";
+
+  const root = document.querySelector<HTMLElement>("#catalog");
+  if (root) {
+    const rows = [...root.querySelectorAll<HTMLElement>("[data-catalog-row]")];
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>("[data-catalog-tab]")];
+    const filter = root.querySelector<HTMLInputElement>("[data-catalog-filter]")!;
+    const empty = root.querySelector<HTMLElement>("[data-catalog-empty]")!;
+    let tab = "all" as "all" | Kind;
+
+    const update = () => {
+      let shown = 0;
+      for (const row of rows) {
+        const kinds = (row.dataset.kinds ?? "").split(" ") as Kind[];
+        const show = inTab({ kinds }, tab) && matchesFilter(row.dataset.filter ?? "", filter.value);
+        row.hidden = !show;
+        if (show) shown += 1;
+      }
+      empty.hidden = shown > 0;
+      for (const button of tabs) button.setAttribute("aria-pressed", String(button.dataset.catalogTab === tab));
+    };
+
+    for (const button of tabs) {
+      button.addEventListener("click", () => {
+        tab = button.dataset.catalogTab as "all" | Kind;
+        update();
+      });
+    }
+    filter.addEventListener("input", update);
+    update();
+
+    for (const button of root.querySelectorAll<HTMLButtonElement>("[data-copy]")) {
+      button.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(button.dataset.copy ?? "");
+        } catch {
+          return;
+        }
+        button.textContent = "Copied";
+        button.classList.add("is-copied");
+        setTimeout(() => {
+          button.textContent = "Copy";
+          button.classList.remove("is-copied");
+        }, 1400);
+      });
+    }
+  }
+</script>
+
+<style>
+  .home-catalog {
+    padding-top: 56px;
+    padding-bottom: 72px;
+    display: flex;
+    flex-direction: column;
+  }
+  .home-catalog-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .home-catalog-head h2 {
+    margin: 0;
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+  }
+  .home-catalog-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 300px;
+    max-width: 100%;
+    height: 38px;
+    padding: 0 12px;
+    box-sizing: border-box;
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    color: var(--text-faint);
+  }
+  .home-catalog-filter:focus-within {
+    border-color: var(--accent);
+  }
+  .home-catalog-filter input {
+    flex-grow: 1;
+    min-width: 0;
+    background: transparent;
+    border: 0;
+    outline: none;
+    color: var(--text);
+    font: inherit;
+    font-size: 13.5px;
+  }
+  .home-catalog-filter input::placeholder {
+    color: var(--text-faint);
+  }
+  .home-catalog-tabs {
+    display: flex;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--divider);
+    margin-bottom: 8px;
+    scrollbar-width: none;
+  }
+  .home-catalog-tab {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    height: 46px;
+    padding: 0 14px;
+    background: transparent;
+    border: 0;
+    color: var(--text-2);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .home-catalog-tab:hover {
+    color: var(--text);
+  }
+  .home-catalog-tab[aria-pressed="true"] {
+    color: var(--text);
+    font-weight: 600;
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+  .home-catalog-count {
+    margin-left: 6px;
+    color: var(--text-faint);
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+  }
+  .home-catalog-rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .home-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 250px) minmax(0, 1fr) minmax(0, 360px) 104px;
+    gap: 20px;
+    align-items: center;
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--divider);
+    border-radius: 8px;
+  }
+  .home-row[hidden] {
+    display: none;
+  }
+  .home-row:hover {
+    background: var(--surface-2);
+  }
+  .home-row-id {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .home-row-name {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    min-width: 0;
+  }
+  .home-row-link {
+    font-family: var(--font-code);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  .home-row-link:hover {
+    text-decoration: none;
+  }
+  .home-row:hover .home-row-link {
+    color: var(--accent);
+  }
+  /* The name's link covers the row; Copy and Docs sit above it. */
+  .home-row-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+  .home-row-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .home-row-tagline {
+    font-size: 15px;
+  }
+  .home-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--text-faint);
+  }
+  .home-row-getit {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 6px 6px 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--divider);
+    border-radius: 4px;
+    min-width: 0;
+  }
+  .home-row-getit code {
+    flex-grow: 1;
+    min-width: 0;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .home-copy {
+    flex-shrink: 0;
+    padding: 4px 8px;
+    background: transparent;
+    border: 1px solid var(--divider);
+    border-radius: 3px;
+    color: var(--text-2);
+    font: inherit;
+    font-size: 11.5px;
+    cursor: pointer;
+  }
+  .home-copy:hover {
+    color: var(--text);
+    border-color: var(--text-faint);
+  }
+  .home-copy.is-copied {
+    color: var(--status-stable);
+    border-color: currentColor;
+  }
+  .home-row-docs {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .home-row-docs-link {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 8px;
+    background: var(--button);
+    color: var(--button-text);
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .home-row-docs-link:hover {
+    text-decoration: none;
+    filter: brightness(1.08);
+  }
+  .home-catalog-empty {
+    margin: 24px 12px;
+    color: var(--text-faint);
+  }
+  @media (max-width: 1100px) {
+    .home-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px 16px;
+    }
+    .home-row-text {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+    .home-row-getit {
+      grid-column: 1 / -1;
+      grid-row: 3;
+    }
+    .home-row-docs {
+      grid-column: 2;
+      grid-row: 1;
+    }
+  }
+</style>

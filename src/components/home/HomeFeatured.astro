@@ -1,0 +1,59 @@
+---
+/*
+ * The featured slot. The build writes its own pick as the default card, so
+ * the page has a featured product without JavaScript. The browser runs the
+ * same pick on its own clock and swaps in another product's card, from a
+ * <template>, only when its result differs.
+ */
+import type { FeaturedCandidate } from "../../lib/featured";
+import type { FeaturedCard } from "../../lib/home";
+import HomeFeaturedCard from "./HomeFeaturedCard.astro";
+
+interface Props {
+  cards: Map<string, FeaturedCard>;
+  candidates: FeaturedCandidate[];
+  /** The build's pick. */
+  pick?: string;
+}
+const { cards, candidates, pick } = Astro.props;
+const picked = pick === undefined ? undefined : cards.get(pick);
+const others = [...cards.values()].filter((card) => card.key !== pick);
+---
+
+<div class="home-featured" data-home-featured>
+  <div class="home-featured-slot" data-featured-slot>
+    {picked && <HomeFeaturedCard card={picked} />}
+  </div>
+  {
+    others.map((card) => (
+      <template data-featured-template={card.key}>
+        <HomeFeaturedCard card={card} lazy />
+      </template>
+    ))
+  }
+  <script type="application/json" data-featured-candidates set:html={JSON.stringify(candidates).replaceAll("<", "\\u003c")} />
+</div>
+
+<script>
+  import { pickFeatured, type FeaturedCandidate } from "../../lib/featured";
+
+  for (const root of document.querySelectorAll<HTMLElement>("[data-home-featured]")) {
+    const slot = root.querySelector<HTMLElement>("[data-featured-slot]")!;
+    const data = root.querySelector<HTMLScriptElement>("[data-featured-candidates]")!;
+    const candidates = JSON.parse(data.textContent ?? "[]") as FeaturedCandidate[];
+    const current = slot.querySelector<HTMLElement>("[data-featured-key]")?.dataset.featuredKey;
+    const pick = pickFeatured(candidates, Date.now());
+    const template = pick && root.querySelector<HTMLTemplateElement>(`template[data-featured-template="${pick}"]`);
+    if (pick !== current && template) {
+      slot.replaceChildren(template.content.cloneNode(true));
+    }
+  }
+</script>
+
+<style>
+  .home-featured,
+  .home-featured-slot {
+    display: grid;
+    min-width: 0;
+  }
+</style>

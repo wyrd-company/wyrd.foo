@@ -1,0 +1,19 @@
+# Two kinds (app first, then a dev container feature), no logo, no order.
+name: beacon
+version: 0.3.1
+docs-version: 0.3.0
+release-unit: beacon
+owner: example-org/beacon
+tagline: Light a lamp in each room you open.
+blurb: A sample app that also ships a dev container feature.
+status: preview
+category: Agent Infrastructure
+kinds:
+  - kind: app
+    install:
+      - { method: docker, command: docker run ghcr.io/example-org/beacon:0.3 }
+  - kind: devcontainer-feature
+    ref: ghcr.io/example-org/beacon/beacon:0
+highlights: [Lights lamps]
+media: [{ src: assets/demo.png, caption: The lamp console }]
+release: { version: 0.3.1, date: 2026-10-10 }
