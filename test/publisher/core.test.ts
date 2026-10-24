@@ -2,8 +2,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   computeRepo,
+  featureRef,
   gitHubReleases,
+  IntentionalConfigError,
   linksOutside,
+  ownerRepoOf,
+  parseIntentionalConfig,
+  tagName,
   readmeOptionNames,
   ReleaseLookupError,
   squareProblem,
@@ -58,7 +63,7 @@ describe("publisher core: release data", () => {
 
   it("in publish mode, a tag with no GitHub Release fails the repo and writes nothing", async () => {
     const releases = fakeReleases({ [`${OWNER}/alpha@alpha-cli@1.2.0`]: ALPHA_CLI_RELEASE });
-    const result = await computeRepo(input(alphaFiles(), { releases, strict: true }));
+    const result = await computeRepo(input(alphaFiles(), { releases, strict: true, tags: { read: async () => undefined } }));
     assert.equal(result.failed, true);
     assert.deepEqual(result.products, []);
     assert.deepEqual(errors(result.findings), ["GitHub Release for tag alpha-app@0.3.0: not-found: from the fixture"]);
@@ -82,6 +87,7 @@ describe("publisher core: checks", () => {
     const files = { ...alphaFiles(), "docs/user/assets/logo.svg": WIDE_SVG };
     const result = await computeRepo(input(files));
     assert.equal(result.failed, true);
+    assert.deepEqual(result.products, [], "no product of a failed repo is returned");
     assert.deepEqual(errors(result.findings), ["products.alpha-cli.logo: assets/logo.svg is not square: its viewBox is 64x32"]);
   });
 
@@ -113,6 +119,102 @@ describe("publisher core: checks", () => {
     const result = await computeRepo(input(files));
     assert.equal(result.failed, true);
     assert.match(errors(result.findings).join("\n"), /contract/);
+  });
+});
+
+describe("publisher core: requirements and generated data", () => {
+  const warnings = (findings: { severity: string; requirement?: string; message: string }[]) =>
+    findings.filter((f) => f.severity === "warning").map((f) => `${f.requirement ?? "-"}: ${f.message}`);
+
+  it("a release unit that the config does not name is an unmet requirement", async () => {
+    const files = alphaFiles();
+    files["docs/user/docs.yml"] = files["docs/user/docs.yml"].toString().replace("name: alpha-app\n", "name: alpha-app\n    release-unit: other-unit\n");
+    const result = await computeRepo(input(files));
+    assert.deepEqual(warnings(result.findings), ["release unit: has no release unit other-unit"]);
+    assert.equal(result.products.find((product) => product.key === "alpha-app")!.tool.release, undefined);
+  });
+
+  it("a unit with no changelog is an unmet requirement, and the release has no notes", async () => {
+    const files = alphaFiles();
+    delete files["app/CHANGELOG.md"];
+    const result = await computeRepo(input(files));
+    assert.deepEqual(warnings(result.findings), ["changelog: does not exist; release unit alpha-app has no changelog"]);
+    const app = result.products.find((product) => product.key === "alpha-app")!;
+    assert.deepEqual(app.tool.release, { version: "0.3.0", date: "2026-01-01T00:00:00.000Z" });
+    assert.ok(!app.files.has("CHANGELOG.md"));
+  });
+
+  it("a lightweight tag gives its commit date, with a warning", async () => {
+    const tags: RepoTags = { read: async (name) => ({ name, annotated: false, date: new Date("2026-04-01T00:00:00Z"), message: "" }) };
+    const result = await computeRepo(input(betaFiles(), { ownerRepo: `${OWNER}/beta`, tags }));
+    assert.deepEqual(warnings(result.findings).filter((w) => w.includes("annotated")), [
+      "-: tag sample-feature@1.4.2 is not annotated; the release date is its commit date",
+      "-: tag sample-image@2.0.0 is not annotated; the release date is its commit date",
+    ]);
+    assert.equal((result.products.find((product) => product.key === "sample-feature")!.tool.release as { date: string }).date, "2026-04-01T00:00:00.000Z");
+  });
+
+  it("warns when manifest.json names another version, and keeps tags written in the kind block", async () => {
+    const files = betaFiles();
+    files["src/images/sample-image/manifest.json"] = JSON.stringify({ version: "1.9.0", variants: ["first"] });
+    files["docs/user/docs.yml"] = files["docs/user/docs.yml"].toString().replace("ref: ghcr.io/sample-org/beta/sample-image\n", "ref: ghcr.io/sample-org/beta/sample-image\n        tags: [{ tag: written }]\n");
+    const result = await computeRepo(input(files, { ownerRepo: `${OWNER}/beta` }));
+    assert.ok(warnings(result.findings).includes("-: has version 1.9.0; docs.yml has 2.0.0"));
+    const image = result.products.find((product) => product.key === "sample-image")!;
+    assert.deepEqual((image.tool.kinds as { tags?: unknown }[])[0].tags, [{ tag: "written" }]);
+  });
+
+  it("an image whose unit has no manifest.json projection is an unmet requirement", async () => {
+    const files = betaFiles();
+    files[".intentional/config.yml"] = files[".intentional/config.yml"].toString().replace("adapter: json", "adapter: toml");
+    files["src/images/sample-image/manifest.json"] = "{}";
+    const result = await computeRepo(input(files, { ownerRepo: `${OWNER}/beta` }));
+    assert.deepEqual(warnings(result.findings).filter((w) => w.startsWith("generated data")), [
+      "generated data: no manifest.json found through a json projection of release unit sample-image",
+    ]);
+  });
+
+  it("a feature whose devcontainer-feature.json gives a name the site cannot show fails the repo", async () => {
+    const files = betaFiles();
+    const json = JSON.parse(files["src/features/sample-feature/devcontainer-feature.json"].toString());
+    files["src/features/sample-feature/devcontainer-feature.json"] = JSON.stringify({ ...json, name: "Two\nlines" });
+    const result = await computeRepo(input(files, { ownerRepo: `${OWNER}/beta` }));
+    assert.equal(result.failed, true);
+    assert.match(errors(result.findings).join("\n"), /content\/sample-feature\/tool\.yaml: name: must be one line/);
+  });
+});
+
+describe("intentional config", () => {
+  const config = (tags: string) => `contract: contract-1\nrelease-units:\n  a:\n    path: ./pkg/\n    projections: [{ adapter: json, file: ./x.json, pointer: /version }]\n    tags:\n${tags}`;
+
+  it("reads each unit's path, primary tag template and projection files", () => {
+    const units = parseIntentionalConfig(config("      primary: { role: primary, template: '{id}@{version}' }\n"));
+    assert.deepEqual(units.get("a"), { id: "a", path: "pkg", primaryTag: "{id}@{version}", projections: [{ adapter: "json", file: "pkg/x.json", pointer: "/version" }] });
+    assert.equal(tagName("{id}@{version}", "a", "1.0.0"), "a@1.0.0");
+    assert.equal(tagName("{version}", "a", "1.0.0"), "1.0.0");
+  });
+
+  it("refuses a unit without exactly one primary tag", () => {
+    assert.throws(() => parseIntentionalConfig(config("      p: { role: projection, template: 'x@{version}' }\n")), IntentionalConfigError);
+    assert.throws(
+      () => parseIntentionalConfig(config("      a: { role: primary, template: '{version}' }\n      b: { role: primary, template: 'b@{version}' }\n")),
+      /has 2 primary tags/,
+    );
+  });
+});
+
+describe("owner and feature references", () => {
+  it("reads owner/repo from GitHub remote URLs", () => {
+    assert.equal(ownerRepoOf("git@github.com:sample-org/sample.git"), "sample-org/sample");
+    assert.equal(ownerRepoOf("https://github.com/sample-org/sample.git"), "sample-org/sample");
+    assert.equal(ownerRepoOf("https://github.com/sample-org/sample"), "sample-org/sample");
+    assert.equal(ownerRepoOf("ssh://git@github.com/sample-org/sample.git"), "sample-org/sample");
+    assert.equal(ownerRepoOf("https://example.com/sample-org/sample.git"), undefined);
+  });
+
+  it("derives the feature reference with a lower-case owner and repo and the major version", () => {
+    const feature = { id: "sample", version: "3.2.1", name: "S", description: "D", options: {} };
+    assert.equal(featureRef("Sample-Org/Sample", feature), "ghcr.io/sample-org/sample/sample:3");
   });
 });
 

@@ -246,12 +246,12 @@ async function imageKind(
   block: Extract<ProductEntry["kinds"][number], { kind: "devcontainer-image" }>,
   files: Map<string, Uint8Array>,
 ) {
-  const path = unit?.projections.find((projection) => posix.basename(projection.file) === IMAGE_MANIFEST)?.file;
+  const path = unit?.projections.find((projection) => projection.adapter === "json" && posix.basename(projection.file) === IMAGE_MANIFEST)?.file;
   const bytes = path === undefined ? undefined : await ctx.files.read(path);
   if (path === undefined || bytes === undefined) {
     ctx.findings.unmet("generated data", {
       key,
-      message: `no ${IMAGE_MANIFEST} found through a projection of release unit ${releaseUnitOf(key, entry)}`,
+      message: `no ${IMAGE_MANIFEST} found through a json projection of release unit ${releaseUnitOf(key, entry)}`,
     });
     return block;
   }

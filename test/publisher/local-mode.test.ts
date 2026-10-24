@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { stringify } from "yaml";
 import { runLocal, type LocalConfig, type RepoReport } from "../../publisher/index.ts";
 import { toolFileSchema } from "../../src/schema/index.ts";
-import { fakeReleases, git, OWNER, Workspace } from "./fixture-repo.ts";
+import { fakeReleases, git, OWNER, WIDE_SVG, Workspace } from "./fixture-repo.ts";
 import { ALPHA_CLI_RELEASE, ALPHA_TAGS, alphaFiles, BETA_TAGS, betaFiles, brokenFiles, gammaFiles } from "./fixtures.ts";
 
 // Local mode over fixture clones: each case asserts the content folder it
@@ -59,6 +59,7 @@ describe("local mode", () => {
       "docs/alpha-cli/getting-started.md",
       "docs/alpha-cli/guides/deep.md",
       "docs/assets/demo.svg",
+      "docs/assets/diagram.svg",
       "docs/assets/logo.svg",
       "tool.yaml",
     ]);
@@ -120,7 +121,8 @@ describe("local mode", () => {
   });
 
   it("writes an image with its manifest.json and the tags it names", () => {
-    assert.ok(ws.files("sample-image").includes("manifest.json"));
+    assert.deepEqual(ws.files("sample-image"), ["CHANGELOG.md", "docs/CHANGELOG.md", "docs/assets/demo.svg", "docs/overview.md", "manifest.json", "tool.yaml"]);
+    assert.match(ws.text("sample-image", "docs/CHANGELOG.md"), /Write the image overview/, "the root docs changelog of a repo with one docs unit");
     assert.deepEqual(ws.tool("sample-image").kinds[0].tags, [
       { tag: "first", architectures: ["linux/amd64"] },
       { tag: "second", architectures: ["linux/amd64"] },
@@ -181,6 +183,25 @@ describe("local mode: key ownership", () => {
     assert.equal(ws.tool("alpha-cli").owner, `${OWNER}/alpha`);
   });
 
+  it("refuses a key whose folder names no owner", async () => {
+    mkdirSync(join(ws.contentDir, "gamma-tool"), { recursive: true });
+    writeFileSync(join(ws.contentDir, "gamma-tool", "tool.yaml"), "name: gamma-tool\n");
+    const reports = await runLocal({ config: config("gamma"), toolsDir: ws.toolsDir, contentDir: ws.contentDir });
+    assert.equal(reportOf(reports, "gamma").outcome, "failed");
+    assert.deepEqual(messages(reportOf(reports, "gamma"), "error"), ["gamma-tool: content/gamma-tool/ has an unknown owner (tool.yaml names no owner); it is not replaced"]);
+    assert.equal(readFileSync(join(ws.contentDir, "gamma-tool", "tool.yaml"), "utf8"), "name: gamma-tool\n");
+    rmSync(join(ws.contentDir, "gamma-tool"), { recursive: true });
+  });
+
+  it("writes no product of a repo when one product fails a check", async () => {
+    const files = alphaFiles();
+    files["docs/user/assets/logo.svg"] = WIDE_SVG;
+    ws.repo("zeta", renamedAlpha(files));
+    const reports = await runLocal({ config: config("zeta"), toolsDir: ws.toolsDir, contentDir: ws.contentDir });
+    assert.equal(reportOf(reports, "zeta").outcome, "failed");
+    assert.throws(() => ws.files("zeta-app"), "the product that passes is not written either");
+  });
+
   it("deletes the folder of a product the owner removed, and keeps other repos' folders", async () => {
     const alphaDir = join(ws.toolsDir, "alpha");
     await runLocal({ config: config("gamma"), toolsDir: ws.toolsDir, contentDir: ws.contentDir });
@@ -239,6 +260,15 @@ describe("local mode: a damaged clone", () => {
     assert.equal(reportOf(reports, "alpha").outcome, "published");
   });
 });
+
+/** alpha's files with its product keys renamed to zeta-cli and zeta-app. */
+function renamedAlpha(files: ReturnType<typeof alphaFiles>) {
+  const out: typeof files = {};
+  for (const [path, content] of Object.entries(files)) {
+    out[path.replaceAll("alpha-", "zeta-")] = typeof content === "string" ? content.replaceAll("alpha-", "zeta-") : content;
+  }
+  return out;
+}
 
 /** gamma's files with its product key renamed. */
 function renamed(key: string) {

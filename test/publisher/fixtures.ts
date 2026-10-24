@@ -38,14 +38,15 @@ export function alphaFiles(options: { withApp?: boolean } = {}): Files {
   return {
     "docs/user/docs.yml": yaml({
       schemaVersion: 1,
-      assets: ["assets/demo.svg", "assets/logo.svg", "assets/unused.svg"],
+      assets: ["assets/demo.svg", "assets/logo.svg", "assets/diagram.svg", "assets/unused.svg"],
       products,
     }),
     "docs/user/assets/demo.svg": SQUARE_SVG,
     "docs/user/assets/logo.svg": SQUARE_SVG,
+    "docs/user/assets/diagram.svg": SQUARE_SVG,
     "docs/user/assets/unused.svg": SQUARE_SVG,
     "docs/user/alpha-cli/getting-started.md": page("alpha-cli", "Getting started", "![A screen](../assets/demo.svg)\n"),
-    "docs/user/alpha-cli/guides/deep.md": page("alpha-cli", "Deep"),
+    "docs/user/alpha-cli/guides/deep.md": page("alpha-cli", "Deep", '<img src="../../assets/diagram.svg" alt="A diagram">\n'),
     "docs/user/alpha-cli/CHANGELOG.md": changelog(["1.0.0", "Write the first sample page."]),
     ...(withApp ? { "docs/user/alpha-app/getting-started.md": page("alpha-app", "Getting started") } : {}),
     ".intentional/config.yml": intentional(units),
