@@ -10,3 +10,14 @@ tasks:
     desc: Install dependencies
     cmds:
       - pnpm install
+
+  build:
+    desc: Build the site and its search index
+    cmds:
+      - pnpm build
+
+  test:
+    desc: Typecheck and test the docs contract in src/schema/
+    cmds:
+      - pnpm typecheck
+      - pnpm test
