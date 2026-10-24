@@ -14,7 +14,9 @@
     "test": "pnpm test:schema && pnpm test:site",
     "test:schema": "node --test 'test/schema/**/*.test.ts'",
     "test:site": "vitest run --project unit",
-    "typecheck": "tsc -p tsconfig.schema.json"
+    "test:dist": "vitest run --project dist",
+    "typecheck": "tsc -p tsconfig.schema.json",
+    "check": "pnpm typecheck && pnpm test && pnpm build && pnpm test:dist"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
