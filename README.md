@@ -56,10 +56,11 @@ pnpm preview
 branch and serves the site on it:
 
 1. The publisher (`publisher/`) runs in local mode over the repos in
-   `publisher/local-repos.yml`. It reads each repo's `wyrd-foo-v2` branch
-   (local, else `origin/wyrd-foo-v2`) from the clone at
-   `/workspaces/tools/<name>` through git objects only: no checkout, no
-   commit, no fetch, no push. Set `WYRD_TOOLS_DIR` for another clone folder.
+   `publisher/local-repos.yml`. For the clone at `/workspaces/tools/<name>`,
+   it fetches `wyrd-foo-v2` from origin into `origin/wyrd-foo-v2` only, then
+   reads `origin/wyrd-foo-v2` (else the local branch) through git objects:
+   no checkout, no commit, no push. Set `WYRD_TOOLS_DIR` for another clone
+   folder.
 2. It writes `.content-v2/<key>/` for every product (`WYRD_CONTENT_DIR` sets
    another folder) and prints each repo's warnings and errors. An unmet
    publishing requirement (no `.intentional/`, no GitHub Release, no
@@ -69,7 +70,7 @@ branch and serves the site on it:
 
 ```sh
 task dev:v2               # reads GitHub Releases (GITHUB_TOKEN or GH_TOKEN if set)
-task dev:v2 -- --offline  # release data from local tags only
+task dev:v2 -- --offline  # no fetch; release data from local tags only
 task publish:local        # the publisher step only
 task validate:repo -- ../gitpr                    # one checkout's working tree
 task validate:repo -- ../gitpr --ref wyrd-foo-v2  # one ref of a checkout
