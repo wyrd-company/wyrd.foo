@@ -1,0 +1,9 @@
+{
+  "id": "lantern",
+  "version": "1.2.0",
+  "name": "Lantern",
+  "description": "Installs the sample lantern tool into a dev container.",
+  "options": {
+    "version": { "type": "string", "default": "latest", "description": "Version to install." }
+  }
+}

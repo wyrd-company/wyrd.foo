@@ -1,0 +1,39 @@
+# An app with a console tour and no docs pages.
+name: gadget
+version: 0.6.0
+docs-version: 0.6.0
+release-unit: gadget
+owner: example-org/gadget
+tagline: A small sample console that you run.
+blurb: Gadget runs a sample service and a web console for it. It is a test fixture product.
+status: preview
+category: Agent Infrastructure
+highlights:
+  - Starts with one command.
+  - Shows every sample queue in the console.
+media:
+  - src: assets/console.png
+    caption: The console home view.
+  - src: assets/queues.png
+    caption: Watch the sample queues.
+  - src: assets/settings.png
+    caption: Change the sample settings.
+kinds:
+  - kind: app
+    install:
+      - method: docker
+        default: true
+        command: |-
+          docker run -d --name gadget \
+            -p 8080:8080 ghcr.io/example-org/gadget
+      - method: homebrew
+        os: [macos]
+        command: brew install example-org/tap/gadget
+      - method: script
+        os: [linux, macos]
+        label: Install script
+        command: curl -fsSL https://example.invalid/gadget/install.sh | sh
+release:
+  version: 0.6.0
+  date: 2026-10-20
+  url: https://github.com/example-org/gadget/releases/tag/0.6.0

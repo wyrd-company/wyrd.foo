@@ -1,0 +1,14 @@
+# A feature entry: name, description and version from devcontainer-feature.json.
+kinds:
+  - kind: devcontainer-feature
+    ref: ghcr.io/example-org/features/lantern:1
+source: src/features/lantern
+category: Dev Containers
+release-unit: lantern
+owner: example-org/features
+name: Lantern
+description: Installs the sample lantern tool into a dev container.
+version: 1.2.0
+release:
+  version: 1.2.0
+  date: 2026-10-05

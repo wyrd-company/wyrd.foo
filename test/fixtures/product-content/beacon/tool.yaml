@@ -1,0 +1,11 @@
+# A second feature entry, with no release data yet.
+kinds:
+  - kind: devcontainer-feature
+    ref: ghcr.io/example-org/features/beacon:0
+source: src/features/beacon
+category: Dev Containers
+release-unit: beacon
+owner: example-org/features
+name: Beacon
+description: Adds the sample beacon service to a dev container.
+version: 0.4.0
