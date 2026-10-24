@@ -430,9 +430,10 @@ is the `tools` list in its kind block.
 
 ## The calling workflow
 
-A tool repo calls the reusable workflow in wyrd.foo, not the action. The
-reusable workflow wraps the action, so the action's inputs and mechanism can
-change without editing tool repos.
+A tool repo calls the reusable workflow in wyrd.foo,
+`.github/workflows/publish-docs.yml`, not the action. The reusable workflow
+wraps the action, so the action's inputs and mechanism can change without
+editing tool repos.
 
 ```yaml
 name: Publish to wyrd.foo
@@ -448,15 +449,21 @@ on:
         description: Tag or commit to publish
         required: true
       feature:
-        description: Feature this release on the front page
+        description: Feature a product on the front page
         type: boolean
         default: false
+      feature-product:
+        description: The product key to feature; empty when the repo has one product
+        default: ""
       feature-days:
-        description: How long the feature lasts
+        description: How long the feature lasts, in days
         default: "14"
       feature-reason:
         description: For example "New MCP server"; default "New release"
         default: ""
+
+permissions:
+  contents: read
 
 jobs:
   publish:
@@ -464,6 +471,7 @@ jobs:
     with:
       ref: ${{ inputs.ref || github.ref_name }}
       feature: ${{ inputs.feature || false }}
+      feature-product: ${{ inputs.feature-product || '' }}
       feature-days: ${{ inputs.feature-days || '14' }}
       feature-reason: ${{ inputs.feature-reason || '' }}
     secrets: inherit
@@ -472,6 +480,39 @@ jobs:
 - The trigger is a push of a code tag or a docs tag, plus a manual run. The
   tag patterns follow the repo's tag templates in `.intentional/config.yml`.
 - A plain push to `main` does not publish.
+- A tag push passes no feature inputs, so it features nothing.
+
+The reusable workflow's inputs:
+
+| Input | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `ref` | string | required | The tag or commit of the tool repo to publish. |
+| `feature` | boolean | `false` | Feature a product on the front page from the time of the run. |
+| `feature-product` | string | `""` | The product key to feature. It may be empty when the repo has exactly one product that is not a feature entry. |
+| `feature-days` | string | `"14"` | How long the feature lasts, in whole days, 1 or more. |
+| `feature-reason` | string | `""` | The feature's reason, one line. Empty means "New release". |
+| `dry-run` | boolean | `false` | Run every check and write the result into a clone of wyrd.foo, but do not push. |
+
+It needs the secrets `WYRD_TOOLS_DOCS_PUBLISHER_APP_ID` and
+`WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY` (`secrets: inherit` passes them). Its
+outputs are `outcome` (`published`, `unchanged`, `dry-run` or `failed`) and
+`commit`, the wyrd.foo commit it pushed.
+
+The reusable workflow:
+
+1. checks out the tool repo at `ref`, with its full history and tags, and
+   without persisted credentials;
+2. mints the publisher App token for wyrd.foo, with contents write access,
+   and names the App bot as the commit author;
+3. runs the `publish-docs@v2` action (`.github/actions/publish-docs`) as
+   `$/.github/actions/publish-docs`, so the action is the one at the
+   workflow's own commit.
+
+Runs from one tool repo do not overlap: the workflow's concurrency group is
+the tool repo. The action is a composite action that installs wyrd.foo's
+dependencies and runs `publisher/action.ts` under Node: the publisher core in
+publish mode. It reads the tool repo's GitHub Releases with that repo's
+`GITHUB_TOKEN`.
 
 ## The publisher
 
@@ -531,9 +572,14 @@ the result is the same for every trigger. The trigger only chooses the ref.
 
    An error in any product fails the whole repo: the run writes nothing for
    it, and the content folder keeps what the last good run wrote.
-6. **Push.** The publisher commits as the publisher App bot and pushes to
-   wyrd.foo `main`, with fetch, rebase and retry when another publish has
-   pushed first. The push starts `cd.yml`.
+6. **Push.** The publisher writes into a fresh clone of wyrd.foo `main`,
+   commits only when the content folder changed, as the publisher App bot,
+   with the message `docs: publish <repo> (<owner/repo>@<commit>)`, and
+   pushes. When the push is refused and `main` has moved (another publish
+   pushed first), it clones the new tip, writes the same result again (so
+   step 4 runs on the new content) and pushes again, up to 5 attempts. A
+   refused push when `main` has not moved is an error and is not retried.
+   The push starts `cd.yml`.
 
 ### Local mode
 
@@ -632,7 +678,11 @@ The site reads `tool.yaml` and the pages with the same module's schemas.
 
 A tag push writes no `featured`: rule 2 below shows a fresh code release
 without any input. `featured` comes only from the `feature` inputs of a
-manual run, for a set reason or length.
+manual run, for a set reason or length. The block runs from the time of the
+run for `feature-days` days, with `feature-reason` (default "New release")
+and the product's `version`, and replaces the block carried forward. A run
+that names a feature entry, a key that is not in the map, or no key when the
+repo has more than one product that can be featured fails and writes nothing.
 
 The front page chooses its featured product in the browser, so a feature
 expires on time without a rebuild:
@@ -674,6 +724,7 @@ The site publishes its JSON Schema at
 | --- | --- | --- |
 | Publisher GitHub App `WYRD_TOOLS_DOCS_PUBLISHER` | Installation on wyrd.foo | Contents: read/write |
 | Tool repos | Org secrets `WYRD_TOOLS_DOCS_PUBLISHER_APP_ID`, `WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY` | Mint the App token inside the reusable workflow |
+| The tool repo's `GITHUB_TOKEN` | The calling workflow's token | Contents: read, to check out the repo and read its GitHub Releases |
 
 The reusable workflow mints the App token scoped to wyrd.foo, so the tool
 repo's own `GITHUB_TOKEN` needs no access to wyrd.foo. The App token push is
