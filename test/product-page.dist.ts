@@ -59,6 +59,35 @@ describe("product pages from the fixture content", () => {
     }
   });
 
+  it("indexes each page once for search, with its product, name and kinds", () => {
+    const kinds: Record<string, string[]> = {
+      widget: ["cli"],
+      gadget: ["app"],
+      sprocket: ["mcp-server"],
+      gizmo: ["app", "devcontainer-feature"],
+      harbor: ["devcontainer-image"],
+      lantern: ["devcontainer-feature"],
+      beacon: ["devcontainer-feature"],
+    };
+    for (const key of PRODUCTS) {
+      const root = productPage(key);
+      const bodies = root.querySelectorAll("[data-pagefind-body]");
+      expect(bodies, key).toHaveLength(1);
+      expect(bodies[0].tagName, key).toBe("ARTICLE");
+      expect(texts(bodies[0], '[data-pagefind-filter="product"]'), key).toEqual([key]);
+      expect(texts(bodies[0], '[data-pagefind-filter="kind"]'), key).toEqual(kinds[key]);
+      expect(texts(bodies[0], '[data-pagefind-meta="productName"]'), key).toEqual([text(bodies[0].querySelector("h1.hero-name"))]);
+    }
+  });
+
+  it("puts the product pages in the search index, beside the docs pages", () => {
+    const entry = JSON.parse(readFileSync(join(DIST, "pagefind", "pagefind-entry.json"), "utf8")) as {
+      languages: Record<string, { page_count: number }>;
+    };
+    // 7 product pages and the 8 fixture docs pages (widget 4, gizmo 2, sprocket 1, harbor 1).
+    expect(Object.values(entry.languages).map((l) => l.page_count)).toEqual([PRODUCTS.length + 8]);
+  });
+
   it("serves every image, video and icon the pages use", () => {
     for (const key of PRODUCTS) {
       const root = productPage(key);

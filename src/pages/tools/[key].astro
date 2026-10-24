@@ -15,6 +15,7 @@ import ProductMedia from "../../components/product/ProductMedia.astro";
 import ProductProse from "../../components/product/ProductProse.astro";
 import ProductReleases from "../../components/product/ProductReleases.astro";
 import ProductSection from "../../components/product/ProductSection.astro";
+import SearchIndexMeta from "../../components/SearchIndexMeta.astro";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import { docsMap } from "../../lib/docs-map";
 import { heroInstall } from "../../lib/install-blocks";
@@ -68,7 +69,8 @@ const media = product ? product.media.map((item) => ({ ...item, src: productAsse
   description={product ? product.tagline : feature!.description}
   product={head}
 >
-  <article class="product site-width" data-product={key} data-page={product ? "product" : "feature"}>
+  <article class="product site-width" data-product={key} data-page={product ? "product" : "feature"} data-pagefind-body>
+    <SearchIndexMeta product={key} productName={tool.name} kinds={kinds} />
     <ProductHero
       name={tool.name}
       tagline={product?.tagline}

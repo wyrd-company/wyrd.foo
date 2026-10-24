@@ -133,13 +133,15 @@ test.describe("search", () => {
     await page.locator(".wsearch-input").fill(query);
   }
 
-  const titles = (page: Page) => page.locator(".wsearch-item .wsearch-title");
+  // Docs page results only: product pages (/tools/<key>/) are in the index too.
+  const docsItems = (page: Page) => page.locator('.wsearch-item:has(a.wsearch-link[href^="/docs/"])');
+  const titles = (page: Page) => docsItems(page).locator(".wsearch-title");
 
   test("ranks the page's product first and narrows by kind chip", async ({ page, baseURL }) => {
     await openDocs(page, baseURL, "/docs/gizmo/usage");
     await search(page, "getting started");
     await expect(titles(page)).toHaveText(["Getting started with gizmo", "Getting started"]);
-    await expect(page.locator(".wsearch-item").first().locator(".wsearch-where")).toHaveClass(/is-local/);
+    await expect(docsItems(page).first().locator(".wsearch-where")).toHaveClass(/is-local/);
 
     const chips = page.locator(".wsearch-kind");
     await expect(chips).toHaveText(["CLI", "MCP server", "App", "Dev container feature"]);
