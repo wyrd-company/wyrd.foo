@@ -3,6 +3,7 @@ import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
+import { parse, stringify } from "yaml";
 import {
   applyRepo,
   computeRepo,
@@ -366,6 +367,34 @@ describe("publisher core: authored feature ref tags", () => {
     assert.deepEqual(refWarnings((await productBlock(ref, otherId)).findings), [], "a JSON whose id is not the ref's");
     const unreadable = (await productBlock(ref, { "app/feature/alpha-app/devcontainer-feature.json": feature("alpha-app", "two") })).findings;
     assert.deepEqual(unreadable, baseline, "an unreadable version adds no finding");
+  });
+
+  it("a product's kind block whose ref names another repo's feature does not warn, even with a same-id JSON here", async () => {
+    // The JSON here has version 0.2.0; tag 1 would warn if this repo's feature were the one the ref names.
+    assert.equal(refWarnings((await productBlock("ghcr.io/sample-org/alpha/alpha-app:1")).findings).length, 1, "control: this repo's ref warns");
+    for (const ref of ["ghcr.io/sample-org/other/alpha-app:1", "ghcr.io/other-org/alpha/alpha-app:1", "ghcr.io/sample-org/alpha/nested/alpha-app:1", "registry.example.invalid/sample-org/alpha/alpha-app:1"]) {
+      assert.deepEqual(refWarnings((await productBlock(ref)).findings), [], ref);
+    }
+  });
+
+  it("matches a ref against the repo lower-cased", async () => {
+    const files: Files = { ...alphaFiles(), "app/feature/alpha-app/devcontainer-feature.json": feature("alpha-app", "0.2.0") };
+    files["docs/user/docs.yml"] = files["docs/user/docs.yml"].toString().replace("ref: ghcr.io/sample-org/alpha/alpha-app:0", "ref: ghcr.io/sample-org/alpha/alpha-app:1");
+    const result = await computeRepo(input(files, { ownerRepo: "Sample-Org/Alpha" }));
+    assert.equal(refWarnings(result.findings).length, 1);
+  });
+
+  it("lists the repo's files once per run, for any number of kind blocks", async () => {
+    const files: Files = { ...alphaFiles(), "app/feature/alpha-app/devcontainer-feature.json": feature("alpha-app", "0.2.0") };
+    const docs = parse(files["docs/user/docs.yml"].toString());
+    docs.products["alpha-cli"].kinds.push({ kind: "devcontainer-feature", ref: "ghcr.io/sample-org/alpha/alpha-cli:0" });
+    files["docs/user/docs.yml"] = stringify(docs);
+    const memory = memoryFiles(files);
+    const lists: string[] = [];
+    const counted = { ...memory, list: (prefix: string) => (lists.push(prefix), memory.list(prefix)) };
+    const result = await computeRepo(input(files, { files: counted }));
+    assert.equal(result.failed, false, errors(result.findings).join("\n"));
+    assert.equal(lists.filter((prefix) => prefix === "").length, 1, `lists: ${JSON.stringify(lists)}`);
   });
 });
 

@@ -25,6 +25,7 @@ import {
   FEATURE_README,
   featureJsonSchema,
   featureRef,
+  isRefOf,
   optionDifference,
   refName,
   refTagDifference,
@@ -86,6 +87,8 @@ export interface RepoResult {
 interface Context extends RepoInput {
   findings: Findings;
   config?: IntentionalConfig;
+  /** Every file of the repo, listed once per run on first use. */
+  allFiles?: Promise<string[]>;
 }
 
 type Entry = ProductEntry | FeatureEntry;
@@ -312,7 +315,10 @@ async function checkFeatureKindRefs(ctx: Context, key: string, entry: ProductEnt
   for (const [index, block] of entry.kinds.entries()) {
     if (block.kind !== "devcontainer-feature") continue;
     const id = refName(block.ref);
-    const candidates = (await ctx.files.list("")).filter((path) => path === `${id}/${FEATURE_JSON}` || path.endsWith(`/${id}/${FEATURE_JSON}`));
+    // A ref to a feature that another repo publishes is not checked here.
+    if (!isRefOf(block.ref, ctx.ownerRepo)) continue;
+    ctx.allFiles ??= ctx.files.list("");
+    const candidates = (await ctx.allFiles).filter((path) => path === `${id}/${FEATURE_JSON}` || path.endsWith(`/${id}/${FEATURE_JSON}`));
     const found: { path: string; version: string }[] = [];
     for (const path of candidates) {
       const feature = featureJsonSchema.safeParse(parseJson(await ctx.files.read(path)));

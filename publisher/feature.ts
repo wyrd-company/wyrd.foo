@@ -30,6 +30,12 @@ export function refName(ref: string): string {
   return ref.slice(ref.lastIndexOf("/") + 1).split(/[:@]/)[0];
 }
 
+/** True when `ref`, without its tag or digest, is `ghcr.io/<owner>/<repo>/<id>` of this repo (owner/repo lower-cased). */
+export function isRefOf(ref: string, ownerRepo: string): boolean {
+  const repository = `${ref.slice(0, ref.lastIndexOf("/") + 1)}${refName(ref)}`;
+  return repository === `ghcr.io/${ownerRepo.toLowerCase()}/${refName(ref)}`;
+}
+
 /**
  * How an authored reference's tag differs from the feature's tag (the major of
  * its version), or undefined when it does not. A reference with no tag
