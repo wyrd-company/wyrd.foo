@@ -256,6 +256,17 @@ for (const [preference, playsOnLoad] of [
       const toggle = page.locator(TOGGLE);
       // The button is shown by the script that decided whether to play.
       await expect(toggle).toBeVisible();
+      if (!playsOnLoad) {
+        // An `autoplay` attribute starts the video only when it is in view and the browser has
+        // buffered it, so read `paused` after both: until then it is true whatever the markup says.
+        await video.scrollIntoViewIfNeeded();
+        await video.evaluate((el: HTMLVideoElement) => {
+          el.preload = "auto";
+        });
+        await expect.poll(() => video.evaluate((el: HTMLVideoElement) => el.readyState)).toBe(4);
+        // The browser starts an in-view autoplay video after the frame that shows it.
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      }
       await expect(video).toHaveJSProperty("paused", !playsOnLoad);
       await expect(video).toHaveJSProperty("muted", true);
       await expect(video).toHaveJSProperty("loop", true);
