@@ -12,6 +12,8 @@ import {
   originUrl,
   ownerRepoOf,
   resolveBranch,
+  resolveCommit,
+  workingTreeFiles,
   type RepoFiles,
   type RepoTags,
 } from "./repo-files.ts";
@@ -44,7 +46,8 @@ export interface LocalOptions {
   releases?: ReleaseLookup;
 }
 
-export type RepoOutcome = "published" | "failed" | "skipped";
+/** `passed` is validate's outcome for a repo that would publish. */
+export type RepoOutcome = "published" | "passed" | "failed" | "skipped";
 
 export interface RepoReport {
   name: string;
@@ -55,6 +58,8 @@ export interface RepoReport {
   ref?: string;
   oid?: string;
   findings: Finding[];
+  /** The products validate computed. */
+  products?: string[];
   written: string[];
   deleted: string[];
 }
@@ -101,7 +106,48 @@ async function runRepo(options: LocalOptions, repo: LocalConfig["repos"][number]
   return report;
 }
 
-// Name the owner, then run the core.
+export interface ValidateOptions {
+  /** The tool repo checkout. */
+  dir: string;
+  /** A ref to read through git objects. Without it, the working tree is read as it is on disk. */
+  ref?: string;
+  /** `owner/repo`; default from the clone's origin remote. */
+  owner?: string;
+  releases?: ReleaseLookup;
+}
+
+/**
+ * Run local mode's checks on one checkout and report the findings. Nothing is
+ * written, so key ownership is not checked. The outcome is `passed` when the
+ * repo would publish.
+ */
+export async function validateRepo(options: ValidateOptions): Promise<RepoReport> {
+  const dir = resolve(options.dir);
+  const report: RepoReport = { name: dir, outcome: "failed", findings: [], products: [], written: [], deleted: [] };
+  try {
+    let files: RepoFiles = workingTreeFiles(dir);
+    if (options.ref !== undefined) {
+      const oid = await resolveCommit(dir, options.ref);
+      if (oid === undefined) {
+        report.findings.push({ severity: "error", message: `${dir} has no commit ${options.ref}` });
+        return report;
+      }
+      report.ref = options.ref;
+      report.oid = oid;
+      files = gitFiles(dir, oid);
+    }
+    const result = await compute(report, dir, options.owner, files, options.releases);
+    if (result === undefined) return report;
+    report.findings.push(...result.findings);
+    report.outcome = result.failed ? "failed" : "passed";
+    report.products = result.products.map((product) => product.key).sort();
+  } catch (error) {
+    report.findings.push({ severity: "error", message: `failed: ${(error as Error).message}` });
+  }
+  return report;
+}
+
+// The shared path of local mode and validate: name the owner, then run the core.
 async function compute(report: RepoReport, dir: string, owner: string | undefined, files: RepoFiles, releases: ReleaseLookup | undefined) {
   const hasGit = existsSync(join(dir, ".git"));
   const url = hasGit ? await originUrl(dir) : undefined;
@@ -122,14 +168,15 @@ export function formatReports(reports: RepoReport[]): string {
     const at = report.ref === undefined ? "" : ` @ ${report.ref} ${report.oid?.slice(0, 12)}`;
     lines.push(`== ${report.name}${report.ownerRepo === undefined ? "" : ` (${report.ownerRepo})`}${at}: ${report.outcome}`);
     for (const finding of report.findings) lines.push(`  ${formatFinding(finding)}`);
+    if (report.products !== undefined) lines.push(`  products: ${report.products.join(", ") || "none"}`);
     if (report.written.length > 0) lines.push(`  wrote: ${report.written.join(", ")}`);
     if (report.deleted.length > 0) lines.push(`  deleted: ${report.deleted.join(", ")}`);
-    if (report.outcome === "failed") lines.push("  nothing written");
+    if (report.outcome === "failed" && report.products === undefined) lines.push("  nothing written");
   }
   const count = (outcome: RepoOutcome) => reports.filter((report) => report.outcome === outcome).length;
   const warnings = reports.flatMap((report) => report.findings).filter((finding) => finding.severity === "warning").length;
   lines.push(
-    `${reports.length} repos: ${count("published")} published, ${count("failed")} failed, ${count("skipped")} skipped; ${warnings} warnings`,
+    `${reports.length} repos: ${count("published")} published, ${count("passed")} passed, ${count("failed")} failed, ${count("skipped")} skipped; ${warnings} warnings`,
   );
   return lines.join("\n");
 }

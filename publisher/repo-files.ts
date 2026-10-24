@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { join, relative } from "node:path";
 import git from "isomorphic-git";
 
 // Read access to a tool repo's files at one ref, and to its tags. Local mode
@@ -46,6 +47,23 @@ export async function resolveBranch(dir: string, branch: string): Promise<GitRef
   return undefined;
 }
 
+/**
+ * The commit a ref names: a branch, tag or remote branch name, a full ref,
+ * `HEAD`, or a commit id. Undefined when the clone has no such ref.
+ */
+export async function resolveCommit(dir: string, ref: string): Promise<string | undefined> {
+  let oid = await resolve(dir, ref);
+  if (oid === undefined && /^[0-9a-f]{4,40}$/i.test(ref)) {
+    oid = await git.expandOid({ fs, dir, oid: ref.toLowerCase() }).catch(() => undefined);
+  }
+  while (oid !== undefined) {
+    const object = await git.readObject({ fs, dir, oid });
+    if (object.type !== "tag") return object.type === "commit" ? oid : undefined;
+    oid = (await git.readTag({ fs, dir, oid })).tag.object;
+  }
+  return undefined;
+}
+
 /** The clone's `remote.origin.url`, when it has one. */
 export async function originUrl(dir: string): Promise<string | undefined> {
   const url: unknown = await git.getConfig({ fs, dir, path: "remote.origin.url" });
@@ -73,6 +91,28 @@ export function gitFiles(dir: string, oid: string): RepoFiles {
         if (isNotFound(error)) return undefined;
         throw error;
       }
+    },
+  };
+}
+
+/**
+ * The files of the working tree at `dir`, as they are on disk, committed or
+ * not. For a tool-repo author who checks a change before committing it.
+ */
+export function workingTreeFiles(dir: string): RepoFiles {
+  return {
+    async list(prefix) {
+      const folder = join(dir, prefix);
+      if (!fs.existsSync(folder)) return [];
+      return fs
+        .readdirSync(folder, { recursive: true, withFileTypes: true })
+        .filter((entry) => entry.isFile())
+        .map((entry) => relative(dir, join(entry.parentPath, entry.name)).split("\\").join("/"))
+        .sort();
+    },
+    async read(path) {
+      const file = join(dir, path);
+      return fs.existsSync(file) && fs.statSync(file).isFile() ? new Uint8Array(fs.readFileSync(file)) : undefined;
     },
   };
 }
