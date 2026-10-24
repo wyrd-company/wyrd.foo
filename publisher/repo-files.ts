@@ -36,11 +36,11 @@ export interface GitRef {
 }
 
 /**
- * Resolve a branch of a local clone: the local branch, else the branch of
- * the `origin` remote. Undefined when neither exists.
+ * Resolve a branch of a local clone: the branch of the `origin` remote, else
+ * the local branch. Undefined when neither exists.
  */
 export async function resolveBranch(dir: string, branch: string): Promise<GitRef | undefined> {
-  for (const ref of [`refs/heads/${branch}`, `refs/remotes/origin/${branch}`]) {
+  for (const ref of [`refs/remotes/origin/${branch}`, `refs/heads/${branch}`]) {
     const oid = await resolve(dir, ref);
     if (oid !== undefined) return { oid, ref };
   }

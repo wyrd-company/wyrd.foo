@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { stringify } from "yaml";
@@ -238,6 +238,74 @@ describe("local mode: key ownership", () => {
     assert.equal(epsilon.outcome, "published");
     assert.equal(epsilon.ref, "refs/remotes/origin/wyrd-foo-v2");
     assert.equal(epsilon.oid, oid);
+  });
+});
+
+describe("local mode: fetch from origin", () => {
+  const ws = new Workspace();
+  after(() => ws.remove());
+  const repos = (name: string): LocalConfig => ({ branch: "wyrd-foo-v2", repos: [{ name, owner: `${OWNER}/${name}` }] });
+
+  /** A bare origin, and a second clone that pushes `files` to its wyrd-foo-v2 branch. */
+  function pushFromElsewhere(origin: string, files: Record<string, string | Uint8Array>) {
+    const other = join(ws.root, `push-${Math.random().toString(36).slice(2)}`);
+    git(ws.root, "clone", "-q", origin, other);
+    git(other, "checkout", "-q", "wyrd-foo-v2");
+    for (const [path, content] of Object.entries(files)) writeFileSync(join(other, path), content);
+    git(other, "commit", "-q", "-am", "pushed change");
+    git(other, "push", "-q", "origin", "wyrd-foo-v2");
+    return git(other, "rev-parse", "HEAD").trim();
+  }
+
+  it("fetches the branch, reads origin/wyrd-foo-v2, and changes only that ref", async () => {
+    const origin = join(ws.root, "kappa.git");
+    git(ws.root, "init", "-q", "--bare", "-b", "main", origin);
+    const dir = ws.repo("kappa", renamed("kappa-tool"), { origin });
+    git(dir, "push", "-q", "origin", "main", "wyrd-foo-v2");
+    const docs = renamed("kappa-tool")["docs/user/docs.yml"].toString().replace("The kappa-tool sample.", "The pushed sample.");
+    const pushed = pushFromElsewhere(origin, { "docs/user/docs.yml": docs });
+    const before = {
+      head: git(dir, "rev-parse", "HEAD"),
+      local: git(dir, "rev-parse", "refs/heads/wyrd-foo-v2"),
+      index: readFileSync(join(dir, ".git", "index")),
+    };
+
+    const reports = await runLocal({ config: repos("kappa"), toolsDir: ws.toolsDir, contentDir: ws.contentDir, fetch: true });
+    const kappa = reportOf(reports, "kappa");
+    assert.equal(kappa.outcome, "published");
+    assert.equal(kappa.ref, "refs/remotes/origin/wyrd-foo-v2");
+    assert.equal(kappa.oid, pushed);
+    assert.equal(ws.tool("kappa-tool").tagline, "The pushed sample.");
+    assert.equal(git(dir, "rev-parse", "HEAD"), before.head);
+    assert.equal(git(dir, "rev-parse", "refs/heads/wyrd-foo-v2"), before.local, "the local branch is not moved");
+    assert.deepEqual(readFileSync(join(dir, ".git", "index")), before.index);
+    assert.equal(git(dir, "status", "--porcelain"), "");
+    assert.ok(!existsSync(join(dir, ".git", "FETCH_HEAD")), "no FETCH_HEAD is written");
+  });
+
+  it("without fetch (offline), reads the origin ref the clone already has", async () => {
+    const origin = join(ws.root, "kappa.git");
+    const dir = join(ws.toolsDir, "kappa");
+    const known = git(dir, "rev-parse", "refs/remotes/origin/wyrd-foo-v2").trim();
+    const docs = renamed("kappa-tool")["docs/user/docs.yml"].toString().replace("The kappa-tool sample.", "A later sample.");
+    pushFromElsewhere(origin, { "docs/user/docs.yml": docs });
+    const reports = await runLocal({ config: repos("kappa"), toolsDir: ws.toolsDir, contentDir: ws.contentDir });
+    assert.equal(reportOf(reports, "kappa").oid, known);
+    assert.equal(ws.tool("kappa-tool").tagline, "The pushed sample.");
+  });
+
+  it("falls back to the local branch, with a warning, when origin has no such branch", async () => {
+    const origin = join(ws.root, "lambda.git");
+    git(ws.root, "init", "-q", "--bare", "-b", "main", origin);
+    const dir = ws.repo("lambda", renamed("lambda-tool"), { origin });
+    const reports = await runLocal({ config: repos("lambda"), toolsDir: ws.toolsDir, contentDir: ws.contentDir, fetch: true });
+    const lambda = reportOf(reports, "lambda");
+    assert.equal(lambda.outcome, "published");
+    assert.equal(lambda.ref, "refs/heads/wyrd-foo-v2");
+    assert.equal(lambda.oid, git(dir, "rev-parse", "refs/heads/wyrd-foo-v2").trim());
+    const fetchWarnings = messages(lambda, "warning").filter((message) => message.includes("could not fetch"));
+    assert.equal(fetchWarnings.length, 1);
+    assert.match(fetchWarnings[0], /^: could not fetch wyrd-foo-v2 from origin: .*wyrd-foo-v2/);
   });
 });
 
