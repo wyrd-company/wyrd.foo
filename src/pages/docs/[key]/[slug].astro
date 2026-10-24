@@ -1,0 +1,50 @@
+---
+/*
+ * A docs page: /docs/<key>/<slug>, from the page's `product:` and file name,
+ * at any depth under the product's docs folder.
+ */
+import { render } from "astro:content";
+import SearchIndexMeta from "../../../components/SearchIndexMeta.astro";
+import DocsArticle from "../../../components/docs/DocsArticle.astro";
+import DocsInstall from "../../../components/docs/DocsInstall.astro";
+import DocsShell from "../../../components/docs/DocsShell.astro";
+import DocsSidebar from "../../../components/docs/DocsSidebar.astro";
+import DocsToc from "../../../components/docs/DocsToc.astro";
+import { getDocsProducts, type DocsPage, type DocsProduct } from "../../../lib/docs";
+import { editUrl, markdownHref, neighbours, sectionOf } from "../../../lib/docs-pages";
+
+export async function getStaticPaths() {
+  const products = await getDocsProducts();
+  return products.flatMap((product) =>
+    product.pages.map((page) => ({ params: { key: product.key, slug: page.slug }, props: { product, page, products } })),
+  );
+}
+
+interface Props {
+  product: DocsProduct;
+  page: DocsPage;
+  products: DocsProduct[];
+}
+const { product, page, products } = Astro.props;
+const { Content, headings } = await render(page.entry);
+const section = sectionOf(product.map, page.slug)!;
+const { prev, next } = neighbours(product.map, page.slug);
+---
+
+<DocsShell title={page.title} product={product} products={products} section={section.section}>
+  <DocsSidebar slot="sidebar" section={section} current={page.slug} />
+  <div data-pagefind-body>
+    <SearchIndexMeta product={product.key} productName={product.name} kinds={product.kinds} />
+    <DocsArticle product={product} title={page.title} section={section.section} prev={prev} next={next}>
+      {page.install && <DocsInstall slot="before" product={product} />}
+      <Content />
+    </DocsArticle>
+  </div>
+  <DocsToc
+    slot="toc"
+    title={page.title}
+    headings={headings}
+    markdownUrl={markdownHref(product.key, page.slug)}
+    editUrl={editUrl(product.data.owner, product.data["docs-path"], page.rel)}
+  />
+</DocsShell>

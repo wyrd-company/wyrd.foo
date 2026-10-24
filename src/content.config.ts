@@ -69,4 +69,14 @@ const pages = defineCollection({
   schema: pageSchema,
 });
 
-export const collections = { tools, docs, products, pages };
+// `<key>/docs/CHANGELOG.md`: the docs unit changelog, linked from the docs
+// version footer (`/docs/<key>/changelog`).
+const docsChangelogs = defineCollection({
+  loader: glob({
+    pattern: "*/docs/CHANGELOG.md",
+    base: CONTENT_ROOT,
+    generateId: ({ entry }) => entry.split("/")[0],
+  }),
+});
+
+export const collections = { tools, docs, products, pages, docsChangelogs };

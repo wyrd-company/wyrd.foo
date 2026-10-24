@@ -7,7 +7,7 @@ import { expect, test } from "@playwright/test";
 import {
   disableHttpCache,
   openPage,
-  PAGES,
+  pages,
   recordTheme,
   reloadPage,
   store,
@@ -17,7 +17,7 @@ import {
 const SYSTEMS: Theme[] = ["dark", "light"];
 const CHOICES: (Theme | null)[] = [null, "dark", "light"];
 
-for (const { name, path } of PAGES) {
+for (const { name, path } of pages()) {
   for (const system of SYSTEMS) {
     test.describe(`${name}, system ${system}`, () => {
       test.use({ colorScheme: system });

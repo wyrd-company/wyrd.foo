@@ -1,0 +1,97 @@
+---
+/*
+ * /docs/: every product that has docs, with its docs version.
+ */
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import ProductMark from "../../components/ProductMark.astro";
+import { getDocsProducts } from "../../lib/docs";
+import { docsHome } from "../../lib/docs-pages";
+
+const products = await getDocsProducts();
+---
+
+<SiteLayout title="Docs — Wyrd Tools" description="Documentation for every Wyrd tool." nav="docs">
+  <section class="docs-index site-width">
+    <h1>Docs</h1>
+    <p class="docs-index-deck">Guides and reference for each tool.</p>
+    {
+      products.length === 0 ? (
+        <p class="docs-index-empty">No product publishes docs yet.</p>
+      ) : (
+        <ul>
+          {products.map((p) => (
+            <li>
+              <a href={docsHome(p.key)}>
+                <ProductMark name={p.name} logo={p.logo} logoDark={p.logoDark} size="card" />
+                <span class="docs-index-text">
+                  <span class="docs-index-name">{p.name}</span>
+                  <span class="docs-index-tagline">{p.data.tagline}</span>
+                </span>
+                <span class="docs-index-version">Docs {p.data["docs-version"]}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </section>
+</SiteLayout>
+
+<style>
+  .docs-index {
+    padding-block: 48px 72px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 40px;
+    letter-spacing: -0.03em;
+  }
+  .docs-index-deck {
+    margin: 8px 0 32px;
+    color: var(--text-2);
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+  }
+  a {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid var(--divider);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text);
+    height: 100%;
+    box-sizing: border-box;
+  }
+  a:hover {
+    border-color: var(--accent);
+    text-decoration: none;
+  }
+  .docs-index-text {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+  }
+  .docs-index-name {
+    font-family: var(--font-code);
+    font-weight: 600;
+  }
+  .docs-index-tagline {
+    font-size: 14px;
+    color: var(--text-2);
+  }
+  .docs-index-version {
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--text-faint);
+    white-space: nowrap;
+  }
+</style>

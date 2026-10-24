@@ -1,0 +1,29 @@
+---
+/*
+ * /docs/<key>/: a static redirect to the product's first page in reading
+ * order.
+ */
+import { getDocsProducts, type DocsProduct } from "../../../lib/docs";
+import { pageHref } from "../../../lib/docs-pages";
+
+export async function getStaticPaths() {
+  return (await getDocsProducts()).map((product) => ({ params: { key: product.key }, props: { product } }));
+}
+
+const { product } = Astro.props as { product: DocsProduct };
+const target = pageHref(product.key, product.first.slug);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{product.name} docs — Wyrd Tools</title>
+    <meta http-equiv="refresh" content={`0; url=${target}`} />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href={new URL(target, Astro.site ?? Astro.url).href} />
+  </head>
+  <body>
+    <a href={target}>{product.name} docs</a>
+  </body>
+</html>

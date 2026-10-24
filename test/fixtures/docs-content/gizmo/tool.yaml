@@ -1,0 +1,16 @@
+name: gizmo
+version: 0.1.0
+docs-version: 0.1.0
+release-unit: gizmo
+owner: example-org/gadgets
+docs-path: docs/user/gizmo
+tagline: A second product in the same repo.
+blurb: Shares the repo with gadget.
+status: planned
+category: Agent Infrastructure
+highlights: [Exists.]
+media: [{ src: assets/demo.gif, caption: Nothing yet. }]
+kinds:
+  - kind: cli
+    install:
+      - { method: archive, os: [linux, macos], command: curl -fsSL https://example.com/gizmo.tar.gz | tar -xz }

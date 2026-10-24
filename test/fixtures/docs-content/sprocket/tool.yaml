@@ -1,0 +1,18 @@
+name: sprocket
+version: 1.0.0
+docs-version: 1.0.1
+release-unit: sprocket
+owner: example-org/sprocket
+logo: assets/logo.svg
+tagline: A sample MCP server.
+blurb: Exposes sample tools to an agent.
+status: stable
+category: Agent Tooling
+highlights: [Answers sample questions.]
+media: [{ src: assets/demo.gif, caption: An agent session. }]
+kinds:
+  - kind: mcp-server
+    install:
+      - { method: claude-code, command: claude mcp add sprocket -- npx -y @example-org/sprocket }
+    tools:
+      - { name: sample_lookup, description: Looks up a sample value., effect: Read-only }

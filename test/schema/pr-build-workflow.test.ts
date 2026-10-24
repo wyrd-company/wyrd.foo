@@ -50,7 +50,7 @@ describe("the PR build workflow", () => {
     assert.match(read("src/lib/content-root.ts"), /process\.env\.WYRD_CONTENT_DIR\b/);
     const config = read("src/content.config.ts");
     assert.match(config, /^import \{ CONTENT_ROOT \} from "\.\/lib\/content-root\.ts";$/m);
-    assert.equal(config.match(/base: CONTENT_ROOT,/g)?.length, 2, "products and pages read the content root");
+    assert.equal(config.match(/base: CONTENT_ROOT,/g)?.length, 3, "products, pages and docs changelogs read the content root");
     assert.equal(step(/^Build the site/).env?.WYRD_CONTENT_DIR, "${{ runner.temp }}/content-v2");
   });
 

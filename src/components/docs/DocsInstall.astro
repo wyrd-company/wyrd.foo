@@ -1,0 +1,86 @@
+---
+/*
+ * The install block a page asks for with `install: true`: the primary kind's
+ * default install command with Copy, and a link to every install method on
+ * the product page.
+ */
+import type { DocsProduct } from "../../lib/docs";
+import { primaryInstall } from "../../lib/docs-pages";
+
+interface Props {
+  product: DocsProduct;
+}
+const { product } = Astro.props;
+const { label, command } = primaryInstall(product.data.kinds[0]);
+---
+
+<section class="docs-install" aria-label={`Install ${product.name}`} data-pagefind-ignore>
+  <div class="docs-install-head">
+    <span class="docs-install-label">{label}</span>
+    <a href={`/tools/${product.key}#install`}>All install methods →</a>
+  </div>
+  <div class="docs-install-code">
+    <pre><code>{command}</code></pre>
+    <button type="button" data-copy-text={command} aria-label={`Copy the ${label} command`}>Copy</button>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>("[data-copy-text]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(button.dataset.copyText!);
+        button.textContent = "Copied";
+      } catch {
+        button.textContent = "Copy failed";
+      }
+      setTimeout(() => (button.textContent = "Copy"), 1600);
+    });
+  });
+</script>
+
+<style>
+  .docs-install {
+    margin: 0 0 28px;
+    border: 1px solid var(--divider);
+    border-radius: 10px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .docs-install-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .docs-install-label {
+    font-family: var(--font-code);
+    color: var(--text-2);
+  }
+  .docs-install-code {
+    position: relative;
+  }
+  .docs-install-code pre {
+    margin: 0;
+    border-radius: 0;
+    padding-right: 84px;
+  }
+  .docs-install-code button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 4px 10px;
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--code-text);
+    background: transparent;
+    border: 1px solid #3a3a42;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .docs-install-code button:hover {
+    border-color: #6aa5ff;
+  }
+</style>
