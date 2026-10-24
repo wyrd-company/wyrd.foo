@@ -50,6 +50,30 @@ pnpm build      # static build to dist/
 pnpm preview
 ```
 
+## v2 dev server
+
+`task dev:v2` builds the v2 content from each tool repo's `wyrd-foo-v2`
+branch and serves the site on it:
+
+1. The publisher (`publisher/`) runs in local mode over the repos in
+   `publisher/local-repos.yml`. It reads each repo's `wyrd-foo-v2` branch
+   (local, else `origin/wyrd-foo-v2`) from the clone at
+   `/workspaces/tools/<name>` through git objects only: no checkout, no
+   commit, no fetch, no push. Set `WYRD_TOOLS_DIR` for another clone folder.
+2. It writes `.content-v2/<key>/` for every product (`WYRD_CONTENT_DIR` sets
+   another folder) and prints each repo's warnings and errors. An unmet
+   publishing requirement (no `.intentional/`, no GitHub Release, no
+   `wyrd-foo-v2` branch) is a warning. A repo with a schema or check error
+   writes nothing and the run goes on.
+3. `astro dev` starts with `WYRD_CONTENT_DIR` set to that folder.
+
+```sh
+task dev:v2                   # GitHub Releases read with GITHUB_TOKEN or GH_TOKEN when set
+task dev:v2 -- --offline      # release data from local tags only
+task publish:local            # the publisher step only
+task validate:repo -- ../gitpr --ref wyrd-foo-v2   # check one checkout; working tree without --ref
+```
+
 ## Deploy
 
 Deployment runs from `.github/workflows/cd.yml` on push to `main`. The target is
