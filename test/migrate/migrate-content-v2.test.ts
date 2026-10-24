@@ -145,7 +145,7 @@ describe("choosing media", () => {
   it("takes the image of the page with the lowest order, not the first file name", () => {
     const from = fresh("from");
     v1(from, "widget", TOOL, "---\ntitle: Second\norder: 2\n---\n![Later](assets/b.gif)\n");
-    writeFileSync(join(from, "widget/docs/aaa.md"), "---\ntitle: First\norder: 1\n---\n![Earlier](assets/a.gif)\n");
+    writeFileSync(join(from, "widget/docs/zzz.md"), "---\ntitle: First\norder: 1\n---\n![Earlier](assets/a.gif)\n");
     mkdirSync(join(from, "widget/docs/assets"));
     for (const name of ["a.gif", "b.gif"]) writeFileSync(join(from, "widget/docs/assets", name), "gif");
     const to = fresh("to");
