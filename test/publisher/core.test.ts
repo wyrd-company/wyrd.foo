@@ -10,6 +10,7 @@ import {
   gitHubReleases,
   IntentionalConfigError,
   linksOutside,
+  optionDifference,
   ownerRepoOf,
   parseIntentionalConfig,
   tagName,
@@ -322,6 +323,42 @@ describe("README option names", () => {
     assert.deepEqual(readmeOptionNames(readme), ["alpha", "beta"]);
     assert.deepEqual(readmeOptionNames("# X\n\nNo options.\n"), []);
   });
+
+  // The two formats feature READMEs use: the repo's own (`Option` first, names
+  // in backticks) and the one devcontainers' generate-docs writes (`Options Id`
+  // first, bare names, a generated note after the table).
+  const json = { id: "sample", version: "1.0.0", name: "S", description: "D", options: { version: {}, installTools: {} } };
+  const formats = {
+    repo: [
+      "## Options",
+      "",
+      "| Option         | Type    | Default  | Description          |",
+      "| -------------- | ------- | -------- | -------------------- |",
+      "| `version`      | string  | `latest` | Version to install.  |",
+      "| `installTools` | boolean | `true`   | Install extra tools. |",
+      "",
+      "## Example",
+    ],
+    upstream: [
+      "## Options",
+      "",
+      "| Options Id   | Description          | Type    | Default Value |",
+      "|-----|-----|-----|-----|",
+      "| version      | Version to install.  | string  | latest        |",
+      "| installTools | Install extra tools. | boolean | true          |",
+      "",
+      "---",
+      "",
+      "_Note: This file was auto-generated from the [devcontainer-feature.json](devcontainer-feature.json)._",
+    ],
+  };
+  for (const [format, lines] of Object.entries(formats)) {
+    it(`reads the ${format} README table format and finds no difference from the JSON`, () => {
+      const readme = `# Sample\n\nInstalls a sample.\n\n${lines.join("\n")}\n`;
+      assert.deepEqual(readmeOptionNames(readme), ["version", "installTools"]);
+      assert.equal(optionDifference(readme, json), undefined);
+    });
+  }
 });
 
 describe("GitHub Releases", () => {
