@@ -8,4 +8,5 @@ export * from "./page.ts";
 export * from "./tool-file.ts";
 export * from "./cross-check.ts";
 export * from "./image-header.ts";
+export * from "./json-schema.ts";
 export { formatIssue, parseWith, type ContractIssue, type ParseResult } from "./issues.ts";
