@@ -128,8 +128,11 @@ In this order:
 1. **Hero**: mark, name, tagline, description, the default install command
    of the primary kind with Copy, then "Read the docs", "Star on GitHub" and
    an "Other install methods ↓" link. A short facts list on the right: all
-   kinds, status, latest version and date, category, licence, repository.
-2. **Media**: the product's media on its own full-width row, with a caption.
+   kinds, status, latest version and date, category, repository.
+2. **Media**: the first media item on its own full-width row, with its
+   caption; the other items follow as a numbered tour. An MP4 or WebM file
+   plays as a muted, looping video; any other file, GIFs included, shows as
+   an image.
 3. **What it does**: up to six `highlights`.
 4. **Install**: full width. One tab group for each kind, in `kinds` order
    (for example "Install" for an app and "Dev container" for a feature). The
@@ -149,8 +152,8 @@ Documentation section.
   from `install[].os`, method pills for each platform, and one code block
   (single or multi-line) with one Copy button for each method. For
   `method: apt` and `method: rpm` the site writes the repo.wyrd.foo setup
-  lines above the product's install line. An app adds a screenshot tour of
-  its console.
+  lines above the product's install line. An app's media tour is the
+  screenshot tour of its console.
 - **MCP server**: client tabs (Claude Code, Claude Desktop, Cursor, VS Code,
   JSON) in place of install methods, and a table of the tools the server
   exposes with their side effects. The media is an animated GIF of an agent
@@ -163,7 +166,9 @@ Documentation section.
 ### Feature entry page
 
 A feature entry has an abbreviated page at `/tools/<key>`: the hero, the
-`devcontainer.json` snippet, then the feature's `README.md` as it is. The
+`devcontainer.json` snippet, the feature's `README.md` as it is, then the
+Releases section (`#releases`), from the annotated tag and the unit's
+changelog. The
 name, description, version and options come from the feature's
 `devcontainer-feature.json`. The README holds the feature's options table, so
 the page has no generated options table and no docs tree. A feature entry is
