@@ -24,7 +24,7 @@
     "test:browser": "pnpm build:home-fixture && pnpm build:docs-fixture && pnpm build:product-fixture && playwright test -c test/browser/playwright.config.ts",
     "typecheck": "pnpm typecheck:schema && pnpm typecheck:site",
     "typecheck:schema": "tsc -p tsconfig.schema.json",
-    "typecheck:site": "astro check",
+    "typecheck:site": "node scripts/typecheck-site.ts",
     "check": "pnpm typecheck && pnpm test && pnpm build && pnpm test:dist && pnpm test:browser"
   },
   "dependencies": {
