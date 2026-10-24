@@ -480,7 +480,10 @@ jobs:
 - The trigger is a push of a code tag or a docs tag, plus a manual run. The
   tag patterns follow the repo's tag templates in `.intentional/config.yml`.
 - A plain push to `main` does not publish.
-- A tag push passes no feature inputs, so it features nothing.
+- A tag push passes no feature inputs, so it features nothing. The reusable
+  workflow also fails a run with `feature: true` on any event but
+  `workflow_dispatch`, before it mints a token or checks anything out, so a
+  mis-wired caller cannot feature a product on a tag push.
 
 The reusable workflow's inputs:
 
@@ -678,7 +681,9 @@ The site reads `tool.yaml` and the pages with the same module's schemas.
 
 A tag push writes no `featured`: rule 2 below shows a fresh code release
 without any input. `featured` comes only from the `feature` inputs of a
-manual run, for a set reason or length. The block runs from the time of the
+manual run, for a set reason or length. The reusable workflow rejects
+`feature: true` outside a manual run (an event other than
+`workflow_dispatch`). The block runs from the time of the
 run for `feature-days` days, with `feature-reason` (default "New release")
 and the product's `version`, and replaces the block carried forward. A run
 that names a feature entry, a key that is not in the map, or no key when the
