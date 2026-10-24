@@ -20,11 +20,12 @@ Three runners own the tests (vitest runs two projects). Each row names the confi
 | --- | --- | --- | --- |
 | node:test | `test/schema/**/*.test.ts` | `pnpm test:schema` | `package.json:15` |
 | node:test | `test/publisher/**/*.test.ts` | `pnpm test:publisher` | `package.json:16` |
-| vitest `unit` | `test/**/*.test.ts`, minus `test/schema/**` and `test/publisher/**` | `pnpm test:site` | `vitest.config.ts:8` (exclude), `vitest.config.ts:11` (include), `package.json:17` |
-| vitest `dist` | `test/**/*.dist.ts` | `pnpm test:dist` (builds the fixtures first) | `vitest.config.ts:13`, `package.json:22` |
-| Playwright | `test/browser/**/*.spec.ts` | `pnpm test:browser` (builds the home, docs and product fixtures first) | `package.json:23`, `test/browser/config.ts:66` (`testDir`, `testMatch` defaults) |
+| vitest `unit` | `test/**/*.test.ts`, minus `test/schema/**`, `test/publisher/**` and `test/build/**` | `pnpm test:site` | `vitest.config.ts:9` (exclude), `vitest.config.ts:12` (include), `package.json:17` |
+| node:test | `test/build/**/*.test.ts` | `pnpm test:build` | `package.json:18` |
+| vitest `dist` | `test/**/*.dist.ts` | `pnpm test:dist` (builds the fixtures first) | `vitest.config.ts:14`, `package.json:23` |
+| Playwright | `test/browser/**/*.spec.ts` | `pnpm test:browser` (builds the home, docs and product fixtures first) | `package.json:24`, `test/browser/config.ts:66` (`testDir`, `testMatch` defaults) |
 
-`pnpm test` runs the first three rows; `pnpm check` runs all of them.
+`pnpm test` runs the first four rows; `pnpm check` runs all of them.
 
 A new node:test folder must be added to the `exclude` list in `vitest.config.ts`
 (and given its own `pnpm test:*` script that `pnpm test` runs), or vitest

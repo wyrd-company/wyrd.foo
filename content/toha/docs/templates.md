@@ -1,5 +1,6 @@
 ---
 title: Authoring templates
+product: toha
 order: 3
 relationships:
   describes: toha

@@ -4,8 +4,9 @@ import { configDefaults } from "vitest/config";
 
 export default getViteConfig({
   test: {
-    // test/schema/ and test/publisher/ run on node:test (`pnpm test:schema`, `pnpm test:publisher`).
-    exclude: [...configDefaults.exclude, "test/schema/**", "test/publisher/**"],
+    // test/schema/, test/publisher/ and test/build/ run on node:test
+    // (`pnpm test:schema`, `pnpm test:publisher`, `pnpm test:build`).
+    exclude: [...configDefaults.exclude, "test/schema/**", "test/publisher/**", "test/build/**"],
     projects: [
       // Render components through the Astro container.
       { extends: true, test: { name: "unit", include: ["test/**/*.test.ts"] } },

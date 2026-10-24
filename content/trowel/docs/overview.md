@@ -1,5 +1,6 @@
 ---
 title: Overview
+product: trowel
 order: 1
 ---
 

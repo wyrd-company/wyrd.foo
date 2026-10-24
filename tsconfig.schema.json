@@ -10,6 +10,7 @@
     "src/pages/schemas/**/*.ts",
     "test/schema/**/*.ts",
     "test/publisher/**/*.ts",
+    "test/build/**/*.ts",
     "test/browser/**/*.ts"
   ]
 }

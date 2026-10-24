@@ -1,5 +1,6 @@
 ---
 title: Generating into subpaths
+product: toha
 order: 11
 relationships:
   describes: toha

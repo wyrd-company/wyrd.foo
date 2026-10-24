@@ -1,5 +1,6 @@
 ---
 title: Getting started
+product: t3c
 order: 1
 relationships:
   references:

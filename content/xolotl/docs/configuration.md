@@ -1,5 +1,6 @@
 ---
 title: Configuration
+product: xolotl
 order: 3
 ---
 

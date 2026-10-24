@@ -1,5 +1,6 @@
 ---
 title: Usage
+product: gitpr
 order: 3
 ---
 

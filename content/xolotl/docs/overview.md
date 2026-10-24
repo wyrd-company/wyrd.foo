@@ -1,5 +1,6 @@
 ---
 title: Overview
+product: xolotl
 order: 1
 ---
 

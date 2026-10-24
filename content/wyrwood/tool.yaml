@@ -1,21 +1,33 @@
-# ---
-# relationships:
-#   publishes-to: wyrd-foo
-#   references: wyrwood
-# ---
 name: wyrwood
+version: 0.1.0
+docs-version: 0.1.0
+release-unit: wyrwood
 tagline: OpenBao-backed secrets and signing for containers, with nothing stored inside.
-blurb: >-
-  A controller that owns policy and an agent on each Docker host that gives every bound container a directory of sockets: an OpenBao endpoint carrying the container's own token and an SSH agent whose keys live in OpenBao.
-category: Agent Infrastructure
-language: Go
+blurb: "A controller that owns policy and an agent on each Docker host that gives every bound
+  container a directory of sockets: an OpenBao endpoint carrying the container's own token and an
+  SSH agent whose keys live in OpenBao."
 status: preview
-repo: https://github.com/wyrd-company/wyrwood
+category: Agent Infrastructure
 order: 6
-install:
-  - label: APT
-    command: sudo apt install wyrwood
-  - label: RPM
-    command: sudo dnf install wyrwood
-  - label: AUR
-    command: paru -S wyrwood-bin
+kinds:
+  - kind: app
+    install:
+      - method: apt
+        os:
+          - linux
+        default: true
+        command: sudo apt install wyrwood
+      - method: rpm
+        os:
+          - linux
+        command: sudo dnf install wyrwood
+      - method: aur
+        os:
+          - linux
+        command: paru -S wyrwood-bin
+highlights:
+  - OpenBao-backed secrets and signing for containers, with nothing stored inside.
+media:
+  - src: assets/demo.gif
+    caption: Wyrwood web interface and command-line demo
+owner: wyrd-company/wyrwood

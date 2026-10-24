@@ -1,5 +1,6 @@
 ---
 title: Installation
+product: beholder
 order: 2
 install: true
 ---

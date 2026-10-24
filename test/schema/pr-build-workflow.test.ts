@@ -3,8 +3,8 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { parse } from "yaml";
 
-// The PR build check: the agreements between the workflow, the migration
-// script and the content config that a green workflow file alone does not show.
+// The PR build check: the agreements between the workflow and the content
+// config that a green workflow file alone does not show.
 
 const REPO = new URL("../../", import.meta.url).pathname;
 const read = (path: string) => readFileSync(`${REPO}${path}`, "utf8");
@@ -29,8 +29,8 @@ describe("the PR build workflow", () => {
     assert.deepEqual(workflow.permissions, { contents: "read" });
   });
 
-  it("runs the contract checks, the migration, the build and the built-output checks, in that order", () => {
-    const order = ["Validate the docs contract", "Migrate content/", "Build the site", "Check the built output"].map((name) =>
+  it("runs the contract checks, the build and the built-output checks, in that order", () => {
+    const order = ["Validate the docs contract", "Build the site", "Check the built output"].map((name) =>
       steps.findIndex((candidate) => candidate.name?.startsWith(name)),
     );
     assert.ok(order.every((index) => index >= 0), `all steps present: ${order}`);
@@ -42,25 +42,21 @@ describe("the PR build workflow", () => {
     assert.match(step(/^Check the built output/).run ?? "", /^pnpm test:dist$/);
   });
 
-  it("builds on the folder the migration wrote, through the variable the content config reads", () => {
-    const migrate = step(/^Migrate content\//).run ?? "";
-    const target = /--to "([^"]+)"/.exec(migrate)?.[1];
-    assert.equal(target, "$RUNNER_TEMP/content-v2");
-    // The content config takes its root from lib/content-root.ts, which reads the variable.
-    assert.match(read("src/lib/content-root.ts"), /process\.env\.WYRD_CONTENT_DIR\b/);
+  it("builds on content/, through the default of the variable the content config reads", () => {
+    assert.match(read("src/lib/content-root.ts"), /= process\.env\.WYRD_CONTENT_DIR \?\? "\.\/content";$/m);
     const config = read("src/content.config.ts");
     assert.match(config, /^import \{ CONTENT_ROOT \} from "\.\/lib\/content-root\.ts";$/m);
     assert.equal(
       config.match(/base: CONTENT_ROOT,/g)?.length,
       5,
-      "every v2 collection reads the content root: products, pages, docs changelogs, feature READMEs, code changelogs",
+      "every collection reads the content root: products, pages, docs changelogs, feature READMEs, code changelogs",
     );
-    assert.equal(step(/^Build the site/).env?.WYRD_CONTENT_DIR, "${{ runner.temp }}/content-v2");
-  });
-
-  it("calls a script that exists", () => {
-    const script = /node (scripts\/\S+)/.exec(step(/^Migrate content\//).run ?? "")?.[1];
-    assert.equal(script, "scripts/migrate-content-v2.ts");
-    assert.ok(read(script).includes("export function migrate"));
+    assert.equal(config.match(/base:/g)?.length, 5, "no collection reads another root");
+    for (const candidate of steps) {
+      assert.equal(candidate.env?.WYRD_CONTENT_DIR, undefined, `${candidate.name ?? candidate.uses} keeps the default root`);
+      assert.doesNotMatch(candidate.run ?? "", /WYRD_CONTENT_DIR/);
+    }
+    assert.equal(workflow.env?.WYRD_CONTENT_DIR, undefined);
+    assert.equal(workflow.jobs.build.env?.WYRD_CONTENT_DIR, undefined);
   });
 });
