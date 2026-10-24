@@ -551,10 +551,11 @@ expires on time without a rebuild:
 1. An active feature (`from ≤ now < until`); if several, the latest `from`
    wins.
 2. Otherwise the newest release in the last 14 days.
-3. Otherwise a weekly rotation (UTC week number modulo the pool) through
-   stable products that have media, sorted by key.
+3. Otherwise a weekly rotation through stable products that have media,
+   sorted by key: the number of whole UTC weeks (Monday to Monday) since
+   1969-12-29, modulo the size of the pool.
 
-Feature entries are never in the pool. The build writes its own pick into
+Ties go to the lower key. Feature entries are never in the pool. The build writes its own pick into
 the HTML as the default; the script swaps it only when its result differs.
 
 ## Schemas
