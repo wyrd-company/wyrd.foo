@@ -79,4 +79,23 @@ const docsChangelogs = defineCollection({
   }),
 });
 
-export const collections = { tools, docs, products, pages, docsChangelogs };
+// `<key>/README.md`: the page body of a feature entry.
+const featureReadmes = defineCollection({
+  loader: glob({
+    pattern: "*/README.md",
+    base: CONTENT_ROOT,
+    generateId: ({ entry }) => entry.split("/")[0],
+  }),
+});
+
+// `<key>/CHANGELOG.md`: the code unit changelog, shown in the product page's
+// Releases section.
+const codeChangelogs = defineCollection({
+  loader: glob({
+    pattern: "*/CHANGELOG.md",
+    base: CONTENT_ROOT,
+    generateId: ({ entry }) => entry.split("/")[0],
+  }),
+});
+
+export const collections = { tools, docs, products, pages, docsChangelogs, featureReadmes, codeChangelogs };
