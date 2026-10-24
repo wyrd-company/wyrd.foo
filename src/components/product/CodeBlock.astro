@@ -1,0 +1,76 @@
+---
+/*
+ * One command or snippet in a dark code block with one Copy button. A shell
+ * command gets a "$" prompt on its first line; the prompt is not copied.
+ */
+interface Props {
+  code: string;
+  /** Show a "$" prompt before the first line. */
+  prompt?: boolean;
+  /** Accessible name of the block, for example "Homebrew install command". */
+  label?: string;
+  class?: string;
+}
+const { code, prompt = false, label, class: klass } = Astro.props;
+---
+
+<div class:list={["code-block", klass]} data-code-block role="group" aria-label={label}>
+  {prompt && <span class="code-block-prompt" aria-hidden="true">$</span>}
+  <pre>{code}</pre>
+  <button type="button" class="code-block-copy" data-copy>Copy</button>
+</div>
+
+<script>
+  import { startCopyButtons } from "../../lib/product-tabs";
+
+  startCopyButtons();
+</script>
+
+<style>
+  .code-block {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--code-bg);
+    color: var(--code-text);
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    padding: 14px 84px 14px 16px;
+  }
+  .code-block pre {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border-radius: 0;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .code-block-prompt {
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.7;
+    color: #8e8e97;
+    user-select: none;
+  }
+  .code-block-copy {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 6px;
+    border: 1px solid #2c2c33;
+    background: #1b1b1f;
+    color: #ededef;
+    font: 500 12px/1 var(--font-text);
+    cursor: pointer;
+  }
+  .code-block-copy:hover {
+    border-color: #6aa5ff;
+  }
+</style>

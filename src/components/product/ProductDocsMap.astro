@@ -1,0 +1,82 @@
+---
+/*
+ * The Documentation section: one card for each docs section, with its
+ * groups and page links (lib/docs-map.ts).
+ */
+import type { DocsMapSection } from "../../lib/docs-map";
+
+interface Props {
+  map: DocsMapSection[];
+  /** The URL of a page of this product. */
+  href: (slug: string) => string;
+}
+const { map, href } = Astro.props;
+---
+
+<div class="docs-map">
+  {
+    map.map((section) => (
+      <div class="docs-map-card">
+        {section.section && <h3 class="docs-map-section">{section.section}</h3>}
+        {section.groups.map((group) => (
+          <div class="docs-map-group">
+            {(map.length > 1 || section.groups.length > 1 || section.section) && (
+              <p class="docs-map-group-name">{group.group}</p>
+            )}
+            <ul>
+              {group.pages.map((page) => (
+                <li>
+                  <a href={href(page.slug)}>{page.title}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .docs-map {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .docs-map-card {
+    padding: 22px 22px 24px;
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+  }
+  .docs-map-section {
+    margin: 0 0 14px;
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .docs-map-group + .docs-map-group {
+    margin-top: 16px;
+  }
+  .docs-map-group-name {
+    margin: 0 0 6px;
+    font-family: var(--font-code);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li a {
+    display: block;
+    padding: 4px 0;
+    color: var(--text);
+    font-size: 14.5px;
+  }
+  li a:hover {
+    color: var(--accent);
+  }
+</style>

@@ -1,0 +1,98 @@
+---
+/*
+ * The Install section: one block for each kind, in `kinds` order. A product
+ * with more than one kind shows one tab for each kind's block, for example
+ * "Install" for an app and "Dev container" for a feature.
+ */
+import "./install-block.css";
+import InstallDevcontainer from "./InstallDevcontainer.astro";
+import InstallMcp from "./InstallMcp.astro";
+import InstallPlatforms from "./InstallPlatforms.astro";
+import { KIND_INSTALL_TABS, mcpClientTabs, platformTabs } from "../../lib/install-blocks";
+import type { KindBlock } from "../../schema/index";
+
+interface Props {
+  kinds: KindBlock[];
+}
+const { kinds } = Astro.props;
+const tabbed = kinds.length > 1;
+const panelId = (kind: string) => `install-kind-${kind}`;
+---
+
+<div class="install-kinds">
+  {
+    tabbed && (
+      <div class="install-kind-tabs" role="tablist" aria-label="Kind">
+        {kinds.map((block, index) => (
+          <button
+            type="button"
+            role="tab"
+            id={`${panelId(block.kind)}-tab`}
+            aria-controls={panelId(block.kind)}
+            aria-selected={index === 0 ? "true" : "false"}
+            tabindex={index === 0 ? 0 : -1}
+          >
+            {KIND_INSTALL_TABS[block.kind]}
+          </button>
+        ))}
+      </div>
+    )
+  }
+  {
+    kinds.map((block, index) => (
+      <div
+        class="install-kind"
+        data-kind={block.kind}
+        id={tabbed ? panelId(block.kind) : undefined}
+        role={tabbed ? "tabpanel" : undefined}
+        aria-labelledby={tabbed ? `${panelId(block.kind)}-tab` : undefined}
+        hidden={tabbed && index > 0}
+      >
+        {(block.kind === "cli" || block.kind === "app") && (
+          <InstallPlatforms tabs={platformTabs(block.install)} id={`install-${block.kind}`} />
+        )}
+        {block.kind === "mcp-server" && (
+          <InstallMcp tabs={mcpClientTabs(block.install)} tools={block.tools} id="install-mcp" />
+        )}
+        {(block.kind === "devcontainer-feature" || block.kind === "devcontainer-image") && <InstallDevcontainer block={block} />}
+      </div>
+    ))
+  }
+</div>
+
+<script>
+  import { startTabs } from "../../lib/product-tabs";
+
+  startTabs();
+</script>
+
+<style>
+  .install-kinds {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .install-kind-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .install-kind-tabs [role="tab"] {
+    height: 36px;
+    padding: 0 16px;
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-2);
+    font: 600 14px/1 var(--font-text);
+    cursor: pointer;
+  }
+  .install-kind-tabs [role="tab"]:hover {
+    color: var(--text);
+  }
+  .install-kind-tabs [role="tab"][aria-selected="true"] {
+    border-color: var(--text);
+    background: var(--text);
+    color: var(--page);
+  }
+</style>

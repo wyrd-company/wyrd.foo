@@ -1,0 +1,79 @@
+---
+/*
+ * The install block of a dev container feature (a devcontainer.json snippet
+ * that adds it) or a dev container image (its reference and a snippet that
+ * uses it, then the tags table of its registry tags).
+ */
+import CodeBlock from "./CodeBlock.astro";
+import { devcontainerFeatureSnippet, devcontainerImageSnippet } from "../../lib/install-blocks";
+import type { KindBlock } from "../../schema/index";
+
+interface Props {
+  block: Extract<KindBlock, { kind: "devcontainer-feature" | "devcontainer-image" }>;
+}
+const { block } = Astro.props;
+---
+
+<div class="install-card" data-install-block={block.kind}>
+  {
+    block.kind === "devcontainer-feature" ? (
+      <div class="install-body">
+        <p class="install-label">Add to devcontainer.json</p>
+        <CodeBlock code={devcontainerFeatureSnippet(block.ref)} label="devcontainer.json features" />
+      </div>
+    ) : (
+      <>
+        <div class="install-body image-refs">
+          <div>
+            <p class="install-label">Image</p>
+            <CodeBlock code={block.ref} label="Image reference" />
+          </div>
+          <div>
+            <p class="install-label">Use in devcontainer.json</p>
+            <CodeBlock code={devcontainerImageSnippet(block.ref)} label="devcontainer.json image" />
+          </div>
+        </div>
+        {block.tags && (
+          <div class="install-body image-tags">
+            <p class="install-label">Tags</p>
+            <div class="image-tags-scroll">
+              <table class="install-table">
+                <thead>
+                  <tr><th scope="col">Tag</th><th scope="col">Base</th><th scope="col">Architectures</th></tr>
+                </thead>
+                <tbody>
+                  {block.tags.map((tag) => (
+                    <tr>
+                      <td><code>{tag.tag}</code></td>
+                      <td>{tag.base ?? "—"}</td>
+                      <td class="image-arch">{tag.architectures?.join(", ") ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
+</div>
+
+<style>
+  .image-refs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .image-tags {
+    border-top: 1px solid var(--divider);
+  }
+  .image-tags-scroll {
+    overflow-x: auto;
+  }
+  .image-arch {
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-2);
+  }
+</style>
