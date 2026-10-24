@@ -526,18 +526,22 @@ the result is the same for every trigger. The trigger only chooses the ref.
 ### Local mode
 
 The dev server (`task dev:v2`) runs the same publisher core in local mode.
-For each tool repo in `publisher/local-repos.yml`, local mode reads the
-repo's `wyrd-foo-v2` branch (the local branch, else `origin/wyrd-foo-v2`)
-from its local clone through git objects only. It does not check out a
-branch or change the clone's working tree or index, and it makes no commit,
-no fetch and no push. It writes into a dev content folder in the wyrd.foo
+For each tool repo in `publisher/local-repos.yml`, local mode fetches the
+repo's `wyrd-foo-v2` branch from origin into `refs/remotes/origin/wyrd-foo-v2`
+of its local clone, so a merged and pushed branch shows up. It then reads
+`origin/wyrd-foo-v2`, else the local `wyrd-foo-v2` branch, through git
+objects, and names the ref it read in its output. It does not check out a
+branch or change the clone's working tree, index, local branches or tags,
+and it makes no commit and no push. A fetch that fails is a warning. It
+writes into a dev content folder in the wyrd.foo
 checkout (`WYRD_CONTENT_DIR`, default `.content-v2`), and the dev server
 serves the site from that folder. It prints each repo's warnings and errors.
 
 - When no GitHub Release is reachable, release data comes from the local
   tag: the annotated tag's date, and the version's section of the unit
   changelog as notes. The GitHub API is read with `GITHUB_TOKEN` or
-  `GH_TOKEN` when one is set; `--offline` reads local tags only.
+  `GH_TOKEN` when one is set; `--offline` skips the fetch and reads local
+  tags only.
 - A requirement that a repo does not meet yet is a warning, not a failure:
   no `wyrd-foo-v2` branch, no intentional, no release unit or docs unit, no
   GitHub Release, no release tag, no unit changelog, no image
