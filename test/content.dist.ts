@@ -32,5 +32,13 @@ describe("built site from content/", () => {
     it(`${key}: has a docs entry`, () => {
       expect(title(`docs/${key}/index.html`)).toBe(`${name} docs — Wyrd Tools`);
     });
+
+    it(`${key}: has a built page for every docs page`, () => {
+      const pages = readdirSync(join("content", key, "docs"), { recursive: true, withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".md") && entry.name !== "CHANGELOG.md")
+        .map((entry) => entry.name.replace(/\.md$/, ""));
+      expect(pages.length).toBeGreaterThan(0);
+      for (const slug of pages) expect(title(`docs/${key}/${slug}/index.html`)).toMatch(/ docs — Wyrd Tools$/);
+    });
   }
 });
