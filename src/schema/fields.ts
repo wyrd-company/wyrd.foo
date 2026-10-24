@@ -15,12 +15,18 @@ export const releaseUnitId = z
   .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/, "must be a release unit id")
   .describe("Release unit id in .intentional/config.yml.");
 
-export const semver = z
-  .string()
-  .regex(
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/,
-    "must be a SemVer version, for example 1.2.3",
-  );
+// SemVer 2.0.0 (semver.org): numeric identifiers have no leading zero, and
+// dot-separated prerelease and build identifiers are never empty.
+const NUMERIC = "0|[1-9]\\d*";
+const PRERELEASE_ID = `(?:${NUMERIC}|\\d*[a-zA-Z-][0-9a-zA-Z-]*)`;
+const BUILD_ID = "[0-9a-zA-Z-]+";
+const SEMVER = new RegExp(
+  `^(?:${NUMERIC})\\.(?:${NUMERIC})\\.(?:${NUMERIC})` +
+    `(?:-${PRERELEASE_ID}(?:\\.${PRERELEASE_ID})*)?` +
+    `(?:\\+${BUILD_ID}(?:\\.${BUILD_ID})*)?$`,
+);
+
+export const semver = z.string().regex(SEMVER, "must be a SemVer 2.0.0 version, for example 1.2.3");
 
 // No leading slash, no backslash, no `.` or `..` segment.
 const RELATIVE_PATH = /^(?!\/)(?!.*(?:^|\/)\.{1,2}(?:\/|$))[^\\]+$/;
