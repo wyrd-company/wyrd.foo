@@ -62,15 +62,15 @@ they get a wyrd.foo page.
 | # | Slice | Contents |
 | --- | --- | --- |
 | 0 | v2 dev server | A wyrd.foo task that, for each tool repo, reads its `wyrd-foo-v2` branch from the local clone, runs the publisher core in local mode into a dev content folder (no commit, no push), and serves the v2 site. Release data comes from local tags when no GitHub Release is reachable. Unmet requirements are warnings. |
-| 1 | Schema and endpoint | Zod schema for `docs.yml`: `schemaVersion` (`1` only, any other value rejected), products map, `kinds` (one block per kind), `install[]` with `method`, `os`, `default`, `label`; `highlights` up to six; `nav`; `media`; `version`, `docs-version`, `release-unit`; `order`; `logo`, `logo-dark`, `favicon`, `social-image`; feature entries; publisher-owned `release`, `featured`, `source`; `relationships` allowed; no `language`. Page schema: `product` required, no `docs` flag. The cross-checks in the publishing design. `/schemas/docs/v1.json` through `z.toJSONSchema`, in a module the publisher imports. |
+| 1 | Schema and endpoint | Zod schema for `docs.yml`: `schemaVersion` (`1` only, any other value rejected), products map, `kinds` (one block per kind), `install[]` with `method`, `os`, `default`, `label`; `highlights` up to six; `nav`; `media`; `version`, `docs-version`, `release-unit`; `order`; `logo`, `logo-dark`, `favicon`, `social-image`; feature entries; the closed category list; publisher-owned `owner`, `release`, `featured`; `relationships` allowed; no `language`. Page schema: `product` required, no `docs` flag. The cross-checks in the publishing design. `/schemas/docs/v1.json` through `z.toJSONSchema`. All in `src/schema/`, a module the publisher imports. |
 | 2 | Theme and shell | Tokens as CSS variables with dark and light values, Geist self-hosted, per-product favicon and `og:`/`twitter:` meta in the shared head, a theme toggle with no flash, a shared header and layout. The blueprint CSS goes. |
 | 3 | Home | Headline, featured card with the browser picker, the shared logo-or-monogram component, Recent releases, catalog with kind tabs (a product under each of its kinds), filter and Copy. |
 | 4 | Product page | `/tools/[key]`: hero with mark and facts, media, highlights, docs map. One install block for each kind: CLI and app (OS tabs and methods, with the site's APT/RPM setup), MCP (client tabs and tools table), feature (`devcontainer.json`), image (reference and tags table). App: screenshot tour. The abbreviated feature entry page. |
 | 5 | Docs | Sticky two-row header (product switcher with marks), sidebar for the current section with progress dots, "On this page" that tracks the last heading above the top of the viewport, Copy as Markdown, Edit on GitHub, version footer. Restyled Pagefind, product pages indexed, `kind` filter. |
 | 6 | `publish-docs@v2` | TypeScript action and reusable workflow around the publisher core. Pages from `docs/user/**`; release data and changelog from the intentional unit and the GitHub Release (feature entries: the annotated tag); generated data from workspace files; key ownership; `featured` carried forward; push with retry. |
 | 7 | Content migration | A script that changes every `content/` folder to the v2 format, and a PR build check workflow on wyrd.foo. |
-| 8 | Tool-repo branches | A `wyrd-foo-v2` branch in each existing repo and beholder: public pages and `docs.yml` moved to `docs/user/`, `docs.yml` in the v2 format, `product:` on every page, highlights, `nav` for toha and xolotl, categories cleaned up, logos, favicon and social image where the repo has them, the calling workflow for v2. t3code-client: one `docs.yml` with two products. One intent per repo where `.intentional/` exists. |
-| 8b | Requirements | The code version projection and a `<key>-docs` unit in every repo; publish triggers on code and docs tags. intentional adopted in seek-cli, tagver and agent-svgtools, and finished in dcb. A GitHub Release for beholder 0.1.0. Repos without intentional set `version` by hand on their `wyrd-foo-v2` branch. |
+| 8 | Tool-repo branches | A `wyrd-foo-v2` branch in each existing repo and beholder: public pages and `docs.yml` moved to `docs/user/`, `docs.yml` in the v2 format, `product:` on every page, highlights, `nav` for toha and xolotl, categories from the closed list, logos, favicon and social image where the repo has them, the calling workflow for v2. t3code-client: one `docs.yml` with two products. One intent per repo where `.intentional/` exists. |
+| 8b | Requirements | The code version projection and a `<key>-docs` unit in every repo; publish triggers on code and docs tags. intentional adopted in seek-cli, tagver and agent-svgtools, and finished in dcb. A GitHub Release for beholder 0.1.0. Repos without intentional set `version` and `docs-version` by hand on their `wyrd-foo-v2` branch. |
 | 8c | Toha onboarding template | A Toha template in a subdirectory of the wyrd.foo repo that onboards a tool repo: `docs/user/docs.yml` with one product, a starter page, the calling workflow for v2, and the intentional docs unit where `.intentional/` exists. Toha update mode carries later contract changes into repos that use it. Repos consume it by Git address tracking wyrd.foo `main`, with no template version tags. It starts when an accepted Toha release exists. |
 | 9 | devcontainers onboarding | intentional (one unit per feature, plus the base image's code unit with a json projection on `manifest.json` `/version`, and its docs unit) and GitHub Releases for the image. `docs/user/docs.yml` with 17 feature entries and a full entry for the base image. Highlights and media for the base image, with media captured by vhs or freeze. The v2 calling workflow in `cd.yml` and `images.yml`. |
 
@@ -79,8 +79,8 @@ Order and dependencies:
 - Slice 0 is first: it is the goal of this effort.
 - Slices 2–5 run in parallel after slice 1.
 - Slice 8 and slice 9 do not wait for slice 8c.
-- Bob reviews the highlights for every product. That review is on the
-  critical path.
+- Bob reviews the highlights for every product, and the category list with
+  them. That review is on the critical path.
 - dcb joins when its docs branch merges.
 
 ## Cutover
@@ -102,44 +102,11 @@ cutover.
 
 ## Open questions
 
-- **Two meanings of `source`.** In `docs.yml`, a feature entry's `source` is
-  a path in the repo (`src/features/caddy`). In `content/<key>/tool.yaml`,
-  `source` is the owner repo (`wyrd-company/devcontainers`). A feature
-  entry's `tool.yaml` needs the owner; the publisher reads the path only at
-  publish time.
-- **Feature entry release unit.** A feature entry holds no `release-unit`, so
-  its unit is its key. An existing unit whose id differs from the feature key
-  (for example `heddle-feature`) needs either a rename or a `release-unit`
-  field in the short entry.
-- **Feature entry `ref`.** A feature entry holds no `ref`. The
-  `devcontainer.json` snippet needs the feature's OCI reference, so the
-  publisher derives it, or the entry gets a `ref` field.
-- **The `repo` field.** The facts list shows the source repository. It can
-  be a product field in `docs.yml`, or the site can build it from the
-  publisher's `source`.
-- **MCP generated data.** Which file in the workspace holds an MCP server's
-  tools list, and how its kind block names it.
-- **Image tags table.** Where the publisher reads the image's registry tags
-  from.
-- **MCP client tabs.** t3code-mcp installs through npm and through the
-  Claude and Codex plugin marketplaces. The mockup's client tabs are Claude
-  Code, Claude Desktop, Cursor, VS Code and JSON. The `mcp-server` kind block
-  holds the data for the tabs; its fields follow from the tab set.
-- **Install methods without a `method`.** A run command through `npx`
-  (intentional), `cargo` from Git (agent-svgtools), `docker pull` and the
-  plugin marketplaces (t3code-mcp).
-- **Category list.** The canonical category names and their order.
-  "Developer Tools", "Development" and "Code Quality" are in use and not in
-  the site's category order.
-- **Catalog order without `order`.** Where products without `order` sort
-  relative to products with it.
 - **Featuring a tag-push release.** A tag push carries no inputs, so a
   feature is requested by a manual run of the calling workflow.
-- **The "Releases" nav.** Where the header's "Releases" link goes: a page of
-  recent releases across products, or the changelog on each product page.
-- **`docs-version` without intentional.** A repo without intentional sets
-  `version` by hand on its `wyrd-foo-v2` branch; `docs-version` needs the
-  same rule.
+- **The site header's "Releases" link.** In the docs header it goes to the
+  product page's Releases section. On pages that belong to no product (home,
+  catalog) it has no product to go to.
 
 ## Risks
 
