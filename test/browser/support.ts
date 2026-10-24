@@ -51,12 +51,17 @@ async function assertShellPage(page: Page, response: Response | null, expected: 
   if (response.status() !== 200) {
     throw new Error(`${expected} answered ${response.status()}, not 200`);
   }
+  await assertSiteShell(page, expected);
+  return response;
+}
+
+/** Fail unless the page in the browser has the site's shell: a fallback page has none. */
+export async function assertSiteShell(page: Page, label: string) {
   const marker = page.locator('meta[property="og:site_name"][content="Wyrd Tools"]');
   const toggles = page.locator("[data-theme-toggle]");
   if ((await marker.count()) === 0 || (await toggles.count()) === 0) {
-    throw new Error(`${expected} is not a page of the site (no site shell in it)`);
+    throw new Error(`${label} is not a page of the site (no site shell in it)`);
   }
-  return response;
 }
 
 /** Turn the HTTP cache off, so a reload fetches every response in full. */
