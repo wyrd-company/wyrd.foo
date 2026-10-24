@@ -488,7 +488,9 @@ jobs:
 - A tag push passes no feature inputs, so it features nothing. The reusable
   workflow also fails a run with `feature: true` on any event but
   `workflow_dispatch`, before it mints a token or checks anything out, so a
-  mis-wired caller cannot feature a product on a tag push.
+  mis-wired caller cannot feature a product on a tag push. The
+  `publish-docs@v2` action holds the same rule: with `feature: true` it fails
+  unless `GITHUB_EVENT_NAME` is `workflow_dispatch`, before it reads the site.
 
 The reusable workflow's inputs:
 
@@ -693,8 +695,8 @@ The site reads `tool.yaml` and the pages with the same module's schemas.
 
 A tag push writes no `featured`: rule 2 below shows a fresh code release
 without any input. `featured` comes only from the `feature` inputs of a
-manual run, for a set reason or length. The reusable workflow rejects
-`feature: true` outside a manual run (an event other than
+manual run, for a set reason or length. The reusable workflow and the
+action both reject `feature: true` outside a manual run (an event other than
 `workflow_dispatch`). The block runs from the time of the
 run for `feature-days` days, with `feature-reason` (default "New release")
 and the product's `version`, and replaces the block carried forward. A run
