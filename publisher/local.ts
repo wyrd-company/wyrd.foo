@@ -48,6 +48,8 @@ export interface LocalOptions {
   releases?: ReleaseLookup;
   /** Fetch each repo's branch from origin before reading it. */
   fetch?: boolean;
+  /** Bound on one fetch, in milliseconds; tests pass a small one. */
+  fetchTimeoutMs?: number;
 }
 
 /** `passed` is validate's outcome for a repo that would publish. */
@@ -85,7 +87,7 @@ async function runRepo(options: LocalOptions, repo: LocalConfig["repos"][number]
   }
   try {
     if (options.fetch) {
-      const fetched = await fetchBranch(dir, options.config.branch);
+      const fetched = await fetchBranch(dir, options.config.branch, { timeoutMs: options.fetchTimeoutMs });
       if (!fetched.ok) {
         report.findings.push({ severity: "warning", message: `could not fetch ${options.config.branch} from origin: ${fetched.message}` });
       }
