@@ -282,7 +282,7 @@ describe("releases", () => {
     const releases = productPage("widget").querySelector("#releases")!;
     expect(text(releases.querySelector("[data-release-latest] .release-version"))).toBe("1.4.0");
     expect(releases.querySelector(".release-link")?.getAttribute("href")).toBe("https://github.com/example-org/widget/releases/tag/1.4.0");
-    expect(texts(releases, ".release-log h2")).toEqual(["1.4.0 - 2026-09-30", "1.3.1 - 2026-08-12"]);
+    expect(texts(releases, ".release-log h4")).toEqual(["1.4.0 - 2026-09-30", "1.3.1 - 2026-08-12"]);
   });
 
   it("shows the version with no date, and no releases, for a product with no release data", () => {
@@ -313,7 +313,7 @@ describe("feature entry page", () => {
 
   it("renders the README as it is, with no generated options table and no docs", () => {
     const page = root();
-    expect(texts(page, "#readme .product-prose h1, #readme .product-prose h2")).toEqual(["Lantern", "Example usage", "Options", "Notes"]);
+    expect(texts(page, "#readme .product-prose h3, #readme .product-prose h4")).toEqual(["Lantern", "Example usage", "Options", "Releases", "Notes"]);
     expect(page.querySelectorAll("table").length).toBe(1);
     expect(page.querySelector("#readme table")).not.toBeNull();
     expect(page.querySelector(".hero-actions a.button-primary")).toBeNull();
@@ -330,13 +330,104 @@ describe("feature entry page", () => {
   });
 
   it("renders each feature entry's own README", () => {
-    expect(texts(productPage("beacon"), "#readme .product-prose h1, #readme .product-prose h2")).toEqual(["Beacon", "Usage"]);
+    expect(texts(productPage("beacon"), "#readme .product-prose h3, #readme .product-prose h4")).toEqual(["Beacon", "Usage"]);
   });
 
   it("shows the release from the tag, with no GitHub Release link, and the unit changelog", () => {
     const releases = root().querySelector("#releases")!;
     expect(text(releases.querySelector(".release-version"))).toBe("1.2.0");
     expect(releases.querySelector(".release-link")).toBeNull();
-    expect(texts(releases, ".release-log h2")).toEqual(["1.2.0 - 2026-10-05"]);
+    expect(texts(releases, ".release-log h4")).toEqual(["1.2.0 - 2026-10-05"]);
+  });
+});
+
+describe("embedded headings", () => {
+  const level = (el: HTMLElement) => Number(el.tagName.slice(1));
+  const embedded = (root: HTMLElement, section: string) => root.querySelectorAll(`#${section} .product-prose :is(h1, h2, h3, h4, h5, h6)`);
+  /** Product pages with a README or a changelog, and which. */
+  const WITH_README = ["lantern", "beacon"];
+  const WITH_CHANGELOG = ["widget", "gadget", "lantern"];
+
+  it("has the hero name as the only h1 of every product page", () => {
+    for (const key of PRODUCTS) {
+      const root = productPage(key);
+      expect(texts(root, "h1"), key).toEqual([text(root.querySelector("h1.hero-name"))]);
+    }
+  });
+
+  it("starts the README and the changelog at an h3, below the section's h2", () => {
+    for (const key of WITH_README) {
+      expect(level(embedded(productPage(key), "readme")[0]), `${key} README`).toBe(3);
+    }
+    for (const key of WITH_CHANGELOG) {
+      expect(level(embedded(productPage(key), "releases")[0]), `${key} changelog`).toBe(3);
+    }
+  });
+
+  it("moves each deeper level down by the same amount, and none past h6", () => {
+    const readme = embedded(productPage("lantern"), "readme");
+    expect(readme.map((h) => `${h.tagName} ${text(h)}`)).toEqual(["H3 Lantern", "H4 Example usage", "H4 Options", "H4 Releases", "H4 Notes"]);
+    const changelog = embedded(productPage("widget"), "releases");
+    expect(changelog.map((h) => `${h.tagName} ${text(h)}`)).toEqual([
+      "H3 Changelog",
+      "H4 1.4.0 - 2026-09-30",
+      "H5 Features",
+      "H4 1.3.1 - 2026-08-12",
+      "H5 Fixes",
+    ]);
+    for (const key of PRODUCTS) {
+      for (const section of ["readme", "releases"]) {
+        for (const heading of embedded(productPage(key), section)) expect(level(heading), `${key} ${section}`).toBeLessThanOrEqual(6);
+      }
+    }
+  });
+
+  it("repeats no id on any page", () => {
+    for (const key of PRODUCTS) {
+      const ids = productPage(key)
+        .querySelectorAll("[id]")
+        .map((el) => el.id);
+      expect(ids.filter((id, i) => ids.indexOf(id) !== i), key).toEqual([]);
+    }
+  });
+
+  it("gives every embedded heading an id that no element of the page itself has", () => {
+    for (const key of PRODUCTS) {
+      const root = productPage(key);
+      const own = root
+        .querySelectorAll("[id]")
+        .filter((el) => !el.closest(".product-prose"))
+        .map((el) => el.id);
+      for (const heading of root.querySelectorAll(".product-prose :is(h1, h2, h3, h4, h5, h6)[id]")) {
+        expect(own, `${key}: #${heading.id}`).not.toContain(heading.id);
+        expect(heading.id, key).toMatch(/^(readme|changelog)--./);
+      }
+    }
+  });
+
+  it("keeps #releases on the Releases section when the README has a heading named Releases", () => {
+    const root = productPage("lantern");
+    expect(texts(root, "#readme .product-prose h4")).toContain("Releases");
+    const withId = root.querySelectorAll('[id="releases"]');
+    expect(withId).toHaveLength(1);
+    expect(withId[0].tagName).toBe("SECTION");
+    expect(text(withId[0].querySelector(":scope > h2"))).toBe("Releases");
+    expect(root.getElementById("readme--releases")?.tagName).toBe("H4");
+  });
+
+  it("points a README link to one of its headings at the heading's new id", () => {
+    const root = productPage("lantern");
+    const link = root.querySelectorAll("#readme .product-prose a").find((a) => text(a) === "Options");
+    expect(link?.getAttribute("href")).toBe("#readme--options");
+    expect(text(root.getElementById("readme--options"))).toBe("Options");
+  });
+
+  it("leaves the docs pages as they were: levels and ids unchanged", () => {
+    const widget = readFileSync(join(DIST, "docs", "widget", "getting-started", "index.html"), "utf8");
+    expect(widget).not.toMatch(/id="(readme|changelog)--/);
+    const changelog = parse(readFileSync(join("dist-fixtures/docs", "docs", "gadget", "changelog", "index.html"), "utf8"));
+    expect(changelog.querySelector('.docs-prose h1[id="changelog"]')).not.toBeNull();
+    expect(texts(changelog, ".docs-prose h2")).toEqual(["0.2.3", "0.2.0"]);
+    expect(changelog.querySelector('.docs-prose h2[id="023"]')).not.toBeNull();
   });
 });

@@ -174,6 +174,14 @@ name, description, version and options come from the feature's
 the page has no generated options table and no docs tree. A feature entry is
 never the featured product.
 
+The README and the changelog keep their text. Their headings nest under the
+section's heading: the hero name is the page's only `<h1>`, the top level of
+each document becomes an `<h3>`, each deeper level moves down by the same
+amount, and nothing goes past `<h6>`. Each embedded heading id is prefixed
+with `readme--` or `changelog--`, and a link in the document to one of its
+headings follows, so a heading named "Releases" cannot take `#releases` from
+the section. Docs pages render as they do from their Markdown.
+
 ## Docs (`/docs/<key>/<slug>`)
 
 `/docs/` lists every product that has docs. `/docs/<key>/` goes to the

@@ -137,7 +137,8 @@ test.describe("sections for each kind", () => {
 
   test("a feature entry shows its README and the link to the install block says what it adds", async ({ page, baseURL }) => {
     await openProduct(page, baseURL, "lantern");
-    await expect(page.locator("#readme h2")).toHaveText(["README", "Example usage", "Options", "Notes"]);
+    await expect(page.locator("#readme h2")).toHaveText(["README"]);
+    await expect(page.locator("#readme .product-prose :is(h3, h4)")).toHaveText(["Lantern", "Example usage", "Options", "Releases", "Notes"]);
     await expect(page.locator(".hero-more")).toContainText("Add to devcontainer.json");
     await expect(page.locator(".hero-install")).toHaveCount(0);
     await openProduct(page, baseURL, "widget");
@@ -240,6 +241,22 @@ test.describe("page", () => {
     await page.locator(".site-nav a", { hasText: "Releases" }).click();
     await page.waitForURL(/\/tools\/widget\/?#releases$/);
     await expect(page.locator("#releases")).toBeInViewport();
+  });
+
+  test("the header's Releases link goes to the Releases section, not to a README heading of that name", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "lantern");
+    await expect(page.locator("#readme .product-prose h4", { hasText: "Releases" })).toHaveCount(1);
+    await page.locator(".site-nav a", { hasText: "Releases" }).click();
+    await page.waitForURL(/\/tools\/lantern\/?#releases$/);
+    await expect(page.locator(":target")).toHaveJSProperty("tagName", "SECTION");
+    await expect(page.locator("section#releases")).toBeInViewport();
+  });
+
+  test("a link in a README to one of its headings goes to that heading", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "lantern");
+    await page.locator("#readme .product-prose a", { hasText: "Options" }).click();
+    await page.waitForURL(/#readme--options$/);
+    await expect(page.locator("#readme--options")).toBeInViewport();
   });
 
   for (const [theme, shown, hidden] of [

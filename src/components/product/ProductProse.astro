@@ -1,7 +1,9 @@
 ---
 /*
  * Rendered Markdown on the product page: a feature's README and the
- * changelog. Code blocks stay dark in both themes.
+ * changelog. Their headings nest under the section's <h2>, so the levels
+ * here start at <h3> (src/lib/embedded-headings.ts). Code blocks stay dark in
+ * both themes.
  */
 interface Props {
   class?: string;
@@ -17,23 +19,26 @@ const { class: klass } = Astro.props;
     font-size: 15.5px;
     line-height: 1.7;
   }
-  .product-prose :global(h1),
-  .product-prose :global(h2),
   .product-prose :global(h3),
-  .product-prose :global(h4) {
+  .product-prose :global(h4),
+  .product-prose :global(h5),
+  .product-prose :global(h6) {
     margin: 1.8em 0 0.6em;
     font-weight: 650;
     line-height: 1.3;
     letter-spacing: -0.015em;
   }
-  .product-prose :global(h1) {
+  .product-prose :global(h3) {
     font-size: 24px;
   }
-  .product-prose :global(h2) {
+  .product-prose :global(h4) {
     font-size: 20px;
   }
-  .product-prose :global(h3) {
+  .product-prose :global(h5) {
     font-size: 16px;
+  }
+  .product-prose :global(h6) {
+    font-size: 15.5px;
   }
   .product-prose :global(> :first-child) {
     margin-top: 0;

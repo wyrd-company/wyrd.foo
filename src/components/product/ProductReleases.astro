@@ -77,14 +77,17 @@ const { release, changelog } = Astro.props;
     margin: 0;
     color: var(--text-2);
   }
-  /* The changelog's own "Changelog" title repeats the section heading. */
-  .release-log :global(.product-prose > h1:first-child) {
-    display: none;
+  /* The changelog's own "Changelog" title is the label of the version list. */
+  .release-log :global(.product-prose > h3:first-child) {
+    margin: 0 0 4px;
+    font-family: var(--font-code);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
   }
-  .release-log :global(.product-prose > h1:first-child + *) {
-    margin-top: 0;
-  }
-  .release-log :global(h2) {
+  .release-log :global(h4) {
     margin-top: 1.6em;
     padding-top: 1.2em;
     border-top: 1px solid var(--divider);
@@ -92,12 +95,12 @@ const { release, changelog } = Astro.props;
     font-size: 17px;
     font-weight: 600;
   }
-  .release-log :global(.product-prose > h1:first-child + h2),
-  .release-log :global(.product-prose > h2:first-child) {
+  .release-log :global(.product-prose > h3:first-child + h4),
+  .release-log :global(.product-prose > h4:first-child) {
     padding-top: 0;
     border-top: 0;
   }
-  .release-log :global(h3) {
+  .release-log :global(h5) {
     font-size: 13px;
     font-family: var(--font-code);
     font-weight: 500;
