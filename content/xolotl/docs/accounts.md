@@ -1,5 +1,6 @@
 ---
 title: Subscription accounts
+product: xolotl
 order: 4
 ---
 

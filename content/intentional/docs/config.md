@@ -1,5 +1,6 @@
 ---
 title: Configuration
+product: intentional
 order: 4
 relationships:
   implements: intent-driven-polyglot-release

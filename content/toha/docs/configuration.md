@@ -1,5 +1,6 @@
 ---
 title: Configuration
+product: toha
 order: 10
 relationships:
   describes: toha

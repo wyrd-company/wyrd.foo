@@ -1,0 +1,183 @@
+---
+/*
+ * The product page hero: breadcrumb, mark, name, tagline and description,
+ * the primary kind's default command with Copy, the buttons, and the facts
+ * list on the right (passed in the "facts" slot).
+ */
+import GitHub from "../icons/GitHub.astro";
+import ProductMark from "../ProductMark.astro";
+import CodeBlock from "./CodeBlock.astro";
+import type { HeroInstall } from "../../lib/install-blocks";
+
+interface Props {
+  name: string;
+  /** One line under the name; a feature entry has none. */
+  tagline?: string;
+  description: string;
+  category: string;
+  logo?: string;
+  logoDark?: string;
+  /** The primary kind's default command; none on a feature entry page. */
+  install?: HeroInstall;
+  /** "Read the docs" target; none when the product has no docs pages. */
+  docsHref?: string;
+  /** `owner/repo` on GitHub. */
+  owner: string;
+  /** The text of the link to the Install section. */
+  installLink?: string;
+}
+const {
+  name,
+  tagline,
+  description,
+  category,
+  logo,
+  logoDark,
+  install,
+  docsHref,
+  owner,
+  installLink = "Other install methods",
+} = Astro.props;
+---
+
+<header class="hero">
+  <nav class="hero-crumbs" aria-label="Breadcrumb">
+    <a href="/#catalog">Catalog</a>
+    <span aria-hidden="true">/</span>
+    <span>{category}</span>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page" class="hero-crumb-current">{name}</span>
+  </nav>
+  <div class="hero-grid">
+    <div class="hero-main">
+      <div class="hero-title">
+        <ProductMark name={name} logo={logo} logoDark={logoDark} size="hero" />
+        <h1 class="hero-name">{name}</h1>
+      </div>
+      {tagline && <p class="hero-tagline">{tagline}</p>}
+      <p class="hero-description">{description}</p>
+      {
+        install && (
+          <div class="hero-install">
+            <p class="hero-install-label">{install.label}</p>
+            <CodeBlock code={install.command} prompt={install.prompt} label={install.label} />
+          </div>
+        )
+      }
+      <div class="hero-actions">
+        {docsHref && <a class="button button-primary" href={docsHref}>Read the docs <span aria-hidden="true">→</span></a>}
+        <a class="button" href={`https://github.com/${owner}`}><GitHub size={16} /> Star on GitHub</a>
+        <a class="hero-more" href="#install">{installLink} <span aria-hidden="true">↓</span></a>
+      </div>
+    </div>
+    <aside class="hero-facts" aria-label="Facts">
+      <slot name="facts" />
+    </aside>
+  </div>
+</header>
+
+<style>
+  .hero {
+    padding-top: 28px;
+  }
+  .hero-crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-faint);
+  }
+  .hero-crumb-current {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 48px 96px;
+    margin-top: 32px;
+    align-items: start;
+  }
+  .hero-title {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .hero-name {
+    margin: 0;
+    font-family: var(--font-code);
+    font-size: clamp(40px, 5vw, 60px);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    overflow-wrap: anywhere;
+  }
+  .hero-tagline {
+    margin: 22px 0 0;
+    font-size: clamp(22px, 2.2vw, 28px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+  .hero-description {
+    max-width: 62ch;
+    margin: 14px 0 0;
+    color: var(--text-2);
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  .hero-install {
+    max-width: 640px;
+    margin-top: 26px;
+  }
+  .hero-install-label {
+    margin: 0 0 8px;
+    font-size: 12.5px;
+    color: var(--text-faint);
+  }
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    margin-top: 26px;
+  }
+  .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 16px;
+    border-radius: 8px;
+    border: 1px solid var(--divider);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .button:hover {
+    text-decoration: none;
+    border-color: var(--text-faint);
+  }
+  .button-primary {
+    border-color: transparent;
+    background: var(--button);
+    color: var(--button-text);
+    font-weight: 600;
+    padding-inline: 18px;
+  }
+  .button-primary:hover {
+    border-color: transparent;
+    filter: brightness(1.08);
+  }
+  .hero-more {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  @media (max-width: 960px) {
+    .hero-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

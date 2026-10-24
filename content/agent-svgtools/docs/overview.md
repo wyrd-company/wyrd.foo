@@ -1,5 +1,6 @@
 ---
 title: Overview
+product: agent-svgtools
 order: 1
 relationships:
   demonstrates: owl-reconstruction-demo

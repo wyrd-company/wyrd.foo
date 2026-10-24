@@ -1,15 +1,31 @@
-# relationships:
-#   references: command-line
 name: t3c
+version: 0.1.0
+docs-version: 0.1.0
+release-unit: t3c
 tagline: Run T3 Code conversations from your terminal and automation.
-blurb: >-
-  A Node command-line client and TypeScript library for stock T3 Code. Pair named servers, run or continue conversations, inspect threads, and preserve clear output and exit codes in automation.
-category: Development
-language: TypeScript
+blurb: A Node command-line client and TypeScript library for stock T3 Code. Pair named servers, run
+  or continue conversations, inspect threads, and preserve clear output and exit codes in
+  automation.
 status: preview
-repo: https://github.com/wyrd-company/t3code-client
-install:
-  - label: npm
-    command: npm install -g @wyrd-company/t3code-cli
-  - label: Homebrew
-    command: brew install wyrd-company/tools/t3c
+category: Agent Tooling
+kinds:
+  - kind: cli
+    install:
+      - method: npm
+        os:
+          - macos
+          - linux
+          - windows
+        default: true
+        command: npm install -g @wyrd-company/t3code-cli
+      - method: homebrew
+        os:
+          - macos
+          - linux
+        command: brew install wyrd-company/tools/t3c
+highlights:
+  - Run T3 Code conversations from your terminal and automation.
+media:
+  - src: assets/demo.gif
+    caption: t3c pairs a profile, starts and waits for a thread, and lists projects
+owner: wyrd-company/t3code-client

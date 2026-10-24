@@ -1,0 +1,29 @@
+name: gadget
+version: 0.2.0
+docs-version: 0.2.3
+release-unit: gadget
+owner: example-org/gadgets
+docs-path: docs/user/gadget
+tagline: Run a sample service.
+blurb: A long-running service used as a test fixture.
+status: preview
+category: Agent Infrastructure
+order: 1
+highlights: [Starts a sample service.]
+media: [{ src: assets/demo.gif, caption: The sample console. }]
+nav:
+  - section: Get started
+    groups:
+      - group: Basics
+        pages: [getting-started, install]
+  - section: Guides
+    groups:
+      - group: Configure
+        pages: [configuration]
+kinds:
+  - kind: app
+    install:
+      - { method: apt, os: [linux], command: sudo apt install gadget }
+      - { method: docker, default: true, command: docker run --rm -it ghcr.io/example-org/gadget }
+  - kind: devcontainer-feature
+    ref: ghcr.io/example-org/gadgets/gadget:1

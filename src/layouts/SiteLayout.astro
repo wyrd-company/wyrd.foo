@@ -1,27 +1,39 @@
 ---
-import "../styles/global.css";
+/*
+ * The page layout for every page: the shared head, the site header, the page
+ * content and the footer. A page can replace the header with its own through
+ * the "header" slot (the docs pages have a two-row header).
+ */
+import SiteFooter from "../components/SiteFooter.astro";
+import SiteHead from "../components/SiteHead.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import type { HeadProduct } from "../lib/head";
+import type { NavItem } from "../lib/site";
 
 interface Props {
   title: string;
   description?: string;
+  /** The product this page belongs to: its favicon and social image, and
+   * search ranks its results first. */
+  product?: HeadProduct & { key: string };
+  /** The header nav item for this page. */
+  nav?: NavItem;
 }
-const { title, description } = Astro.props;
+const { title, description, product, nav } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="generator" content={Astro.generator} />
-    <title>{title}</title>
-    {description && <meta name="description" content={description} />}
-    <slot name="head" />
+    <SiteHead title={title} description={description} product={product} />
   </head>
   <body>
-    <slot />
+    <slot name="header">
+      <SiteHeader current={nav} product={product?.key} productName={product?.name} />
+    </slot>
+    <main class="site-main">
+      <slot />
+    </main>
+    <SiteFooter />
   </body>
 </html>

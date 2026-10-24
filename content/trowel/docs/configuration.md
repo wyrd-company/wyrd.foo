@@ -1,5 +1,6 @@
 ---
 title: Configuration
+product: trowel
 order: 3
 ---
 

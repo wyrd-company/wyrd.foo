@@ -1,0 +1,29 @@
+---
+/*
+ * /docs/<key>/: a static redirect to the product's first page in reading
+ * order, with the shared head so the page keeps the theme while it goes.
+ */
+import SiteHead from "../../../components/SiteHead.astro";
+import { getDocsProducts, type DocsProduct } from "../../../lib/docs";
+import { pageHref } from "../../../lib/docs-pages";
+
+export async function getStaticPaths() {
+  return (await getDocsProducts()).map((product) => ({ params: { key: product.key }, props: { product } }));
+}
+
+const { product } = Astro.props as { product: DocsProduct };
+const target = pageHref(product.key, product.first.slug);
+const head = { name: product.name, logo: product.logo, favicon: product.favicon, socialImage: product.socialImage };
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <SiteHead title={`${product.name} docs — Wyrd Tools`} description={product.data.tagline} product={head} />
+    <meta http-equiv="refresh" content={`0; url=${target}`} />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <a href={target}>{product.name} docs</a>
+  </body>
+</html>

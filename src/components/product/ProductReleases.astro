@@ -1,0 +1,111 @@
+---
+/*
+ * The Releases section: the latest release (version, date and its GitHub
+ * Release), then the release unit's changelog, passed in the default slot.
+ */
+import ProductProse from "./ProductProse.astro";
+import { formatReleaseDate } from "../../lib/product-facts";
+
+interface Props {
+  release?: { version: string; date: Date; url?: string };
+  /** True when the default slot holds a changelog. */
+  changelog: boolean;
+}
+const { release, changelog } = Astro.props;
+---
+
+{
+  release && (
+    <div class="release-latest" data-release-latest>
+      <span class="release-label">Latest</span>
+      <span class="release-version">{release.version}</span>
+      <time datetime={formatReleaseDate(release.date)}>{formatReleaseDate(release.date)}</time>
+      {release.url && (
+        <a class="release-link" href={release.url}>
+          Release notes on GitHub <span aria-hidden="true">↗</span>
+        </a>
+      )}
+    </div>
+  )
+}
+{
+  changelog ? (
+    <div class="release-log">
+      <ProductProse>
+        <slot />
+      </ProductProse>
+    </div>
+  ) : (
+    !release && <p class="release-none">No releases yet.</p>
+  )
+}
+
+<style>
+  .release-latest {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 16px;
+    margin-bottom: 28px;
+    padding: 16px 20px;
+    background: var(--accent-tint);
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  .release-label {
+    font-family: var(--font-code);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .release-version {
+    font-family: var(--font-code);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .release-latest time {
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-2);
+  }
+  .release-link {
+    margin-left: auto;
+    font-weight: 500;
+  }
+  .release-none {
+    margin: 0;
+    color: var(--text-2);
+  }
+  /* The changelog's own "Changelog" title is the label of the version list. */
+  .release-log :global(.product-prose > h3:first-child) {
+    margin: 0 0 4px;
+    font-family: var(--font-code);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .release-log :global(h4) {
+    margin-top: 1.6em;
+    padding-top: 1.2em;
+    border-top: 1px solid var(--divider);
+    font-family: var(--font-code);
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .release-log :global(.product-prose > h3:first-child + h4),
+  .release-log :global(.product-prose > h4:first-child) {
+    padding-top: 0;
+    border-top: 0;
+  }
+  .release-log :global(h5) {
+    font-size: 13px;
+    font-family: var(--font-code);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+</style>

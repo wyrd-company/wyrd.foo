@@ -1,5 +1,6 @@
 ---
 title: Configuration
+product: seek
 order: 3
 ---
 

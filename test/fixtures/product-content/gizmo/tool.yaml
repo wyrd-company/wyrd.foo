@@ -1,0 +1,36 @@
+# A product with more than one kind: an app that is also a dev container feature.
+name: gizmo
+version: 2.1.0
+docs-version: 2.1.0
+release-unit: gizmo
+owner: example-org/gizmo
+tagline: A sample board that runs on your machine or in a dev container.
+blurb: Gizmo serves a sample board. Run it on its own, or add it to a dev container as a feature. It is a test fixture product.
+status: stable
+category: Knowledge & Planning
+order: 2
+highlights:
+  - Serves the board on one port.
+  - Keeps its data in one folder.
+media:
+  - src: assets/board.png
+    caption: The sample board.
+  - src: assets/demo.webm
+    caption: The sample board in use.
+    alt: A recording of the sample board.
+kinds:
+  - kind: app
+    install:
+      - method: homebrew
+        os: [macos, linux]
+        command: brew install example-org/tap/gizmo
+      - method: apt
+        os: [linux]
+        label: Debian, Ubuntu
+        command: sudo apt install gizmo
+  - kind: devcontainer-feature
+    ref: ghcr.io/example-org/gizmo/gizmo:2
+release:
+  version: 2.1.0
+  date: 2026-10-11
+  url: https://github.com/example-org/gizmo/releases/tag/2.1.0

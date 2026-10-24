@@ -1,5 +1,6 @@
 ---
 title: Usage
+product: intentional
 order: 3
 relationships:
   implements: intent-driven-polyglot-release

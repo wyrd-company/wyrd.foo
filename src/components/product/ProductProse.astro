@@ -1,0 +1,85 @@
+---
+/*
+ * Rendered Markdown on the product page: a feature's README and the
+ * changelog. Their headings nest under the section's <h2>, so the levels
+ * here start at <h3> (src/lib/embedded-headings.ts). Code blocks stay dark in
+ * both themes.
+ */
+interface Props {
+  class?: string;
+}
+const { class: klass } = Astro.props;
+---
+
+<div class:list={["product-prose", klass]}><slot /></div>
+
+<style>
+  .product-prose {
+    max-width: 760px;
+    font-size: 15.5px;
+    line-height: 1.7;
+  }
+  .product-prose :global(h3),
+  .product-prose :global(h4),
+  .product-prose :global(h5),
+  .product-prose :global(h6) {
+    margin: 1.8em 0 0.6em;
+    font-weight: 650;
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+  }
+  .product-prose :global(h3) {
+    font-size: 24px;
+  }
+  .product-prose :global(h4) {
+    font-size: 20px;
+  }
+  .product-prose :global(h5) {
+    font-size: 16px;
+  }
+  .product-prose :global(h6) {
+    font-size: 15.5px;
+  }
+  .product-prose :global(> :first-child) {
+    margin-top: 0;
+  }
+  .product-prose :global(p),
+  .product-prose :global(ul),
+  .product-prose :global(ol) {
+    margin: 0.8em 0;
+  }
+  .product-prose :global(li) {
+    margin: 0.25em 0;
+  }
+  .product-prose :global(:not(pre) > code) {
+    padding: 1px 5px;
+    border: 1px solid var(--divider);
+    border-radius: 4px;
+    background: var(--surface-2);
+    font-size: 0.86em;
+  }
+  .product-prose :global(pre) {
+    margin: 1em 0;
+    background-color: var(--code-bg) !important;
+    border: 1px solid var(--divider);
+  }
+  .product-prose :global(table) {
+    width: 100%;
+    margin: 1em 0;
+    border-collapse: collapse;
+    font-size: 14px;
+    display: block;
+    overflow-x: auto;
+  }
+  .product-prose :global(th),
+  .product-prose :global(td) {
+    padding: 8px 14px 8px 0;
+    border-bottom: 1px solid var(--divider);
+    text-align: left;
+    vertical-align: top;
+  }
+  .product-prose :global(th) {
+    color: var(--text-faint);
+    font-weight: 600;
+  }
+</style>

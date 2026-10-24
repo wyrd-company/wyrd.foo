@@ -1,5 +1,6 @@
 ---
 title: Updating projects
+product: toha
 order: 10
 relationships:
   describes: toha

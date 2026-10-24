@@ -1,5 +1,6 @@
 ---
 title: Installation
+product: trowel
 order: 2
 install: true
 ---

@@ -1,9 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <rect width="32" height="32" rx="6" fill="#0b121c" />
-  <g fill="none" stroke="#3fd2e6" stroke-linecap="square">
-    <rect x="6.5" y="6.5" width="19" height="19" stroke-width="1.6" />
-    <path d="M16 6.5v19M6.5 16h19" stroke-width="0.9" opacity="0.5" />
-    <path d="M9 9l14 14M23 9L9 23" stroke-width="0.7" opacity="0.32" />
-    <circle cx="16" cy="16" r="4.6" stroke-width="1.7" />
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="4.57" fill="#6aa5ff"/><text x="16" y="16" dy=".35em" text-anchor="middle" fill="#0b0b0c" font-family="Geist Mono, ui-monospace, monospace" font-size="19" font-weight="600">W</text></svg>

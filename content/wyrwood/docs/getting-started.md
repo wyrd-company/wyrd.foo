@@ -1,5 +1,6 @@
 ---
 title: Getting started
+product: wyrwood
 order: 3
 relationships:
   references:

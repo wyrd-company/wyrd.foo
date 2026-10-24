@@ -1,0 +1,29 @@
+---
+/* The icon of a product kind, drawn in the current text colour. */
+import type { Kind } from "../../schema/vocabulary.ts";
+
+interface Props {
+  kind: Kind;
+  size?: number;
+}
+const { kind, size = 12 } = Astro.props;
+---
+
+<svg
+  class="kind-icon"
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+>
+  {kind === "cli" && <path d="M4 17l6-5-6-5M12 19h8" />}
+  {kind === "mcp-server" && <path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0V8zM12 17v5" />}
+  {kind === "app" && <><rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18" /></>}
+  {kind === "devcontainer-feature" && <path d="M12 2l9 5v10l-9 5-9-5V7zM12 12l9-5M12 12L3 7M12 12v10" />}
+  {kind === "devcontainer-image" && <path d="M12 3l9 5-9 5-9-5zM3 12.5l9 5 9-5M3 17l9 5 9-5" />}
+</svg>

@@ -1,5 +1,6 @@
 ---
 title: Known limitations
+product: xolotl
 order: 11
 ---
 

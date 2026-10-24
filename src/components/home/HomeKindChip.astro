@@ -1,0 +1,30 @@
+---
+/* A product's kind as a small chip: icon and label. */
+import { KIND_LABEL } from "../../lib/home";
+import type { Kind } from "../../schema/vocabulary.ts";
+import HomeKindIcon from "./HomeKindIcon.astro";
+
+interface Props {
+  kind: Kind;
+}
+const { kind } = Astro.props;
+---
+
+<span class="kind-chip" data-kind={kind}><HomeKindIcon kind={kind} />{KIND_LABEL[kind]}</span>
+
+<style>
+  .kind-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border: 1px solid var(--divider);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text-2);
+    font-family: var(--font-code);
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+</style>

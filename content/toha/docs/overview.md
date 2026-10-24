@@ -1,5 +1,6 @@
 ---
 title: Toha
+product: toha
 order: 1
 relationships:
   describes: toha

@@ -1,5 +1,6 @@
 ---
 title: Generating files
+product: toha
 order: 7
 relationships:
   describes: toha
