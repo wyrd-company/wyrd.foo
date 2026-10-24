@@ -195,9 +195,8 @@ describe("featured", () => {
   it("otherwise rotates weekly through stable products with media, by key", () => {
     const pool = [c("d"), c("b"), c("x", { stable: false }), c("y", { hasMedia: false }), c("c")];
     const week = utcWeek(now);
-    const expected = ["b", "c", "d"][week % 3];
-    expect(pickFeatured(pool, now)).toBe(expected);
-    expect(pickFeatured(pool, now + 7 * DAY)).toBe(["b", "c", "d"][(week + 1) % 3]);
+    const picks = Array.from({ length: 12 }, (_, i) => pickFeatured(pool, now + i * 7 * DAY));
+    expect(picks).toEqual(Array.from({ length: 12 }, (_, i) => ["b", "c", "d"][(week + i) % 3]));
   });
 
   it("has no pick when nothing qualifies", () => {
