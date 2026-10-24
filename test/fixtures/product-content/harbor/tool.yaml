@@ -1,0 +1,27 @@
+# A dev container image with a tags table.
+name: harbor
+version: 0.9.0
+docs-version: 0.9.0
+release-unit: harbor
+owner: example-org/harbor
+tagline: A sample base image for dev containers.
+blurb: Harbor is a base image with a shell and common tools. It is a test fixture product.
+status: stable
+category: Dev Containers
+highlights:
+  - Starts from a small base.
+  - Builds for two architectures.
+media:
+  - src: assets/shell.png
+    caption: A shell in the harbor image.
+kinds:
+  - kind: devcontainer-image
+    ref: ghcr.io/example-org/harbor:0
+    tags:
+      - { tag: "0", base: debian-bookworm, architectures: [amd64, arm64] }
+      - { tag: "0.9", base: debian-bookworm, architectures: [amd64, arm64] }
+      - { tag: "0.9.0", base: debian-bookworm, architectures: [amd64, arm64] }
+release:
+  version: 0.9.0
+  date: 2026-09-15
+  url: https://github.com/example-org/harbor/releases/tag/0.9.0

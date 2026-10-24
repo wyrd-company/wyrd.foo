@@ -1,0 +1,55 @@
+# An MCP server with client tabs, both plugin marketplaces and a tools table,
+# and no release data yet.
+name: sprocket
+version: 0.3.1
+docs-version: 0.3.1
+release-unit: sprocket
+owner: example-org/sprocket
+tagline: Let an agent read and update sample records.
+blurb: Sprocket is an MCP server that gives an agent the sample records of a test store. It is a test fixture product.
+status: preview
+category: Agent Tooling
+highlights:
+  - Lists sample records with filters.
+  - Updates one sample record at a time.
+  - Never deletes a record.
+media:
+  - src: assets/demo.gif
+    caption: An agent lists the sample records.
+kinds:
+  - kind: mcp-server
+    install:
+      - method: claude-code
+        default: true
+        command: claude mcp add sprocket -- npx -y @example-org/sprocket
+      - method: claude-desktop
+        command: |-
+          {
+            "mcpServers": {
+              "sprocket": { "command": "npx", "args": ["-y", "@example-org/sprocket"] }
+            }
+          }
+      - method: cursor
+        command: |-
+          {
+            "mcpServers": {
+              "sprocket": { "command": "npx", "args": ["-y", "@example-org/sprocket"] }
+            }
+          }
+      - method: vscode
+        command: code --add-mcp '{"name":"sprocket","command":"npx","args":["-y","@example-org/sprocket"]}'
+      - method: json
+        command: |-
+          { "command": "npx", "args": ["-y", "@example-org/sprocket"] }
+      - method: plugin
+        label: Claude Code marketplace
+        command: |-
+          /plugin marketplace add example-org/plugins
+          /plugin install sprocket@example-org
+      - method: plugin
+        label: Codex marketplace
+        command: codex plugin install example-org/sprocket
+    tools:
+      - { name: list_records, description: Lists sample records that match a filter., effect: Read-only }
+      - { name: get_record, description: Reads one sample record., effect: Read-only }
+      - { name: update_record, description: Updates one field of a sample record., effect: Writes }
