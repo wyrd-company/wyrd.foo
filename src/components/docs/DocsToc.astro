@@ -86,14 +86,44 @@ const shown = headings.filter((h) => h.depth === 2 || h.depth === 3);
   addEventListener("resize", queue);
   update();
 
+  /** The page's Markdown; rejects when the endpoint does not answer ok. */
+  function fetchMarkdown(url: string): Promise<string> {
+    const text = fetch(url).then((response) => {
+      if (!response.ok) throw new Error(String(response.status));
+      return response.text();
+    });
+    text.catch(() => {}); // the caller's await reports it; this one only marks it handled
+    return text;
+  }
+
+  /**
+   * A clipboard item whose text is still being fetched, or undefined where the
+   * browser lacks ClipboardItem or does not take a promise as its value (it
+   * throws when the item is made).
+   */
+  function clipboardItem(markdown: Promise<string>): ClipboardItem | undefined {
+    if (typeof ClipboardItem === "undefined") return undefined;
+    const blob = markdown.then((text) => new Blob([text], { type: "text/plain" }));
+    blob.catch(() => {});
+    try {
+      return new ClipboardItem({ "text/plain": blob });
+    } catch {
+      return undefined;
+    }
+  }
+
   document.querySelectorAll<HTMLButtonElement>("[data-copy-markdown]").forEach((button) => {
     const label = button.querySelector<HTMLElement>("[data-copy-label]")!;
     const idle = label.textContent;
     button.addEventListener("click", async () => {
       try {
-        const response = await fetch(button.dataset.copyMarkdown!);
-        if (!response.ok) throw new Error(String(response.status));
-        await navigator.clipboard.writeText(await response.text());
+        // The write starts inside the click, with the fetch still pending.
+        // WebKit's documented rule is that a clipboard write happens within
+        // the user gesture, which a write made after an awaited fetch may miss.
+        const markdown = fetchMarkdown(button.dataset.copyMarkdown!);
+        const item = clipboardItem(markdown);
+        if (item) await navigator.clipboard.write([item]);
+        else await navigator.clipboard.writeText(await markdown);
         label.textContent = "Copied";
       } catch {
         label.textContent = "Copy failed";
