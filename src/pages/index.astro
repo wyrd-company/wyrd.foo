@@ -84,6 +84,10 @@ const pick = pickFeatured(candidates, Date.now());
     align-items: stretch;
     animation: home-rise 520ms 160ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   }
+  /* With no featured product, Recent releases takes the full width. */
+  :global(.home-spotlight:has(> [data-home-featured][hidden])) {
+    grid-template-columns: minmax(0, 1fr);
+  }
   @media (max-width: 1100px) {
     .home-spotlight {
       grid-template-columns: minmax(0, 1fr);

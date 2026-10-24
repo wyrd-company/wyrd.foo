@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { inTab, matchesFilter } from "../src/lib/catalog-filter";
-import { pickFeatured, utcWeek, type FeaturedCandidate } from "../src/lib/featured";
+import { pickFeatured, slotChange, utcWeek, type FeaturedCandidate } from "../src/lib/featured";
 import {
   catalogRows,
   featuredCandidates,
@@ -208,5 +208,51 @@ describe("featured", () => {
     const monday = Date.parse("2026-10-26T00:00:00Z");
     expect(utcWeek(monday)).toBe(utcWeek(sunday) + 1);
     expect(utcWeek(Date.parse("2026-10-19T00:00:00Z"))).toBe(utcWeek(sunday));
+  });
+
+  it("has no pick once an only feature has ended and nothing else qualifies", () => {
+    const until = Date.parse("2026-10-15T00:00:00Z");
+    const ended = [c("sample-app", { stable: false, featured: { from: Date.parse("2026-10-01T00:00:00Z"), until } })];
+    expect(pickFeatured(ended, until - 1)).toBe("sample-app");
+    expect(pickFeatured(ended, until)).toBeUndefined();
+    expect(pickFeatured(ended, until + 30 * DAY)).toBeUndefined();
+  });
+});
+
+describe("featured slot change", () => {
+  const cards = new Set(["a", "b"]);
+  const hasCard = (key: string) => cards.has(key);
+
+  it("keeps the card when the browser picks the card the build wrote", () => {
+    expect(slotChange("a", "a", hasCard)).toBe("keep");
+  });
+
+  it("swaps to the browser's pick when the page holds its card", () => {
+    expect(slotChange("a", "b", hasCard)).toEqual({ swap: "b" });
+    expect(slotChange(undefined, "b", hasCard)).toEqual({ swap: "b" });
+  });
+
+  it("clears the build's card when the browser has no pick", () => {
+    expect(slotChange("a", undefined, hasCard)).toBe("clear");
+  });
+
+  it("clears the build's card when the browser's pick has no card", () => {
+    expect(slotChange("a", "z", hasCard)).toBe("clear");
+  });
+
+  it("leaves an empty slot empty when the browser has no pick either", () => {
+    expect(slotChange(undefined, undefined, hasCard)).toBe("keep");
+    expect(slotChange(undefined, "z", hasCard)).toBe("keep");
+  });
+
+  it("clears an ended feature's card, the review case", () => {
+    const until = Date.parse("2026-10-15T00:00:00Z");
+    const ended: FeaturedCandidate[] = [
+      { key: "sample-app", stable: false, hasMedia: true, featured: { from: Date.parse("2026-10-01T00:00:00Z"), until } },
+    ];
+    const has = (key: string) => key === "sample-app";
+    for (const at of [until, until + 86_400_000]) {
+      expect(slotChange("sample-app", pickFeatured(ended, at), has), new Date(at).toISOString()).toBe("clear");
+    }
   });
 });

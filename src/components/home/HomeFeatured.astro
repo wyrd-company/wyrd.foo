@@ -3,7 +3,8 @@
  * The featured slot. The build writes its own pick as the default card, so
  * the page has a featured product without JavaScript. The browser runs the
  * same pick on its own clock and swaps in another product's card, from a
- * <template>, only when its result differs.
+ * <template>, only when its result differs. When the browser has no pick,
+ * the card is removed and the slot hidden, so an ended feature does not stay.
  */
 import type { FeaturedCandidate } from "../../lib/featured";
 import type { FeaturedCard } from "../../lib/home";
@@ -20,7 +21,7 @@ const picked = pick === undefined ? undefined : cards.get(pick);
 const others = [...cards.values()].filter((card) => card.key !== pick);
 ---
 
-<div class="home-featured" data-home-featured>
+<div class="home-featured" data-home-featured hidden={picked === undefined}>
   <div class="home-featured-slot" data-featured-slot>
     {picked && <HomeFeaturedCard card={picked} />}
   </div>
@@ -35,22 +36,30 @@ const others = [...cards.values()].filter((card) => card.key !== pick);
 </div>
 
 <script>
-  import { pickFeatured, type FeaturedCandidate } from "../../lib/featured";
+  import { pickFeatured, slotChange, type FeaturedCandidate } from "../../lib/featured";
 
   for (const root of document.querySelectorAll<HTMLElement>("[data-home-featured]")) {
     const slot = root.querySelector<HTMLElement>("[data-featured-slot]")!;
     const data = root.querySelector<HTMLScriptElement>("[data-featured-candidates]")!;
     const candidates = JSON.parse(data.textContent ?? "[]") as FeaturedCandidate[];
-    const current = slot.querySelector<HTMLElement>("[data-featured-key]")?.dataset.featuredKey;
-    const pick = pickFeatured(candidates, Date.now());
-    const template = pick && root.querySelector<HTMLTemplateElement>(`template[data-featured-template="${pick}"]`);
-    if (pick !== current && template) {
-      slot.replaceChildren(template.content.cloneNode(true));
+    const template = (key: string) =>
+      root.querySelector<HTMLTemplateElement>(`template[data-featured-template="${CSS.escape(key)}"]`);
+    const shown = slot.querySelector<HTMLElement>("[data-featured-key]")?.dataset.featuredKey;
+    const change = slotChange(shown, pickFeatured(candidates, Date.now()), (key) => template(key) !== null);
+    if (change === "clear") {
+      slot.replaceChildren();
+      root.hidden = true;
+    } else if (change !== "keep") {
+      slot.replaceChildren(template(change.swap)!.content.cloneNode(true));
+      root.hidden = false;
     }
   }
 </script>
 
 <style>
+  .home-featured[hidden] {
+    display: none;
+  }
   .home-featured,
   .home-featured-slot {
     display: grid;
