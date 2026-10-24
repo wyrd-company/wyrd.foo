@@ -156,6 +156,34 @@ test("a product page fixture server that does not start fails the run", async ()
   await serverStopped(run.port);
 });
 
+test("a run with a port for every fixture server passes, as the real config requires", async () => {
+  const run = await startRun("noop", {
+    INNER_STRICT: "1",
+    INNER_HOME_PORT: String(await freePort()),
+    INNER_DOCS_PORT: String(await freePort()),
+    INNER_PRODUCTS_PORT: String(await freePort()),
+  });
+  expect(await run.exit, run.output()).toBe(0);
+  expect(run.output()).toContain("1 passed");
+});
+
+for (const missing of ["HOME", "DOCS", "PRODUCTS"]) {
+  test(`a fixture row with no port fails the run: ${missing.toLowerCase()}`, async () => {
+    const ports = Object.fromEntries(
+      await Promise.all(
+        ["HOME", "DOCS", "PRODUCTS"]
+          .filter((name) => name !== missing)
+          .map(async (name) => [`INNER_${name}_PORT`, String(await freePort())] as const),
+      ),
+    );
+    const run = await startRun("noop", { INNER_STRICT: "1", ...ports });
+    expect(await run.exit).not.toBe(0);
+    expect(run.output()).toContain(`no port for the fixture server of: ${missing.toLowerCase()}`);
+    expect(run.output(), "the test itself did not run").not.toContain("1 passed");
+    await serverStopped(run.port);
+  });
+}
+
 test("a server that does not start fails the run", async () => {
   const run = await startRun("noop", { INNER_COMMAND: `${process.execPath} -e ""` });
   expect(await run.exit).not.toBe(0);
