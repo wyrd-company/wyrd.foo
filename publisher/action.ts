@@ -9,6 +9,7 @@ import { formatFinding, type Finding } from "./report.ts";
 // It reads the action's inputs from PUBLISH_* environment variables, runs
 // publish mode, prints each finding as an annotation and writes the step
 // outputs. Exit 1 when nothing was published because of an error.
+// PUBLISH_FEATURE=true is refused unless GITHUB_EVENT_NAME is workflow_dispatch.
 
 const INPUTS = [
   "PUBLISH_SOURCE",
@@ -47,8 +48,17 @@ function flag(name: Input): boolean {
   return value === "true";
 }
 
+/** The only event that may feature a product: a manual run. */
+const FEATURE_EVENT = "workflow_dispatch";
+
 function featureRequest(): FeatureRequest | undefined {
   if (!flag("PUBLISH_FEATURE")) return undefined;
+  // The reusable workflow refuses this too; the action holds the rule itself,
+  // so a caller that skips the workflow cannot feature from a tag push.
+  const event = process.env.GITHUB_EVENT_NAME?.trim();
+  if (event !== FEATURE_EVENT) {
+    throw new InputError(`PUBLISH_FEATURE is true on ${event ? `a ${event}` : "an unknown"} event; only a ${FEATURE_EVENT} run may feature a product`);
+  }
   const days = input("PUBLISH_FEATURE_DAYS") as string;
   if (!/^\d+$/.test(days)) throw new InputError(`PUBLISH_FEATURE_DAYS must be a whole number of days; it is ${days}`);
   return { product: input("PUBLISH_FEATURE_PRODUCT", false), days: Number.parseInt(days, 10), reason: input("PUBLISH_FEATURE_REASON", false) };
