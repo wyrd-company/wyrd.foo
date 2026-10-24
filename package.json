@@ -11,7 +11,9 @@
     "build": "astro build && pagefind --site dist",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "node --test 'test/**/*.test.ts'",
+    "test": "pnpm test:schema && pnpm test:site",
+    "test:schema": "node --test 'test/schema/**/*.test.ts'",
+    "test:site": "vitest run --project unit",
     "typecheck": "tsc -p tsconfig.schema.json"
   },
   "dependencies": {
@@ -26,9 +28,11 @@
     "@types/node": "^24.19.2",
     "@types/semver": "^7.8.0",
     "ajv": "^8.20.0",
+    "node-html-parser": "^9.0.5",
     "pagefind": "^1.5.2",
     "semver": "^7.8.5",
     "typescript": "^7.0.2",
+    "vitest": "^5.0.5",
     "yaml": "^2.9.1"
   }
 }

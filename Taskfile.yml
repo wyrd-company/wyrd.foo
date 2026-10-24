@@ -17,7 +17,7 @@ tasks:
       - pnpm build
 
   test:
-    desc: Typecheck and test the docs contract in src/schema/
+    desc: Typecheck the docs contract, then run the schema and site tests
     cmds:
       - pnpm typecheck
       - pnpm test
