@@ -17,10 +17,32 @@ export const featureJsonSchema = z.looseObject({
 
 export type FeatureJson = z.output<typeof featureJsonSchema>;
 
+/** The tag a feature is published under: the major of its version. */
+export const featureTag = (version: string) => version.split(".")[0];
+
 /** The derived OCI reference: `ghcr.io/<owner>/<repo>/<feature id>:<major>`. */
 export function featureRef(ownerRepo: string, feature: FeatureJson): string {
-  const major = feature.version.split(".")[0];
-  return `ghcr.io/${ownerRepo.toLowerCase()}/${feature.id}:${major}`;
+  return `ghcr.io/${ownerRepo.toLowerCase()}/${feature.id}:${featureTag(feature.version)}`;
+}
+
+/** The last path segment of an OCI reference, without its tag or digest: the feature id it names. */
+export function refName(ref: string): string {
+  return ref.slice(ref.lastIndexOf("/") + 1).split(/[:@]/)[0];
+}
+
+/**
+ * How an authored reference's tag differs from the feature's tag (the major of
+ * its version), or undefined when it does not. A reference with no tag
+ * differs. A digest reference (`@sha256:...`) pins one build and is not
+ * compared.
+ */
+export function refTagDifference(ref: string, version: string): { tag?: string; expected: string } | undefined {
+  const last = ref.slice(ref.lastIndexOf("/") + 1);
+  if (last.includes("@")) return undefined;
+  const colon = last.indexOf(":");
+  const tag = colon === -1 ? undefined : last.slice(colon + 1);
+  const expected = featureTag(version);
+  return tag === expected ? undefined : { tag, expected };
 }
 
 /**

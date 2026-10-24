@@ -20,7 +20,16 @@ import {
   type PageFrontMatter,
   type ProductEntry,
 } from "../src/schema/index.ts";
-import { FEATURE_JSON, FEATURE_README, featureJsonSchema, featureRef, optionDifference, type FeatureJson } from "./feature.ts";
+import {
+  FEATURE_JSON,
+  FEATURE_README,
+  featureJsonSchema,
+  featureRef,
+  optionDifference,
+  refName,
+  refTagDifference,
+  type FeatureJson,
+} from "./feature.ts";
 import {
   INTENTIONAL_CONFIG,
   IntentionalConfigError,
@@ -227,6 +236,7 @@ async function productOutput(ctx: Context, tree: Tree, key: string, entry: Produ
   const docsChangelog = tree.files.get(folder + DOCS_CHANGELOG);
   if (docsChangelog !== undefined) files.set(`docs/${DOCS_CHANGELOG}`, docsChangelog);
 
+  await checkFeatureKindRefs(ctx, key, entry);
   const kinds = await Promise.all(entry.kinds.map((block) => (block.kind === "devcontainer-image" ? imageKind(ctx, key, entry, unit, block, files) : block)));
   const tool = {
     ...entry,
@@ -291,6 +301,48 @@ async function imageKind(
   return { ...block, tags: manifest.variants.map((tag) => ({ tag, ...architectures })) };
 }
 
+/**
+ * Warn when a product's devcontainer-feature kind block names a tag other than
+ * the major of the feature's version. The feature's JSON is the one file
+ * `<...>/<feature id>/devcontainer-feature.json` in the repo whose `id` is the
+ * last path segment of the ref; with none, or more than one, the tag is not
+ * checked.
+ */
+async function checkFeatureKindRefs(ctx: Context, key: string, entry: ProductEntry) {
+  for (const [index, block] of entry.kinds.entries()) {
+    if (block.kind !== "devcontainer-feature") continue;
+    const id = refName(block.ref);
+    const candidates = (await ctx.files.list("")).filter((path) => path === `${id}/${FEATURE_JSON}` || path.endsWith(`/${id}/${FEATURE_JSON}`));
+    const found: { path: string; version: string }[] = [];
+    for (const path of candidates) {
+      const feature = featureJsonSchema.safeParse(parseJson(await ctx.files.read(path)));
+      if (feature.success && feature.data.id === id) found.push({ path, version: feature.data.version });
+    }
+    if (found.length === 1) warnRefTag(ctx, key, `products.${key}.kinds.${index}.ref`, block.ref, found[0]);
+  }
+}
+
+/** The ref tag warning, for a product kind block and a feature entry alike. */
+function warnRefTag(ctx: Context, key: string, field: string, ref: string, source: { path: string; version: string }) {
+  const difference = refTagDifference(ref, source.version);
+  if (difference === undefined) return;
+  const has = difference.tag === undefined ? "has no tag" : `has tag ${difference.tag}`;
+  ctx.findings.warning({
+    key,
+    file: DOCS_FILE,
+    message: `${field}: ${ref} ${has}; the feature is published as ${difference.expected}, the major of version ${source.version} in ${source.path}`,
+  });
+}
+
+function parseJson(bytes: Uint8Array | undefined): unknown {
+  if (bytes === undefined) return undefined;
+  try {
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return undefined;
+  }
+}
+
 const isStringList = (value: unknown): value is string[] =>
   Array.isArray(value) && value.length > 0 && value.every((item) => typeof item === "string" && item !== "");
 
@@ -319,6 +371,9 @@ async function featureOutput(ctx: Context, tree: Tree, key: string, entry: Featu
     ctx.findings.warning({ key, file: readmePath, message: `option names differ from ${FEATURE_JSON} (${parts.join("; ")})` });
   }
 
+  const authored = entry.kinds[0].ref;
+  if (authored !== undefined) warnRefTag(ctx, key, `products.${key}.kinds.0.ref`, authored, { path: jsonPath, version: feature.version });
+
   const unitId = releaseUnitOf(key, entry);
   const unit = codeUnit(ctx, key, unitId);
   const changelog = unit === undefined ? undefined : await codeChangelog(ctx, key, unit);
@@ -329,7 +384,7 @@ async function featureOutput(ctx: Context, tree: Tree, key: string, entry: Featu
 
   const tool = {
     ...entry,
-    kinds: [{ kind: "devcontainer-feature", ref: entry.kinds[0].ref ?? featureRef(ctx.ownerRepo, feature) }],
+    kinds: [{ kind: "devcontainer-feature", ref: authored ?? featureRef(ctx.ownerRepo, feature) }],
     "release-unit": unitId,
     owner: ctx.ownerRepo,
     ...(release === undefined ? {} : { release: releaseYaml(release) }),
