@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import { checkFailure } from "../../scripts/typecheck-site.ts";
+import { COLOUR, plainText } from "./colour.ts";
 
 // `pnpm typecheck:site` fails closed: a run of `astro check` that did not check
 // the site fails, whatever its exit code.
@@ -56,7 +57,7 @@ registerHooks({
   const run = (command: string, args: string[]) =>
     spawnSync(command, args, {
       cwd: REPO,
-      env: { ...process.env, NODE_OPTIONS: `--import=${hook}` },
+      env: { ...process.env, ...COLOUR, NODE_OPTIONS: `--import=${hook}` },
       input: "",
       encoding: "utf8",
       timeout: 120_000,
@@ -64,14 +65,14 @@ registerHooks({
 
   it("control: astro check itself finds no checker and checks nothing", () => {
     const control = run(join(REPO, "node_modules/.bin/astro"), ["check"]);
-    const output = `${control.stdout}${control.stderr}`;
+    const output = plainText(`${control.stdout}${control.stderr}`);
     assert.match(output, /@astrojs\/check/);
     assert.doesNotMatch(output, /Result \(\d+ files?\)/);
   });
 
   it("fails", () => {
     const wrapped = run(process.execPath, [join(REPO, "scripts/typecheck-site.ts")]);
-    const output = `${wrapped.stdout}${wrapped.stderr}`;
+    const output = plainText(`${wrapped.stdout}${wrapped.stderr}`);
     assert.equal(wrapped.status, 1, output);
     assert.match(output, /typecheck:site: astro check printed no "Result \(N files\)" line/);
   });
