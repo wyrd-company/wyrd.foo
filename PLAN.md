@@ -65,7 +65,7 @@ they get a wyrd.foo page.
 | 1 | Schema and endpoint | Zod schema for `docs.yml`: `schemaVersion` (`1` only, any other value rejected), products map, `kinds` (one block per kind), `install[]` with `method`, `os`, `default`, `label`; `highlights` up to six; `nav`; `media`; `version`, `docs-version`, `release-unit`; `order`; `logo`, `logo-dark`, `favicon`, `social-image`; feature entries; the closed category list; publisher-owned `owner`, `release`, `featured`; `relationships` allowed; no `language`. Page schema: `product` required, no `docs` flag. The cross-checks in the publishing design. `/schemas/docs/v1.json` through `z.toJSONSchema`. All in `src/schema/`, a module the publisher imports. |
 | 2 | Theme and shell | Tokens as CSS variables with dark and light values, Geist self-hosted, per-product favicon and `og:`/`twitter:` meta in the shared head, a theme toggle with no flash, a shared header and layout. The blueprint CSS goes. |
 | 3 | Home | Headline, featured card with the browser picker, the shared logo-or-monogram component, Recent releases, catalog with kind tabs (a product under each of its kinds), filter and Copy. |
-| 4 | Product page | `/tools/[key]`: hero with mark and facts, media, highlights, docs map. One install block for each kind: CLI and app (OS tabs and methods, with the site's APT/RPM setup), MCP (client tabs and tools table), feature (`devcontainer.json`), image (reference and tags table). App: screenshot tour. The abbreviated feature entry page. |
+| 4 | Product page | `/tools/[key]`: hero with mark and facts, media, highlights, docs map. One install block for each kind: CLI and app (OS tabs and methods, with the site's APT/RPM setup), MCP (client tabs, one tab for each plugin marketplace entry, and tools table), feature (`devcontainer.json`), image (reference and tags table). App: screenshot tour. The abbreviated feature entry page. |
 | 5 | Docs | Sticky two-row header (product switcher with marks), sidebar for the current section with progress dots, "On this page" that tracks the last heading above the top of the viewport, Copy as Markdown, Edit on GitHub, version footer. Restyled Pagefind, product pages indexed, `kind` filter. |
 | 6 | `publish-docs@v2` | TypeScript action and reusable workflow around the publisher core. Pages from `docs/user/**`; release data and changelog from the intentional unit and the GitHub Release (feature entries: the annotated tag); generated data from workspace files; key ownership; `featured` carried forward; push with retry. |
 | 7 | Content format | `content/` holds the ingested layout the publisher writes, for every product, and the site's collections read it; `WYRD_CONTENT_DIR` points them at another folder, such as the dev content folder or a test fixture. A product whose tool repo has not yet published carries the minimum that validates: `version` and `docs-version` `0.1.0`, one highlight (the tagline), `kinds` (`app` for trowel, wyrwood and xolotl, `cli` otherwise), a category from the closed list, and a placeholder media file for beholder and dcb. The PR build check (`.github/workflows/pr-build.yml`) runs on pull requests to `main`: typecheck and tests of the docs contract, the site build on `content/`, the built-output checks and the browser tests (Chromium cached by Playwright version), so a broken product fails the PR. |
@@ -110,8 +110,9 @@ cutover.
 - A docs release from `main` can describe features that are not released
   yet, while `version` names the last release. v2 cannot detect this.
 - Full-width GIFs on every product page make pages heavy. The product page
-  plays MP4 and WebM media as video, so a repo can publish its media in
-  those formats instead.
+  plays MP4 and WebM media as video with a pause button, and does not play it
+  on load for a visitor who prefers reduced motion, so a repo can publish its
+  media in those formats instead.
 - The featured picker reads the browser clock. A wrong clock shows a
   different product; the build-time default is in the HTML.
 - Install commands must not use a product key where the package name
