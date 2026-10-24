@@ -79,10 +79,13 @@ task validate:repo -- ../gitpr --ref wyrd-foo-v2  # one ref of a checkout
 ## Browser tests
 
 Behaviour that only a real browser shows (the theme before the first paint, the
-toggle, the system preference) is checked with
+toggle, the system preference, the home page's tabs, filter, Copy and featured
+card) is checked with
 [Playwright Test](https://playwright.dev/docs/test-intro) in `test/browser/`.
 The suite serves the built site (`dist/`) with `astro preview` on a free port,
-and stops the server when the run ends, however it ends.
+and stops the server when the run ends, however it ends. The home page specs
+run against a second server on the home fixture build (`dist-fixtures/home`,
+built from `test/fixtures/home-content` by `pnpm test:browser`).
 
 ```sh
 pnpm exec playwright install chromium   # once; the version is pinned by @playwright/test

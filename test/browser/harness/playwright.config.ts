@@ -7,5 +7,7 @@ import { harnessConfig } from "../config";
 export default harnessConfig({
   port: Number(process.env.INNER_PORT),
   command: process.env.INNER_COMMAND,
+  homePort: process.env.INNER_HOME_PORT ? Number(process.env.INNER_HOME_PORT) : undefined,
+  homeCommand: process.env.INNER_HOME_COMMAND,
   testMatch: `**/${process.env.INNER_SPEC}.inner.ts`,
 });

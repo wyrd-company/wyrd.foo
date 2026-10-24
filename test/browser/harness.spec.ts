@@ -19,6 +19,8 @@ const CONFIG = join(import.meta.dirname, "harness", "playwright.config.ts");
 interface Run {
   child: ChildProcess;
   port: number;
+  /** The home fixture server's port, when the run has one. */
+  homePort?: number;
   output: () => string;
   exit: Promise<number | null>;
 }
@@ -43,7 +45,8 @@ function startRun(
     const exit = new Promise<number | null>((resolve) =>
       child.once("close", (code) => resolve(code)),
     );
-    return { child, port, output: () => text, exit };
+    const homePort = extra.INNER_HOME_PORT ? Number(extra.INNER_HOME_PORT) : undefined;
+    return { child, port, homePort, output: () => text, exit };
   });
 }
 
@@ -60,6 +63,26 @@ test("the control: a run with a server and a browser passes, and stops its serve
   const run = await startRun("visit");
   expect(await run.exit, run.output()).toBe(0);
   expect(run.output()).toContain("1 passed");
+  await serverStopped(run.port);
+});
+
+test("a run with the home fixture server passes, and stops both servers", async () => {
+  const homePort = await freePort();
+  const run = await startRun("noop", { INNER_HOME_PORT: String(homePort) });
+  expect(await run.exit, run.output()).toBe(0);
+  expect(run.output()).toContain("1 passed");
+  await serverStopped(run.port);
+  await serverStopped(homePort);
+});
+
+test("a home fixture server that does not start fails the run", async () => {
+  const run = await startRun("noop", {
+    INNER_HOME_PORT: String(await freePort()),
+    INNER_HOME_COMMAND: `${process.execPath} -e ""`,
+  });
+  expect(await run.exit).not.toBe(0);
+  expect(run.output()).toMatch(/webServer exited early/);
+  expect(run.output(), "the test itself did not run").not.toContain("1 passed");
   await serverStopped(run.port);
 });
 
