@@ -133,6 +133,15 @@ describe("publish-docs reusable workflow", () => {
     assert.ok(guardAt < checkoutAt, "the guard runs before the checkout");
   });
 
+  it("lets no failure pass: no job or step, the guard included, sets continue-on-error", () => {
+    // A guard that fails with continue-on-error lets the run go on and publish.
+    for (const [name, job] of Object.entries(workflow.jobs)) {
+      assert.ok(!("continue-on-error" in job), `job ${name} sets continue-on-error`);
+      for (const step of job.steps) assert.ok(!("continue-on-error" in step), `step ${step.name ?? step.id} of job ${name} sets continue-on-error`);
+    }
+    for (const step of action.runs.steps) assert.ok(!("continue-on-error" in step), `action step ${step.name ?? step.id} sets continue-on-error`);
+  });
+
   it("fires for feature on every event but a manual run, and for nothing else", () => {
     const guard = steps.find((step) => step.if?.includes("inputs.feature"))!;
     // The condition is valid JavaScript over the two names it reads.
