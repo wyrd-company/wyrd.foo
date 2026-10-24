@@ -68,10 +68,11 @@ branch and serves the site on it:
 3. `astro dev` starts with `WYRD_CONTENT_DIR` set to that folder.
 
 ```sh
-task dev:v2                   # GitHub Releases read with GITHUB_TOKEN or GH_TOKEN when set
-task dev:v2 -- --offline      # release data from local tags only
-task publish:local            # the publisher step only
-task validate:repo -- ../gitpr --ref wyrd-foo-v2   # check one checkout; working tree without --ref
+task dev:v2               # reads GitHub Releases (GITHUB_TOKEN or GH_TOKEN if set)
+task dev:v2 -- --offline  # release data from local tags only
+task publish:local        # the publisher step only
+task validate:repo -- ../gitpr                    # one checkout's working tree
+task validate:repo -- ../gitpr --ref wyrd-foo-v2  # one ref of a checkout
 ```
 
 ## Deploy
