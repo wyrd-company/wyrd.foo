@@ -1,24 +1,23 @@
 ---
-import "../styles/global.css";
+/*
+ * The page layout for every page: the shared head and the page content.
+ */
+import SiteHead from "../components/SiteHead.astro";
+import type { HeadProduct } from "../lib/head";
 
 interface Props {
   title: string;
   description?: string;
+  /** The product this page belongs to: its favicon and social image. */
+  product?: HeadProduct;
 }
-const { title, description } = Astro.props;
+const { title, description, product } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="generator" content={Astro.generator} />
-    <title>{title}</title>
-    {description && <meta name="description" content={description} />}
+    <SiteHead title={title} description={description} product={product} />
     <slot name="head" />
   </head>
   <body>
