@@ -14,7 +14,8 @@
     "test": "pnpm test:schema && pnpm test:site",
     "test:schema": "node --test 'test/schema/**/*.test.ts'",
     "test:site": "vitest run --project unit",
-    "test:dist": "vitest run --project dist",
+    "build:fixtures": "astro build --root test/fixtures/head-site",
+    "test:dist": "pnpm build:fixtures && vitest run --project dist",
     "typecheck": "tsc -p tsconfig.schema.json",
     "check": "pnpm typecheck && pnpm test && pnpm build && pnpm test:dist"
   },
