@@ -18,7 +18,7 @@
     "build:fixtures": "astro build --root test/fixtures/head-site && pnpm build:home-fixture && pnpm build:docs-fixture && pnpm build:product-fixture",
     "build:home-fixture": "WYRD_CONTENT_DIR=test/fixtures/home-content astro build --outDir dist-fixtures/home",
     "build:docs-fixture": "WYRD_CONTENT_DIR=test/fixtures/docs-content astro build --outDir dist-fixtures/docs && pagefind --site dist-fixtures/docs",
-    "build:product-fixture": "WYRD_CONTENT_DIR=test/fixtures/product-content astro build --outDir dist-fixtures/products",
+    "build:product-fixture": "WYRD_CONTENT_DIR=test/fixtures/product-content astro build --outDir dist-fixtures/products && pagefind --site dist-fixtures/products",
     "test:dist": "pnpm build:fixtures && vitest run --project dist",
     "test:browser": "pnpm build:home-fixture && pnpm build:docs-fixture && pnpm build:product-fixture && playwright test -c test/browser/playwright.config.ts",
     "typecheck": "pnpm typecheck:schema && pnpm typecheck:site",

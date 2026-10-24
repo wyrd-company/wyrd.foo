@@ -94,6 +94,18 @@ test.describe("copy", () => {
   });
 });
 
+test.describe("search", () => {
+  test("finds the product pages, the page's own product first", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    await page.locator("[data-wsearch-open]").first().click();
+    await page.locator(".wsearch-input").fill("sample board");
+    const first = page.locator(".wsearch-item").first();
+    await expect(first.locator("a.wsearch-link")).toHaveAttribute("href", /^\/tools\/gizmo\/?$/);
+    await expect(first.locator(".wsearch-title")).toHaveText("gizmo");
+    await expect(first.locator(".wsearch-where")).toHaveClass(/is-local/);
+  });
+});
+
 test.describe("page", () => {
   test("the header's Releases link goes to the page's Releases section", async ({ page, baseURL }) => {
     await openProduct(page, baseURL, "widget");

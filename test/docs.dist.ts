@@ -110,10 +110,10 @@ describe("docs built from the fixture content", () => {
     expect(page("docs/gadget").querySelector("[data-pagefind-body]")).toBeNull();
   });
 
-  it("indexes the docs pages and the docs changelog, not the redirects", () => {
+  it("indexes the docs pages, the docs changelog and the product pages, not the redirects", () => {
     const entry = JSON.parse(file("pagefind/pagefind-entry.json")) as { languages: Record<string, { page_count: number }> };
-    // 7 fixture pages and gadget's docs changelog.
-    expect(Object.values(entry.languages).map((l) => l.page_count)).toEqual([8]);
+    // 7 fixture pages, gadget's docs changelog and the 3 product pages (/tools/<key>).
+    expect(Object.values(entry.languages).map((l) => l.page_count)).toEqual([11]);
   });
 
   it("gives a docs page of a product with no favicon or logo its monogram favicon and the site image", () => {
