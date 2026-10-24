@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   computeRepo,
   gitHubReleases,
+  linksOutside,
   readmeOptionNames,
   ReleaseLookupError,
   squareProblem,
@@ -174,5 +175,50 @@ describe("GitHub Releases", () => {
     assert.equal(await reason(respond(200, "not json")), "malformed");
     assert.equal(await reason(respond(200, { ...release, tag_name: "2.0.0" })), "malformed");
     assert.equal(await reason(respond(200, { ...release, published_at: "never" })), "malformed");
+  });
+});
+
+describe("links outside docs/user/", () => {
+  const root = "docs/user/";
+
+  it("names each relative link that leaves docs/user/, with its line", () => {
+    const page = [
+      "---",
+      "title: T",
+      "---",
+      "See [the design](../design/plan.md) and ![a shot](../../assets/shot.png).",
+      '<img src="../../README.md" alt="x">',
+      "[ref]: ../private/notes.md",
+    ].join("\n");
+    assert.deepEqual(linksOutside("docs/user/guide.md", page, root), [
+      { line: 4, target: "../design/plan.md", resolved: "docs/design/plan.md" },
+      { line: 4, target: "../../assets/shot.png", resolved: "assets/shot.png" },
+      { line: 5, target: "../../README.md", resolved: "README.md" },
+      { line: 6, target: "../private/notes.md", resolved: "docs/private/notes.md" },
+    ]);
+  });
+
+  it("ignores links inside docs/user/, URLs, root paths, anchors and code", () => {
+    const page = [
+      "[a](guides/b.md#part) [c](../user/d.md) [e](https://example.com/x) [f](/tools/x) [g](#here)",
+      "`[h](../../code.md)`",
+      "```md",
+      "[i](../../fenced.md)",
+      "```",
+    ].join("\n");
+    assert.deepEqual(linksOutside("docs/user/guide.md", page, root), []);
+    assert.deepEqual(linksOutside("docs/user/deep/page.md", "[up](../assets/a.svg)", root), []);
+  });
+
+  it("is a warning in the repo's findings, and the repo still publishes", async () => {
+    const files = { ...alphaFiles() };
+    files["docs/user/alpha-cli/guides/deep.md"] = files["docs/user/alpha-cli/guides/deep.md"].toString() + "\nSee [the source](../../../../cli/main.go).\n";
+    const result = await computeRepo(input(files));
+    assert.equal(result.failed, false);
+    const warnings = result.findings.filter((finding) => finding.file === "docs/user/alpha-cli/guides/deep.md");
+    assert.deepEqual(
+      warnings.map((finding) => [finding.severity, finding.message]),
+      [["warning", "line 8: link ../../../../cli/main.go resolves to cli/main.go, outside docs/user/; that file is not published"]],
+    );
   });
 });
