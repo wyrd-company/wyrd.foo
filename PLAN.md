@@ -109,8 +109,9 @@ cutover.
   One of them is the canonical docs home.
 - A docs release from `main` can describe features that are not released
   yet, while `version` names the last release. v2 cannot detect this.
-- Full-width GIFs on every product page make pages heavy. A poster frame
-  with MP4 or WebM is an option.
+- Full-width GIFs on every product page make pages heavy. The product page
+  plays MP4 and WebM media as video, so a repo can publish its media in
+  those formats instead.
 - The featured picker reads the browser clock. A wrong clock shows a
   different product; the build-time default is in the HTML.
 - Install commands must not use a product key where the package name
