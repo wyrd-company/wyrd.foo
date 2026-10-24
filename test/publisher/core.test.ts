@@ -234,6 +234,11 @@ describe("owner and feature references", () => {
     const feature = { id: "sample", version: "3.2.1", name: "S", description: "D", options: {} };
     assert.equal(featureRef("Sample-Org/Sample", feature), "ghcr.io/sample-org/sample/sample:3");
   });
+
+  it("derives major 0 for a 0.x feature, the tag devcontainers/action publishes", () => {
+    const feature = { id: "sample", version: "0.2.0", name: "S", description: "D", options: {} };
+    assert.equal(featureRef("sample-org/sample", feature), "ghcr.io/sample-org/sample/sample:0");
+  });
 });
 
 describe("logo squareness", () => {
