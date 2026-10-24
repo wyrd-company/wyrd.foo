@@ -1,7 +1,7 @@
 import { defineCollection } from "astro:content";
 import { contentGlob } from "./lib/content-glob.ts";
 import { CONTENT_ROOT } from "./lib/content-root.ts";
-import { pageSchema, pageSlugOf, toolFileSchema } from "./schema/index.ts";
+import { pageSchema, pageSlugOf, toolFileSchema, withClosestIssues } from "./schema/index.ts";
 
 // Collections validated by the shared docs contract in src/schema/. The
 // publisher writes `<root>/<key>/tool.yaml`, and under `<root>/<key>/docs/`
@@ -15,7 +15,9 @@ const products = defineCollection({
     base: CONTENT_ROOT,
     generateId: ({ entry }) => entry.split("/")[0],
   }),
-  schema: toolFileSchema,
+  // A product entry and a feature entry are a union: report the closest one's
+  // fields, so a broken tool.yaml names the field.
+  schema: withClosestIssues(toolFileSchema),
 });
 
 const pages = defineCollection({

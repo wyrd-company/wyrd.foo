@@ -10,4 +10,4 @@ export * from "./cross-check.ts";
 export * from "./docs-folder.ts";
 export * from "./image-header.ts";
 export * from "./json-schema.ts";
-export { formatIssue, parseWith, type ContractIssue, type ParseResult } from "./issues.ts";
+export { formatIssue, parseWith, withClosestIssues, type ContractIssue, type ParseResult } from "./issues.ts";

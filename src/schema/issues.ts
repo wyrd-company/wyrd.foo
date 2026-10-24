@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 
 /** One contract violation, named by the file and the field it is in. */
 export interface ContractIssue {
@@ -65,4 +65,27 @@ function messageOf(issue: z.core.$ZodIssue): string {
   }
   if (issue.code === "invalid_key") return `is not a valid key: ${issue.issues.map((nested) => nested.message).join("; ")}`;
   return issue.message;
+}
+
+/** Marks a value that `schema` refused, with the refusal's issues. */
+const REFUSED = Symbol("refused");
+
+/**
+ * `schema`, with a failure reported as the closest union branch's issues, each
+ * at its field. A plain union fails with one "did not match union" issue at
+ * the root, which names no field. The site's content collections use it.
+ * Its input side is `schema` itself, so the JSON Schema Astro generates for a
+ * collection from the input shape is unchanged.
+ */
+export function withClosestIssues<S extends z.ZodType>(schema: S) {
+  return schema
+    .catch((ctx) => ({ [REFUSED]: ctx.error.issues }) as unknown as z.output<S>)
+    .pipe(
+      z.custom<z.output<S>>().transform((value, ctx): z.output<S> => {
+        const refused = (value as { [REFUSED]?: z.core.$ZodIssue[] } | null)?.[REFUSED];
+        if (refused === undefined) return value;
+        for (const { path, message } of closestIssues(refused)) ctx.addIssue({ code: "custom", message, path });
+        return z.NEVER;
+      }),
+    );
 }
