@@ -318,7 +318,8 @@ products:
 - The publisher derives the feature's OCI reference as
   `ghcr.io/<owner>/<repo>/<feature id>:<major>`, from the repo, the `id` and
   the major version in `devcontainer-feature.json`. An optional `ref` in the
-  kind block overrides it.
+  kind block overrides it; the publisher warns when its tag is not that
+  major.
 - Name, description, version and options come from
   `devcontainer-feature.json` at `source`.
 - The page is the abbreviated feature page: the `devcontainer.json` snippet,
@@ -330,7 +331,10 @@ products:
   annotated intentional tag of its unit and the unit's changelog.
 - A feature entry is not listed in Recent releases and is never featured.
 - The publisher warns when the option names in `README.md` differ from the
-  options in `devcontainer-feature.json`.
+  options in `devcontainer-feature.json`. It reads the first column of the
+  table under `## Options` in either README format: the repo's own (`Option`
+  header, names in backticks) or the one devcontainers' generated docs use
+  (`Options Id` header, bare names).
 
 A dev container image has a full product entry, a docs unit and GitHub
 Releases, like any other product.
@@ -360,8 +364,9 @@ Markdown body.
 - The slug is the file name without `.md`. It is unique within a product, so
   two products in one repo can each have `getting-started.md`.
 - A page's URL is `/docs/<key>/<slug>`.
-- The slug `changelog` is reserved: `/docs/<key>/changelog` shows the docs
-  unit changelog. The site build fails on a page with that slug.
+- The slug `changelog` is reserved, in any letter case: `/docs/<key>/changelog`
+  shows the docs unit changelog. The publisher rejects a page with that slug
+  at any depth, naming the file, and the site build fails on one.
 
 ## Release units
 
@@ -532,6 +537,7 @@ the result is the same for every trigger. The trigger only chooses the ref.
    the checks the schema cannot express:
    - every page's `product:` is a key in `products`;
    - every slug is unique within its product;
+   - no page has the reserved slug `changelog`, in any letter case;
    - every `nav` page exists for that product;
    - no page names a feature entry;
    - every `media.src`, `logo`, `logo-dark`, `favicon` and `social-image`,
@@ -548,8 +554,14 @@ the result is the same for every trigger. The trigger only chooses the ref.
      SemVer `version`, a `name` and a `description`.
 
    The publisher warns, and does not fail, when a feature's `README.md`
-   option names differ from its `devcontainer-feature.json` options, and
-   when a page links to a file outside `docs/user/`.
+   option names differ from its `devcontainer-feature.json` options, when
+   an authored feature `ref` has a tag other than the major of the
+   feature's version, and when a page links to a file outside `docs/user/`.
+   The feature's version comes from the feature entry's
+   `devcontainer-feature.json`; for a product's `devcontainer-feature` kind
+   block, from the one `<feature id>/devcontainer-feature.json` in the repo
+   whose `id` is the last path segment of the `ref`. With no such file, or
+   more than one, the tag is not checked.
 3. **Resolve release data** for each product. The publisher takes `version`
    and `docs-version` from `docs.yml` at the ref, reads the code unit's
    primary tag template, and builds the tag from `version`.

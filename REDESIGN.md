@@ -199,7 +199,8 @@ product's first page in reading order.
   on the repo's default branch, under the product's `docs-path`).
 - **Version footer**: "Docs 0.2.3 · for trowel 0.2.0", from the product's
   `docs-version` and `version`. "Docs 0.2.3" links the docs unit changelog
-  at `/docs/<key>/changelog` when the product publishes one.
+  at `/docs/<key>/changelog` when the product publishes one. The page slug
+  `changelog` is reserved for it, in any letter case.
 - Sections, groups and page order come from the product's `nav` in
   `docs.yml`. Pages that `nav` does not list go into a trailing "More" group
   in the last section, by `order`, then title. A product with no `nav` has
