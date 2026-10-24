@@ -104,9 +104,6 @@ cutover.
 
 - **Featuring a tag-push release.** A tag push carries no inputs, so a
   feature is requested by a manual run of the calling workflow.
-- **The site header's "Releases" link.** In the docs header it goes to the
-  product page's Releases section. On pages that belong to no product (home,
-  catalog) it has no product to go to.
 
 ## Risks
 

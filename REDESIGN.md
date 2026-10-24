@@ -44,7 +44,10 @@ repo (for example each feature in the devcontainers repo). Its kinds are
   self-hosted.
 - **Header:** the page background with a 1px blue line along the bottom, in
   both modes. Left: a square "W" tile and the `wyrd/tools` wordmark in blue.
-  Then nav (Catalog, Docs, Releases), search, theme toggle, GitHub.
+  Then nav (Catalog, Docs, Releases), search, theme toggle, GitHub. On a
+  product page and its docs pages, Releases goes to the product page's
+  Releases section (`/tools/<key>#releases`); on every other page it goes to
+  the home page's Recent releases list (`/#releases`).
 - **Code blocks** are dark in both modes.
 - Every text colour meets a 4.5:1 contrast ratio on its background.
 
@@ -105,9 +108,9 @@ The shared head writes these tags for each page.
      featured data" in the publishing design. The build writes its own pick
      into the HTML as the default, so the page has a featured product
      without JavaScript.
-   - Recent releases: each entry is the mark and the name on one line (long
-     names wrap) with "kind · version · date" underneath. Feature entries
-     are not listed.
+   - Recent releases (`#releases`): each entry is the mark and the name on
+     one line (long names wrap) with "kind · version · date" underneath.
+     Feature entries are not listed.
 3. **Catalog** with kind tabs (All, CLIs, MCP servers, Apps, Dev container
    features, Dev container images) and a filter box. A product shows under
    the tab of each of its kinds, and once under All. Each feature entry is
