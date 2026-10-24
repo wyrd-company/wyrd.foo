@@ -115,7 +115,8 @@ The shared head writes these tags for each page.
    primary kind badge, tagline and category, the primary kind's "get it"
    command with Copy, and one Docs button when the product has docs pages.
    Clicking anywhere else on the row opens the product page. Rows hold no
-   media. Rows sort by `order` (lower first), then by `name`.
+   media. Products with an `order` come first, lower first; the others
+   follow, by `name`.
 
 ## Product page (`/tools/<key>`)
 
@@ -124,13 +125,15 @@ In this order:
 1. **Hero**: mark, name, tagline, description, the default install command
    of the primary kind with Copy, then "Read the docs", "Star on GitHub" and
    an "Other install methods ↓" link. A short facts list on the right: all
-   kinds, status, latest version and date, category, licence, source.
+   kinds, status, latest version and date, category, licence, repository.
 2. **Media**: the product's media on its own full-width row, with a caption.
 3. **What it does**: up to six `highlights`.
 4. **Install**: full width. One tab group for each kind, in `kinds` order
    (for example "Install" for an app and "Dev container" for a feature). The
    block for each kind is in "Install blocks by kind" below.
 5. **Documentation**: a map of the docs sections and their pages.
+6. **Releases** (`#releases`): the product's changelog, from its release
+   unit.
 
 Every product page has highlights and media, except the pages of feature
 entries. Docs pages are optional. A product with no docs pages
@@ -166,9 +169,10 @@ never the featured product.
 ## Docs (`/docs/<key>/<slug>`)
 
 - **Sticky header** in two rows: wordmark, product switcher (with each
-  product's mark), search scoped to the product, GitHub; then section tabs
-  (for example Get started, Authoring, Using templates). Products without
-  sections get no tab row.
+  product's mark), search scoped to the product, a "Releases" link to the
+  product page's Releases section (`/tools/<key>#releases`), GitHub; then
+  section tabs (for example Get started, Authoring, Using templates).
+  Products without sections get no tab row.
 - **Left sidebar** for the current section only, with group headings and
   reading-progress dots (done, current, ahead). It scrolls on its own.
 - **Content**: breadcrumb, title, lead paragraph, prose up to ~720px wide. Tip

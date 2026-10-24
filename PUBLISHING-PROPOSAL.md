@@ -144,8 +144,8 @@ products:
 | `release-unit` | no | The product's code release unit. Default: the product key. |
 | `tagline`, `blurb` | yes | One line, and the description in the hero. |
 | `status` | yes | `stable`, `preview` or `planned`. |
-| `category` | yes | Catalog category. |
-| `order` | no | Integer catalog position, lower first. Products without `order` sort by `name`. |
+| `category` | yes | One of the categories (see "Categories"). |
+| `order` | no | Integer catalog position, lower first. Products without `order` sort after the products with it, by `name`. |
 | `kinds` | yes | One or more kind blocks; the first is the primary kind. |
 | `highlights` | yes | Up to six one-line statements for "What it does". |
 | `media` | yes | Hero media; each `src` is listed in `assets`. |
@@ -154,8 +154,9 @@ products:
 | `favicon` | no | SVG or PNG, listed in `assets`. |
 | `social-image` | no | PNG or JPEG, 1200×630, listed in `assets`. |
 
-`release`, `featured` and `source` are owned by the publisher; `docs.yml`
-does not set them.
+`owner`, `release` and `featured` are owned by the publisher; `docs.yml`
+does not set them. `docs.yml` has no `repo` field: the site builds the
+GitHub link from `owner`. Every other field is rejected.
 
 ### Kinds
 
@@ -167,9 +168,11 @@ the product page:
 | Kind | Block |
 | --- | --- |
 | `cli`, `app` | `install`: the install methods (below). |
-| `mcp-server` | The data for the client tabs. The tools table comes from generated data. |
+| `mcp-server` | `install`: the client methods (see "MCP install"). `tools`: the tools table, as `{ name, description, effect }` entries; `effect` is a short text such as "Read-only" or "Writes". |
 | `devcontainer-feature` | `ref`: the feature's OCI reference. |
-| `devcontainer-image` | `ref`: the image reference. The tags table comes from the image's registry tags. |
+| `devcontainer-image` | `ref`: the image reference. `tags`: optional, the tags table as `{ tag, base, architectures }` entries, for an image whose tags the publisher cannot read from the image build config. |
+
+A product lists each kind once.
 
 The first kind is the primary kind: its badge and its "get it" command show
 in the catalog row, and its default install command shows in the hero.
@@ -197,21 +200,72 @@ install:
 
 | Field     | Required | Meaning |
 | --------- | -------- | ------- |
-| `method`  | yes      | One of `homebrew`, `apt`, `rpm`, `aur`, `nix`, `cargo`, `npm`, `pipx`, `go`, `winget`, `scoop`, `docker`, `archive`, `script`. The site owns each method's display name and icon. |
-| `os`      | yes, except `docker` | Any of `macos`, `linux`, `windows`. |
+| `method`  | yes      | One of `homebrew`, `apt`, `rpm`, `aur`, `nix`, `cargo`, `npm`, `npx`, `pipx`, `go`, `winget`, `scoop`, `docker`, `archive`, `script`, `other`. The site owns each method's display name and icon. |
+| `os`      | yes, except `docker` | Any of `macos`, `linux`, `windows`, each once. |
 | `command` | yes      | One line, or several (YAML block scalar). Shown as one code block with one Copy button. |
-| `label`   | no       | Short qualifier, for example "Debian, Ubuntu". |
+| `label`   | yes for `other`, else no | Short qualifier, for example "Debian, Ubuntu" or "From Git". |
 | `default` | no       | `true` on at most one entry: the command shown in the hero. Otherwise the first entry. |
 
-For `method: apt` and `method: rpm`, `command` is only the install line. The
-site owns the repository setup (signing key and source list from
-repo.wyrd.foo) and shows it above the install line, so the setup has one
-source.
+- `npx` is a command that runs the tool without installing it.
+- A method that installs from another place keeps its method and adds a `label`
+  (`cargo` with `label: From Git`). `docker` covers `docker run` and
+  `docker pull`.
+- `other` is for an install with no method in the list; its `label` names
+  it.
+
+For `method: apt` and `method: rpm`, `command` is only the install line: one
+command, with no line break, `;`, `|` or `&&`. The site owns the repository
+setup (signing key and source list from repo.wyrd.foo) and shows it above
+the install line, so the setup has one source.
 
 The site derives the platform tabs from `os` (macOS, Linux, Windows, plus
 Docker when a `docker` entry exists). A method listed for several systems
 appears under each. A method may appear more than once with different `os`
 values when the command differs per system.
+
+### MCP install
+
+The `install` list of an `mcp-server` kind has the same `label`, `default`
+and `command` fields, and no `os`. Its `method` is an MCP client or a plugin
+marketplace:
+
+| Method | Tab |
+| --- | --- |
+| `claude-code`, `claude-desktop`, `cursor`, `vscode` | The client's own tab. `command` is its add command or configuration. |
+| `json` | The generic JSON configuration. |
+| `plugin` | A plugin marketplace. `label` names the marketplace and is required. |
+| `other` | A client with no method in the list. `label` names it and is required. |
+
+The site makes one client tab for each entry present.
+
+```yaml
+kinds:
+  - kind: mcp-server
+    install:
+      - method: claude-code
+        command: claude mcp add <name> -- <server command>
+      - method: plugin
+        label: Claude plugin marketplace
+        command: /plugin install t3code-mcp
+    tools:
+      - { name: <tool>, description: <what it does>, effect: Read-only }
+```
+
+### Categories
+
+`category` is one of a closed list. The list is in catalog order: the
+catalog groups products by category in this order.
+
+1. Git & Review
+2. Release & Versioning
+3. Templates & Scaffolding
+4. Dev Containers
+5. Agent Tooling
+6. Agent Infrastructure
+7. Code Intelligence
+8. Knowledge & Planning
+
+A feature entry without `category` is in Dev Containers.
 
 ### `nav`
 
@@ -223,8 +277,9 @@ nav:
         pages: [template-interviews, template-flow, template-jinja]
 ```
 
-`nav` belongs to one product and lists that product's page slugs. Published
-pages that `nav` does not list go into a trailing "More" group.
+`nav` belongs to one product and lists that product's page slugs; every
+slug it lists is a page of that product. Published pages that `nav` does not
+list go into a trailing "More" group.
 
 ### Feature entries
 
@@ -236,13 +291,24 @@ products:
   caddy:
     kinds: [{ kind: devcontainer-feature }]
     source: src/features/caddy      # devcontainer-feature.json + README.md
-    category: Dev container features
+    category: Dev Containers        # optional; the default
     logo: assets/caddy.svg          # optional
+  heddle:
+    kinds: [{ kind: devcontainer-feature }]
+    source: src/features/heddle
+    release-unit: heddle-feature    # optional; default = key
 ```
 
-- The entry holds only the key, `kinds`, `source` and an optional
-  `category` and `logo`. Each feature is listed by its own entry; `docs.yml`
-  has no glob.
+- The entry holds only the key, `kinds` (one `devcontainer-feature` block),
+  `source`, and an optional `category`, `logo` and `release-unit`. Each
+  feature is listed by its own entry; `docs.yml` has no glob.
+- `source` is the path of the feature's folder in the repo. It has no other
+  meaning in `docs.yml`.
+- The feature's release unit is `release-unit`, or the key.
+- The publisher derives the feature's OCI reference as
+  `ghcr.io/<owner>/<repo>/<feature id>:<major>`, from the repo, the `id` and
+  the major version in `devcontainer-feature.json`. An optional `ref` in the
+  kind block overrides it.
 - Name, description, version and options come from
   `devcontainer-feature.json` at `source`.
 - The page is the abbreviated feature page: the `devcontainer.json` snippet,
@@ -276,7 +342,9 @@ Markdown body.
 ```
 
 - `product:` names the product the page belongs to. It is a key in
-  `products`.
+  `products`, and not a feature entry: feature entries have no docs pages.
+- Front matter holds only `title`, `product`, `order`, `install` and the
+  optional `relationships`.
 - The slug is the file name without `.md`. It is unique within a product, so
   two products in one repo can each have `getting-started.md`.
 - A page's URL is `/docs/<key>/<slug>`.
@@ -333,9 +401,11 @@ publisher runs, not a release asset:
 
 | Kind | Data | File |
 | --- | --- | --- |
-| `mcp-server` | Tools, with their side effects | The server's tools list |
 | `devcontainer-feature` | Name, description, version, options | `devcontainer-feature.json` |
 | `devcontainer-image` | Image version | `manifest.json` |
+| `devcontainer-image` | Registry tags | The image build config, when the publisher can read it; otherwise the kind block's `tags` |
+
+An MCP server's tools table is the `tools` list in its kind block.
 
 ## The calling workflow
 
@@ -398,10 +468,12 @@ the result is the same for every trigger. The trigger only chooses the ref.
    - every page's `product:` is a key in `products`;
    - every slug is unique within its product;
    - every `nav` page exists for that product;
+   - no page names a feature entry;
    - every `media.src`, `logo`, `logo-dark`, `favicon` and `social-image` is
      listed in `assets`, and every listed asset exists inside `docs/user/`;
    - `logo` and `logo-dark` are SVG; `favicon` is SVG or PNG;
-     `social-image` is PNG or JPEG at 1200×630;
+     `social-image` is PNG or JPEG at 1200×630. The file extension and the
+     file content must both match;
    - for each feature entry, `devcontainer-feature.json` and `README.md`
      exist at `source`.
 3. **Resolve release data** for each product. The publisher takes `version`
@@ -414,7 +486,7 @@ the result is the same for every trigger. The trigger only chooses the ref.
      tag.
    - For both, it reads the changelog from the unit.
 4. **Check key ownership.** Each `content/<key>/tool.yaml` records its owner
-   in `source: <owner/repo>`. The publisher rejects a key that another repo
+   in `owner: <owner/repo>`. The publisher rejects a key that another repo
    owns.
 5. **Write** `content/<key>/` for every product in the map (see "Content
    written to wyrd.foo"). It carries
@@ -437,21 +509,21 @@ checkout, and the dev server serves the site from that folder.
 - When no GitHub Release is reachable, release data comes from the local
   tags.
 - A requirement that a repo does not meet yet (for example, no intentional)
-  is a warning, not a failure. A repo without intentional sets `version` by
-  hand on its `wyrd-foo-v2` branch.
+  is a warning, not a failure. A repo without intentional sets `version` and
+  `docs-version` by hand on its `wyrd-foo-v2` branch.
 
 ## Content written to wyrd.foo
 
-`content/<key>/` holds `tool.yaml`, the product's pages by slug, the listed
-assets the product uses, the unit changelog, and the generated data for the
-product's kinds. A feature entry's folder holds its `README.md` as the page
-body.
+`content/<key>/` holds `tool.yaml`, the product's pages as
+`docs/<slug>.md`, the listed assets the product uses, the unit changelog,
+and the generated data for the product's kinds. A feature entry's folder
+holds its `README.md` as the page body.
 
-`tool.yaml` holds the validated product entry plus three fields that only
-the publisher writes:
+`tool.yaml` holds the validated product entry, with `release-unit` filled
+in, plus three fields that only the publisher writes:
 
 ```yaml
-source: wyrd-company/trowel
+owner: wyrd-company/trowel
 release:
   version: 0.2.0
   date: 2026-10-01
@@ -463,6 +535,13 @@ featured:
   reason: New MCP server
   version: 0.2.0
 ```
+
+A feature entry's `tool.yaml` holds the entry with `release-unit` and the
+kind block's `ref` filled in, `name`, `description` and `version` from
+`devcontainer-feature.json`, `owner`, and `release` from the annotated tag
+(no `url`). It has no `featured`.
+
+The site reads `tool.yaml` and the pages with the same module's schemas.
 
 ## Release and featured data
 
@@ -483,12 +562,17 @@ the HTML as the default; the script swaps it only when its result differs.
 The site publishes its JSON Schema at
 `https://wyrd.foo/schemas/docs/v1.json`.
 
-- The site's Zod schema is the single source of truth for `docs.yml` and
-  page front matter. It lives in a module that both the site and the
-  publisher import.
+- The Zod schemas in `src/schema/` are the single source of truth for
+  `docs.yml`, page front matter and `tool.yaml`, and for the closed lists
+  (kinds, categories, install methods). The module has no Astro imports and
+  runs under plain Node; the site and the publisher import it.
+- The module also holds the cross-check (`crossCheck`): the checks in step 2
+  of "The publisher" that read the `docs/user/` tree. The publisher checks
+  each feature entry's `source` folder itself.
 - `/schemas/docs/v1.json` is generated from it at build time
   (`z.toJSONSchema`, Zod 4) by a static Astro endpoint, so the published
-  schema and the site's own validation cannot drift.
+  schema and the site's own validation cannot drift. Page front matter is
+  in the schema as `$defs.page`. The cross-checks are not in it.
 - The schema's `$id` is its URL.
 - The schema has one version, `1`. Every `docs.yml` declares
   `schemaVersion: 1`. The site and the publisher validate against that one
