@@ -34,19 +34,29 @@ export function parseWith<S extends z.ZodType>(
   return { ok: false, issues: result.error.issues.flatMap((issue) => toContractIssues(issue, [], file)) };
 }
 
+/** One issue of the branch that came closest, with its path from the parsed value. */
+export interface ClosestIssue {
+  path: PropertyKey[];
+  message: string;
+}
+
 // A union issue holds one issue list per branch. Report the branch that came
 // closest (fewest issues): for docs.yml that is the entry form the author
 // meant, product entry or feature entry.
+export function closestIssues(issues: readonly z.core.$ZodIssue[], prefix: PropertyKey[] = []): ClosestIssue[] {
+  return issues.flatMap((issue): ClosestIssue[] => {
+    const path = [...prefix, ...issue.path];
+    if (issue.code === "invalid_union" && issue.errors.length > 0) {
+      const closest = issue.errors.reduce((best, branch) => (branch.length < best.length ? branch : best));
+      return closestIssues(closest, path);
+    }
+    if (issue.code === "unrecognized_keys") return issue.keys.map((key) => ({ path: [...path, key], message: "is not an allowed field" }));
+    return [{ path, message: messageOf(issue) }];
+  });
+}
+
 function toContractIssues(issue: z.core.$ZodIssue, prefix: PropertyKey[], file: string): ContractIssue[] {
-  const path = [...prefix, ...issue.path];
-  if (issue.code === "invalid_union" && issue.errors.length > 0) {
-    const closest = issue.errors.reduce((best, branch) => (branch.length < best.length ? branch : best));
-    return closest.flatMap((nested) => toContractIssues(nested, path, file));
-  }
-  if (issue.code === "unrecognized_keys") {
-    return issue.keys.map((key) => ({ file, field: fieldPath([...path, key]), message: "is not an allowed field" }));
-  }
-  return [{ file, field: fieldPath(path), message: messageOf(issue) }];
+  return closestIssues([issue], prefix).map(({ path, message }) => ({ file, field: fieldPath(path), message }));
 }
 
 function messageOf(issue: z.core.$ZodIssue): string {
