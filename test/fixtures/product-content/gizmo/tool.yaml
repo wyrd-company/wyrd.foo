@@ -15,6 +15,9 @@ highlights:
 media:
   - src: assets/board.png
     caption: The sample board.
+  - src: assets/demo.webm
+    caption: The sample board in use.
+    alt: A recording of the sample board.
 kinds:
   - kind: app
     install:

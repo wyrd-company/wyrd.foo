@@ -194,6 +194,20 @@ describe("install block: CLI and app", () => {
   });
 });
 
+describe("media: video", () => {
+  it("shows a WebM in the tour as a muted, looping video with a pause button, and no autoplay", () => {
+    const root = productPage("gizmo");
+    const video = root.querySelector(".media-tour video")!;
+    expect(video.getAttribute("src")).toBe("/assets/gizmo/assets/demo.webm");
+    expect(video.hasAttribute("autoplay")).toBe(false);
+    for (const attr of ["muted", "loop", "playsinline", "controls"]) expect(video.hasAttribute(attr), attr).toBe(true);
+    expect(root.querySelector(".media-tour button[data-media-toggle]")?.getAttribute("aria-label")).toBe(
+      "Play video: A recording of the sample board.",
+    );
+    expect(root.querySelectorAll("video[autoplay]")).toEqual([]);
+  });
+});
+
 describe("install block: MCP server", () => {
   it("makes one client tab per install entry, the plugin marketplaces included", () => {
     const root = productPage("sprocket");

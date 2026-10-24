@@ -66,12 +66,12 @@ const SECTIONS = [
   },
   {
     key: "gizmo",
-    why: "an app that is also a dev container feature: only the first kind's block is in view",
+    why: "an app that is also a dev container feature, with a video in its tour: only the first kind's block is in view",
     sections: ["highlights", "install", "docs", "releases"],
     blocks: ["platforms"],
     docs: true,
     media: true,
-    tour: false,
+    tour: true,
   },
   {
     key: "lantern",
@@ -232,6 +232,66 @@ test.describe("search", () => {
     await expect(first.locator("a.wsearch-link")).toHaveAttribute("href", /^\/tools\/gizmo\/?$/);
     await expect(first.locator(".wsearch-title")).toHaveText("gizmo");
     await expect(first.locator(".wsearch-where")).toHaveClass(/is-local/);
+  });
+});
+
+/*
+ * The video of gizmo's tour (a six second WebM, so WCAG 2.2.2 applies): it
+ * plays on load unless the visitor prefers reduced motion, and a button
+ * pauses and resumes it either way.
+ */
+const VIDEO = ".media-tour video";
+const TOGGLE = ".media-tour [data-media-toggle]";
+
+for (const [preference, playsOnLoad] of [
+  ["no-preference", true],
+  ["reduce", false],
+] as const) {
+  test.describe(`video with reducedMotion "${preference}"`, () => {
+    test.use({ reducedMotion: preference });
+
+    test(`${playsOnLoad ? "plays" : "does not play"} on load, muted and looped, and the button pauses and resumes it`, async ({ page, baseURL }) => {
+      await openProduct(page, baseURL, "gizmo");
+      const video = page.locator(VIDEO);
+      const toggle = page.locator(TOGGLE);
+      // The button is shown by the script that decided whether to play.
+      await expect(toggle).toBeVisible();
+      await expect(video).toHaveJSProperty("paused", !playsOnLoad);
+      await expect(video).toHaveJSProperty("muted", true);
+      await expect(video).toHaveJSProperty("loop", true);
+      await expect(video).toHaveJSProperty("controls", false);
+      await expect(toggle).toHaveAccessibleName(playsOnLoad ? /^Pause video:/ : /^Play video:/);
+      await expect(toggle).toContainText(playsOnLoad ? "Pause" : "Play");
+      await toggle.click();
+      await expect(video).toHaveJSProperty("paused", playsOnLoad);
+      await expect(toggle).toHaveAccessibleName(playsOnLoad ? /^Play video:/ : /^Pause video:/);
+      await toggle.click();
+      await expect(video).toHaveJSProperty("paused", !playsOnLoad);
+    });
+
+    test("the button is reached and pressed with the keyboard", async ({ page, baseURL }) => {
+      await openProduct(page, baseURL, "gizmo");
+      const toggle = page.locator(TOGGLE);
+      await expect(toggle).toBeVisible();
+      await toggle.focus();
+      await expect(toggle).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(page.locator(VIDEO)).toHaveJSProperty("paused", playsOnLoad);
+      await page.keyboard.press("Space");
+      await expect(page.locator(VIDEO)).toHaveJSProperty("paused", !playsOnLoad);
+    });
+  });
+}
+
+test.describe("video without script", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("does not play, and keeps its native controls and no button", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    const video = page.locator(VIDEO);
+    await expect(video).toHaveJSProperty("controls", true);
+    await expect(video).toHaveJSProperty("paused", true);
+    await expect(page.locator(TOGGLE)).toBeHidden();
   });
 });
 

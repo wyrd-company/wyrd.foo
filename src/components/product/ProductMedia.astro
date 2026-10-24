@@ -2,10 +2,11 @@
 /*
  * The product's media: the first item full width with its caption, then the
  * others as a numbered tour (for an app, the screenshot tour of its console).
- * MP4 and WebM files play as muted, looping video; every other file is an
- * image, GIFs included.
+ * MP4 and WebM files play as muted, looping video with a pause button
+ * (ProductVideo.astro); every other file is an image, GIFs included.
  */
 import { isVideo } from "../../lib/product-media";
+import ProductVideo from "./ProductVideo.astro";
 
 export interface MediaView {
   src: string;
@@ -26,7 +27,7 @@ const [first, ...tour] = media;
   <div class="media-frame">
     {
       isVideo(first.src) ? (
-        <video src={first.src} autoplay muted loop playsinline preload="metadata" aria-label={first.alt ?? first.caption} />
+        <ProductVideo src={first.src} label={first.alt ?? first.caption} />
       ) : (
         <img src={first.src} alt={first.alt ?? first.caption} decoding="async" />
       )
@@ -44,7 +45,7 @@ const [first, ...tour] = media;
             <figure>
               <div class="media-frame">
                 {isVideo(item.src) ? (
-                  <video src={item.src} autoplay muted loop playsinline preload="metadata" aria-label={item.alt ?? item.caption} />
+                  <ProductVideo src={item.src} label={item.alt ?? item.caption} />
                 ) : (
                   <img src={item.src} alt={item.alt ?? item.caption} loading="lazy" decoding="async" />
                 )}
@@ -74,8 +75,7 @@ const [first, ...tour] = media;
     border-radius: 10px;
     background: var(--code-bg);
   }
-  .media-frame img,
-  .media-frame video {
+  .media-frame img {
     display: block;
     width: 100%;
     height: auto;
