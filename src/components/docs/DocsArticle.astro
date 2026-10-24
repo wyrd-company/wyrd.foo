@@ -129,7 +129,13 @@ const { product, title, section, prev, next } = Astro.props;
     line-height: 1.7;
     color: var(--text);
   }
-  .docs-prose :global(> p:first-child) {
+  /* The page title is the h1 above; a leading h1 in the body (a changelog's
+     "# Changelog") would repeat it. */
+  .docs-prose :global(> h1:first-child) {
+    display: none;
+  }
+  .docs-prose :global(> p:first-child),
+  .docs-prose :global(> h1:first-child + p) {
     font-size: 18.5px;
     line-height: 1.6;
     color: var(--text-2);
