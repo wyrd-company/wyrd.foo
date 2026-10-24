@@ -195,14 +195,106 @@ test.describe("search", () => {
 });
 
 test.describe("Copy as Markdown", () => {
+  const PAGE = "/docs/gadget/getting-started";
+  const MARKDOWN = "**/docs/gadget/getting-started.md";
+  const gadgetStart = (text: string) => text.startsWith("# Getting started\n\ngadget runs a sample service");
+
+  /** Count the page's calls to the clipboard's write(), the call that takes a promise of the text. */
+  const countClipboardWrites = (page: Page) =>
+    page.addInitScript(() => {
+      const write = Clipboard.prototype.write;
+      (window as unknown as { clipboardWrites: number }).clipboardWrites = 0;
+      Clipboard.prototype.write = function (...args) {
+        (window as unknown as { clipboardWrites: number }).clipboardWrites++;
+        return write.apply(this, args);
+      };
+    });
+
   test("puts the title and the page body on the clipboard", async ({ context, page, baseURL }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-    await openDocs(page, baseURL, "/docs/gadget/getting-started");
+    await openDocs(page, baseURL, PAGE);
     const button = page.locator("[data-copy-markdown]");
     await button.click();
     await expect(button).toHaveText("Copied");
     const text = await page.evaluate(() => navigator.clipboard.readText());
-    expect(text.startsWith("# Getting started\n\ngadget runs a sample service")).toBe(true);
+    expect(gadgetStart(text)).toBe(true);
     expect(text).toContain("## Start the service");
+  });
+
+  test("starts the clipboard write inside the click, before the Markdown has arrived", async ({ context, page, baseURL }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await countClipboardWrites(page);
+    await openDocs(page, baseURL, PAGE);
+    // The Markdown answer is held; a write that waits for it cannot have started.
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route(MARKDOWN, async (route) => {
+      await held;
+      await route.continue();
+    });
+    try {
+      const button = page.locator("[data-copy-markdown]");
+      await button.click();
+      await page.waitForFunction(() => (window as unknown as { clipboardWrites: number }).clipboardWrites === 1);
+      await expect(button, "the label waits for the write to resolve").not.toHaveText("Copied");
+    } finally {
+      release();
+    }
+    await expect(page.locator("[data-copy-markdown]")).toHaveText("Copied");
+    expect(gadgetStart(await page.evaluate(() => navigator.clipboard.readText()))).toBe(true);
+  });
+
+  // The two ways a browser can lack a clipboard item with a promise for its text.
+  const WITHOUT_PROMISE_ITEMS = {
+    "has no ClipboardItem": () => {
+      Object.defineProperty(window, "ClipboardItem", { value: undefined, configurable: true });
+    },
+    "makes a ClipboardItem only from a Blob": () => {
+      Object.defineProperty(window, "ClipboardItem", {
+        configurable: true,
+        value: class {
+          constructor(items: Record<string, unknown>) {
+            for (const value of Object.values(items)) {
+              if (!(value instanceof Blob)) throw new TypeError("The provided value is not of type 'Blob'.");
+            }
+          }
+        },
+      });
+    },
+  };
+  for (const [name, stub] of Object.entries(WITHOUT_PROMISE_ITEMS)) {
+    test(`falls back to writing the fetched text when the browser ${name}`, async ({ context, page, baseURL }) => {
+      await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+      await countClipboardWrites(page);
+      await page.addInitScript(stub);
+      await openDocs(page, baseURL, PAGE);
+      const button = page.locator("[data-copy-markdown]");
+      await button.click();
+      await expect(button).toHaveText("Copied");
+      expect(await page.evaluate(() => (window as unknown as { clipboardWrites: number }).clipboardWrites), "write() was not used").toBe(0);
+      expect(gadgetStart(await page.evaluate(() => navigator.clipboard.readText()))).toBe(true);
+    });
+  }
+
+  test("says Copy failed, and stays on the page, when the Markdown is not served", async ({ context, page, baseURL }) => {
+    // The clipboard accepts the write, so the status is the only thing that can fail the copy.
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openDocs(page, baseURL, PAGE);
+    // A body that would copy fine: only the status says it is not the page.
+    await page.route(MARKDOWN, (route) => route.fulfill({ status: 500, contentType: "text/markdown", body: "# Server error\n" }));
+    const button = page.locator("[data-copy-markdown]");
+    await button.click();
+    await expect(button).toHaveText("Copy failed");
+    expect(new URL(page.url()).pathname).toBe(PAGE);
+  });
+
+  test("says Copy failed when the clipboard refuses the write", async ({ page, baseURL }) => {
+    await page.addInitScript(() => {
+      Clipboard.prototype.write = () => Promise.reject(new DOMException("refused", "NotAllowedError"));
+    });
+    await openDocs(page, baseURL, PAGE);
+    const button = page.locator("[data-copy-markdown]");
+    await button.click();
+    await expect(button).toHaveText("Copy failed");
   });
 });
