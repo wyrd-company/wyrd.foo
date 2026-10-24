@@ -4,6 +4,7 @@ import {
   crossCheck,
   docsFileSchema,
   DOCS_CHANGELOG,
+  docsPathOf,
   formatIssue,
   isFeatureEntry,
   isPageFile,
@@ -232,6 +233,7 @@ async function productOutput(ctx: Context, tree: Tree, key: string, entry: Produ
     kinds,
     "release-unit": unitId,
     owner: ctx.ownerRepo,
+    "docs-path": docsPathOf(folder),
     ...(release === undefined ? {} : { release: releaseYaml(release) }),
   };
   return validated(ctx, key, tool, files, false);

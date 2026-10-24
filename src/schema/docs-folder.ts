@@ -14,3 +14,11 @@ export function productDocsFolder(key: string, paths: Iterable<string>): string 
   for (const path of paths) if (path.startsWith(folder)) return folder;
   return "";
 }
+
+/**
+ * The repo path of a product's docs folder, for `docs-path` in tool.yaml:
+ * `docs/user`, or `docs/user/<key>` for a folder from productDocsFolder.
+ */
+export function docsPathOf(folder: string): string {
+  return `docs/user${folder === "" ? "" : `/${folder.replace(/\/$/, "")}`}`;
+}

@@ -269,6 +269,21 @@ describe("intentional config", () => {
   });
 });
 
+describe("docs-path", () => {
+  it("names the product's docs folder in the repo, per key or docs/user", async () => {
+    const alpha = await computeRepo(input(alphaFiles()));
+    assert.deepEqual(
+      alpha.products.filter((product) => !product.feature).map((product) => [product.key, product.tool["docs-path"]]),
+      [["alpha-cli", "docs/user/alpha-cli"], ["alpha-app", "docs/user/alpha-app"]],
+    );
+    const beta = await computeRepo(input(betaFiles(), { ownerRepo: `${OWNER}/beta` }));
+    const image = beta.products.find((product) => product.key === "sample-image")!;
+    assert.equal(image.tool["docs-path"], "docs/user");
+    const feature = beta.products.find((product) => product.key === "sample-feature")!;
+    assert.equal(feature.tool["docs-path"], undefined, "a feature entry has no docs pages");
+  });
+});
+
 describe("owner and feature references", () => {
   it("reads owner/repo from GitHub remote URLs", () => {
     assert.equal(ownerRepoOf("git@github.com:sample-org/sample.git"), "sample-org/sample");
