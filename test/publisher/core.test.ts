@@ -285,6 +285,90 @@ describe("docs-path", () => {
   });
 });
 
+describe("publisher core: authored feature ref tags", () => {
+  const refWarnings = (findings: { severity: string; message: string }[]) =>
+    findings.filter((f) => f.severity === "warning" && /\.ref: /.test(f.message)).map((f) => f.message);
+  const FEATURE_JSON_PATH = "src/features/sample-feature/devcontainer-feature.json";
+
+  /** beta's feature entry at version 0.2.0, with an authored ref when one is given. */
+  function featureEntry(ref?: string) {
+    const files = betaFiles();
+    files[FEATURE_JSON_PATH] = JSON.stringify({ ...JSON.parse(files[FEATURE_JSON_PATH].toString()), version: "0.2.0" });
+    if (ref !== undefined) files["docs/user/docs.yml"] = files["docs/user/docs.yml"].toString().replace("- kind: devcontainer-feature", `- kind: devcontainer-feature\n        ref: ${ref}`);
+    return computeRepo(input(files, { ownerRepo: `${OWNER}/beta` }));
+  }
+
+  /** alpha's product alpha-app, whose devcontainer-feature kind block has the ref given, with its feature JSON. */
+  function productBlock(ref: string, json: Record<string, string> = { "app/feature/alpha-app/devcontainer-feature.json": feature("alpha-app", "0.2.0") }) {
+    const files = { ...alphaFiles(), ...json };
+    files["docs/user/docs.yml"] = files["docs/user/docs.yml"].toString().replace("ref: ghcr.io/sample-org/alpha/alpha-app:0", `ref: ${ref}`);
+    return computeRepo(input(files));
+  }
+  const kindRef = (result: Awaited<ReturnType<typeof computeRepo>>, key: string) =>
+    (result.products.find((p) => p.key === key)!.tool.kinds as { ref: string }[])[0].ref;
+  const feature = (id: string, version: string) => JSON.stringify({ id, version, name: "Sample", description: "A sample." });
+
+  it("a feature entry ref with tag 1 for version 0.2.0 warns, naming the product, the ref, the expected tag and the version source", async () => {
+    const result = await featureEntry("ghcr.io/sample-org/beta/sample-feature:1");
+    assert.equal(result.failed, false);
+    assert.deepEqual(refWarnings(result.findings), [
+      `products.sample-feature.kinds.0.ref: ghcr.io/sample-org/beta/sample-feature:1 has tag 1; the feature is published as 0, the major of version 0.2.0 in ${FEATURE_JSON_PATH}`,
+    ]);
+    const warning = result.findings.find((f) => /\.ref: /.test(f.message))!;
+    assert.equal(warning.key, "sample-feature");
+    assert.equal(warning.file, "docs/user/docs.yml");
+    assert.equal(kindRef(result, "sample-feature"), "ghcr.io/sample-org/beta/sample-feature:1", "the authored ref is kept");
+  });
+
+  it("a feature entry ref with tag 0 for version 0.2.0 does not warn", async () => {
+    assert.deepEqual(refWarnings((await featureEntry("ghcr.io/sample-org/beta/sample-feature:0")).findings), []);
+  });
+
+  it("a feature entry with no ref (derived) does not warn", async () => {
+    const result = await featureEntry();
+    assert.deepEqual(refWarnings(result.findings), []);
+    assert.equal(kindRef(result, "sample-feature"), "ghcr.io/sample-org/beta/sample-feature:0");
+  });
+
+  it("a feature entry ref with no tag warns; a digest ref does not", async () => {
+    assert.match(refWarnings((await featureEntry("ghcr.io/sample-org/beta/sample-feature")).findings).join(), /sample-feature has no tag; the feature is published as 0/);
+    assert.deepEqual(refWarnings((await featureEntry(`ghcr.io/sample-org/beta/sample-feature@sha256:${"a".repeat(64)}`)).findings), []);
+  });
+
+  it("a feature entry whose version cannot be read keeps its own error and adds no ref warning", async () => {
+    const files = betaFiles();
+    files[FEATURE_JSON_PATH] = JSON.stringify({ ...JSON.parse(files[FEATURE_JSON_PATH].toString()), version: "two" });
+    files["docs/user/docs.yml"] = files["docs/user/docs.yml"].toString().replace("- kind: devcontainer-feature", "- kind: devcontainer-feature\n        ref: ghcr.io/sample-org/beta/sample-feature:1");
+    const result = await computeRepo(input(files, { ownerRepo: `${OWNER}/beta` }));
+    assert.match(errors(result.findings).join("\n"), /version/);
+    assert.deepEqual(refWarnings(result.findings), []);
+  });
+
+  it("a product's devcontainer-feature kind block with tag 1 for feature version 0.2.0 warns, through the JSON its ref names", async () => {
+    const result = await productBlock("ghcr.io/sample-org/alpha/alpha-app:1");
+    assert.equal(result.failed, false);
+    assert.deepEqual(refWarnings(result.findings), [
+      "products.alpha-app.kinds.1.ref: ghcr.io/sample-org/alpha/alpha-app:1 has tag 1; the feature is published as 0, the major of version 0.2.0 in app/feature/alpha-app/devcontainer-feature.json",
+    ]);
+  });
+
+  it("a product's devcontainer-feature kind block with tag 0 for feature version 0.2.0 does not warn", async () => {
+    assert.deepEqual(refWarnings((await productBlock("ghcr.io/sample-org/alpha/alpha-app:0")).findings), []);
+  });
+
+  it("a product's kind block whose feature JSON cannot be found, is ambiguous or has no readable version does not warn", async () => {
+    const ref = "ghcr.io/sample-org/alpha/alpha-app:1";
+    const baseline = (await productBlock(ref, {})).findings;
+    assert.deepEqual(refWarnings(baseline), [], "no JSON in the repo");
+    const twins = { "a/alpha-app/devcontainer-feature.json": feature("alpha-app", "0.2.0"), "b/alpha-app/devcontainer-feature.json": feature("alpha-app", "0.2.0") };
+    assert.deepEqual(refWarnings((await productBlock(ref, twins)).findings), [], "two JSONs for one id");
+    const otherId = { "app/feature/alpha-app/devcontainer-feature.json": feature("other", "0.2.0") };
+    assert.deepEqual(refWarnings((await productBlock(ref, otherId)).findings), [], "a JSON whose id is not the ref's");
+    const unreadable = (await productBlock(ref, { "app/feature/alpha-app/devcontainer-feature.json": feature("alpha-app", "two") })).findings;
+    assert.deepEqual(unreadable, baseline, "an unreadable version adds no finding");
+  });
+});
+
 describe("owner and feature references", () => {
   it("reads owner/repo from GitHub remote URLs", () => {
     assert.equal(ownerRepoOf("git@github.com:sample-org/sample.git"), "sample-org/sample");
