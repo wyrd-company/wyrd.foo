@@ -54,6 +54,7 @@ describe("relPathOf", () => {
 
   it("keeps a nested docs folder that belongs to the page's path", () => {
     expect(relPathOf(`${ROOT}/gadget/docs/docs/setup.md`, "gadget")).toBe("docs/setup.md");
+    expect(relPathOf(`${ROOT}/gadget/docs/gadget/docs/setup.md`, "gadget")).toBe("gadget/docs/setup.md");
   });
 
   it("fails for a file outside the product's docs folder", () => {
