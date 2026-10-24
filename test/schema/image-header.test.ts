@@ -39,4 +39,15 @@ describe("readImageHeader", () => {
     assert.equal(readImageHeader(asset("social.png").subarray(0, 20)), undefined);
     assert.equal(readImageHeader(asset("social.jpg").subarray(0, 30)), undefined);
   });
+
+  it("returns undefined for a PNG whose first chunk is not IHDR", () => {
+    const bytes = asset("social.png");
+    bytes.set(text("IDAT"), 12);
+    assert.equal(readImageHeader(bytes), undefined);
+  });
+
+  it("returns undefined for a JPEG cut off inside its frame header", () => {
+    const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xc4, 0x00, 0x05, 0x00, 0x00, 0x00, 0xff, 0xc0, 0x00, 0x11, 0x08]);
+    assert.equal(readImageHeader(bytes), undefined);
+  });
 });
