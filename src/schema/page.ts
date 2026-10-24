@@ -20,6 +20,17 @@ export function pageSlugOf(path: string): string {
   return name.replace(/\.md$/i, "");
 }
 
+/** The page slug the docs changelog route takes (`/docs/<key>/changelog`). No page may use it. */
+export const CHANGELOG_SLUG = "changelog";
+
+/**
+ * True when a page slug is the reserved `changelog`, in any letter case. The
+ * site build and the publisher cross-check both use it, so they agree.
+ */
+export function isReservedSlug(slug: string): boolean {
+  return slug.toLowerCase() === CHANGELOG_SLUG;
+}
+
 /** The file name of a docs unit changelog. intentional writes it at the unit path. */
 export const DOCS_CHANGELOG = "CHANGELOG.md";
 
