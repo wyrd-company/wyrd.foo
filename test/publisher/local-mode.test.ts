@@ -51,22 +51,29 @@ describe("local mode", () => {
   });
   after(() => ws.remove());
 
-  it("writes a multi-product map: each product's pages, used assets and both changelogs", () => {
+  it("writes a multi-product map: each product's docs folder mirrored to docs/, with used assets and both changelogs", () => {
     assert.equal(reportOf(reports, "alpha").outcome, "published");
     assert.deepEqual(ws.files("alpha-cli"), [
       "CHANGELOG.md",
       "docs/CHANGELOG.md",
-      "docs/alpha-cli/getting-started.md",
-      "docs/alpha-cli/guides/deep.md",
       "docs/assets/demo.svg",
       "docs/assets/diagram.svg",
       "docs/assets/logo.svg",
+      "docs/getting-started.md",
+      "docs/guides/deep.md",
       "tool.yaml",
     ]);
-    assert.deepEqual(ws.files("alpha-app"), ["CHANGELOG.md", "docs/alpha-app/getting-started.md", "docs/assets/demo.svg", "tool.yaml"]);
+    assert.deepEqual(ws.files("alpha-app"), ["CHANGELOG.md", "docs/assets/demo.svg", "docs/getting-started.md", "tool.yaml"]);
     assert.match(ws.text("alpha-cli", "CHANGELOG.md"), /## 1\.2\.0/, "the code unit changelog");
     assert.match(ws.text("alpha-cli", "docs/CHANGELOG.md"), /## 1\.0\.0/, "the docs unit changelog");
-    assert.equal(ws.text("alpha-cli", "docs/alpha-cli/getting-started.md"), alphaFiles()["docs/user/alpha-cli/getting-started.md"]);
+    assert.equal(ws.text("alpha-cli", "docs/getting-started.md"), alphaFiles()["docs/user/alpha-cli/getting-started.md"]);
+  });
+
+  it("keeps a per-key product's asset fields relative to its docs folder, so they resolve under docs/", () => {
+    const tool = ws.tool("alpha-cli");
+    assert.equal(tool.logo, "assets/logo.svg");
+    assert.deepEqual(tool.media, [{ src: "assets/demo.svg", caption: "A sample screen." }]);
+    for (const path of [tool.logo, tool.media[0].src]) assert.ok(ws.files("alpha-cli").includes(`docs/${path}`), path);
   });
 
   it("writes tool.yaml with owner, release unit and the GitHub Release", () => {
@@ -195,7 +202,7 @@ describe("local mode: key ownership", () => {
 
   it("writes no product of a repo when one product fails a check", async () => {
     const files = alphaFiles();
-    files["docs/user/assets/logo.svg"] = WIDE_SVG;
+    files["docs/user/alpha-cli/assets/logo.svg"] = WIDE_SVG;
     ws.repo("zeta", renamedAlpha(files));
     const reports = await runLocal({ config: config("zeta"), toolsDir: ws.toolsDir, contentDir: ws.contentDir });
     assert.equal(reportOf(reports, "zeta").outcome, "failed");

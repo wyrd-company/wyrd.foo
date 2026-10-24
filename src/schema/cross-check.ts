@@ -1,4 +1,5 @@
 import { isFeatureEntry, type DocsFile, type FeatureEntry, type ProductEntry } from "./docs-file.ts";
+import { productDocsFolder } from "./docs-folder.ts";
 import { readImageHeader, type ImageType } from "./image-header.ts";
 import { fieldPath, type ContractIssue } from "./issues.ts";
 import { pageSlugOf, type PageFrontMatter } from "./page.ts";
@@ -112,12 +113,19 @@ function checkAssets({ docsFile, docs, files }: DocsTree): ContractIssue[] {
   });
   const listed = new Set(docs.assets);
   for (const [key, entry] of productMap(docs)) {
+    // Asset fields are relative to the product's docs folder; `assets` lists paths relative to docs/user/.
+    const folder = productDocsFolder(key, files.keys());
     for (const ref of assetRefs(key, entry)) {
       const field = fieldPath(ref.field);
-      if (!listed.has(ref.path)) {
-        issues.push({ file: docsFile, field, message: `${ref.path} is not listed in assets` });
+      const path = folder + ref.path;
+      if (!listed.has(path)) {
+        const message =
+          folder === ""
+            ? `${ref.path} is not listed in assets`
+            : `${ref.path} is docs/user/${path}, which is not listed in assets as ${path}`;
+        issues.push({ file: docsFile, field, message });
       }
-      const problem = imageProblem(ref, files.get(ref.path));
+      const problem = imageProblem(ref, files.get(path));
       if (problem !== undefined) issues.push({ file: docsFile, field, message: problem });
     }
   }

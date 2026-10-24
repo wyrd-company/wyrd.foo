@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
-import { crossCheck, formatIssue, type ContractIssue, type DocsTree } from "../../src/schema/index.ts";
+import { crossCheck, formatIssue, productDocsFolder, type ContractIssue, type DocsTree } from "../../src/schema/index.ts";
 import { FIXTURES, loadTree, readRawDocs, type Raw } from "./load-tree.ts";
 
 // Each case starts from a valid fixture, breaks one rule, and expects exactly
@@ -189,11 +189,37 @@ describe("cross-check: asset types and size", () => {
   it("a .jpg social image whose content is PNG fails", () => {
     const tree = treeFrom("app");
     const files = new Map(tree.files);
-    files.set("assets/social.jpg", asset("social.png"));
+    files.set("gadget/assets/social.jpg", asset("social.png"));
     assertOneIssue(crossCheck({ ...tree, files }), {
       file: "app/docs.yml",
       field: "products.gadget.social-image",
       message: /its content is not JPEG/,
+    });
+  });
+});
+
+describe("cross-check: a product's docs folder", () => {
+  it("is docs/user/<key>/ when that folder holds a file, else docs/user/", () => {
+    assert.equal(productDocsFolder("gadget", ["gadget/getting-started.md", "assets/x.svg"]), "gadget/");
+    assert.equal(productDocsFolder("gadget", ["getting-started.md", "gadget-notes/x.md"]), "");
+    assert.equal(productDocsFolder("gadget", []), "");
+  });
+
+  it("resolves a per-key product's asset fields under its folder", () => {
+    const tree = treeFrom("app");
+    assert.equal((tree.docs.products.gadget as { media: { src: string }[] }).media[0].src, "assets/demo.gif");
+    assert.ok(tree.docs.assets.includes("gadget/assets/demo.gif"));
+    assert.deepEqual(crossCheck(tree), []);
+  });
+
+  it("fails a per-key product whose asset field repeats the folder name", () => {
+    const tree = treeFrom("app", (raw) => {
+      raw.products.gizmo.media[0].src = "gizmo/assets/demo.gif";
+    });
+    assertOneIssue(crossCheck(tree), {
+      file: "app/docs.yml",
+      field: "products.gizmo.media[0].src",
+      message: /gizmo\/assets\/demo\.gif is docs\/user\/gizmo\/gizmo\/assets\/demo\.gif, which is not listed in assets/,
     });
   });
 });
