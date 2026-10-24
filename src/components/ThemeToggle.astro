@@ -1,7 +1,6 @@
 ---
 /*
- * Switches between the dark and light theme and stores the choice. Until the
- * user chooses, the page follows the system preference (see SiteHead).
+ * Switches between the dark and light theme (behaviour in lib/theme.ts).
  */
 ---
 
@@ -16,42 +15,28 @@
 </button>
 
 <script>
-  const KEY = "wyrd-theme";
-  const root = document.documentElement;
-  const system = matchMedia("(prefers-color-scheme: light)");
+  import { startThemeToggle } from "../lib/theme";
 
-  function stored(): string | null {
-    try {
-      return localStorage.getItem(KEY);
-    } catch {
-      return null;
-    }
-  }
+  const root = document.documentElement;
+  const buttons = document.querySelectorAll("[data-theme-toggle]");
 
   function label() {
     const next = root.dataset.theme === "light" ? "dark" : "light";
-    document.querySelectorAll("[data-theme-toggle]").forEach((b) => b.setAttribute("aria-label", `Switch to ${next} theme`));
+    buttons.forEach((b) => b.setAttribute("aria-label", `Switch to ${next} theme`));
   }
 
-  document.querySelectorAll("[data-theme-toggle]").forEach((b) =>
-    b.addEventListener("click", () => {
-      const next = root.dataset.theme === "light" ? "dark" : "light";
-      root.dataset.theme = next;
-      try {
-        localStorage.setItem(KEY, next);
-      } catch {}
-      label();
-    }),
-  );
+  let storage: Storage | null = null;
+  try {
+    storage = localStorage;
+  } catch {}
 
-  // Follow the system preference until the user chooses.
-  system.addEventListener("change", (e) => {
-    const s = stored();
-    if (s === "light" || s === "dark") return;
-    root.dataset.theme = e.matches ? "light" : "dark";
-    label();
+  const theme = startThemeToggle({
+    root,
+    storage,
+    system: matchMedia("(prefers-color-scheme: light)"),
+    onChange: label,
   });
-
+  buttons.forEach((b) => b.addEventListener("click", () => theme.toggle()));
   label();
 </script>
 

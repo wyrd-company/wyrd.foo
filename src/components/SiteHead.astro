@@ -24,7 +24,7 @@ const socialImage = new URL(resolveSocialImage(product), site).href;
 <meta charset="utf-8" />
 <script is:inline>
   // Set the theme before the first paint: the stored choice, else the system
-  // preference, else dark. ThemeToggle stores the choice under the same key.
+  // preference, else dark. lib/theme.ts stores the choice under the same key.
   (() => {
     let theme;
     try {
