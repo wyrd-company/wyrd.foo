@@ -3,7 +3,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { stringify } from "yaml";
-import { fetchBranch, runLocal, type LocalConfig, type RepoReport } from "../../publisher/index.ts";
+import { FETCH_KILL_GRACE_MS, fetchBranch, runLocal, type LocalConfig, type RepoReport } from "../../publisher/index.ts";
 import { toolFileSchema } from "../../src/schema/index.ts";
 import { fakeReleases, git, OWNER, WIDE_SVG, Workspace } from "./fixture-repo.ts";
 import { ALPHA_CLI_RELEASE, ALPHA_TAGS, alphaFiles, BETA_TAGS, betaFiles, brokenFiles, gammaFiles } from "./fixtures.ts";
@@ -424,6 +424,88 @@ describe("local mode: fetch from origin", () => {
     });
   });
 });
+
+describe("fetchBranch: stopping a fetch that passed its bound", () => {
+  const ws = new Workspace();
+  after(() => ws.remove());
+
+  /** A clone whose origin is a stub ssh running `script`; its PIDs are written to `<stub>.pids`. */
+  async function withHangingRemote(name: string, script: string, body: (dir: string, stub: string) => Promise<void>) {
+    const dir = join(ws.root, name);
+    git(ws.root, "init", "-q", "-b", "main", dir);
+    git(dir, "remote", "add", "origin", `ssh://stub-host/${name}`);
+    const stubDir = mkdtempSync(join(ws.root, "stub-"));
+    const stub = join(stubDir, "ssh");
+    writeFileSync(stub, `#!/bin/sh\n${script}\n`);
+    chmodSync(stub, 0o755);
+    const saved = process.env.PATH;
+    process.env.PATH = `${stubDir}:${saved}`;
+    try {
+      await body(dir, stub);
+    } finally {
+      process.env.PATH = saved;
+      for (const pid of pidsOf(stub)) if (isAlive(pid)) process.kill(pid, "SIGKILL");
+    }
+  }
+  const pidsOf = (stub: string) => (existsSync(`${stub}.pids`) ? readFileSync(`${stub}.pids`, "utf8").split("\n").filter(Boolean).map(Number) : []);
+
+  it("uses a 5 s grace from SIGTERM to SIGKILL by default", () => {
+    assert.equal(FETCH_KILL_GRACE_MS, 5_000);
+  });
+
+  it("sends SIGTERM first, and returns without the grace when the group exits on it", async () => {
+    // The stub records the signal it gets, then exits; its child exits on SIGTERM too.
+    const script = `echo $$ > "$0.pids"\ntrap 'echo TERM >> "$0.signals"; exit 0' TERM\nsleep 20 &\necho $! >> "$0.pids"\nwait`;
+    await withHangingRemote("term", script, async (dir, stub) => {
+      const started = Date.now();
+      const result = await fetchBranch(dir, "wyrd-foo-v2", { timeoutMs: 300, graceMs: 8_000 });
+      const elapsed = Date.now() - started;
+      assert.deepEqual(result, { ok: false, message: "timed out after 0.3 s" });
+      assert.equal(pidsOf(stub).length, 2, "the fetch reached the stub ssh");
+      assert.equal(existsSync(`${stub}.signals`) ? readFileSync(`${stub}.signals`, "utf8") : "", "TERM\n", "the stub got SIGTERM");
+      assert.ok(elapsed < 5_000, `returned in ${elapsed} ms, before the 8 s grace`);
+      for (const pid of pidsOf(stub)) assert.ok(!isAlive(pid), `process ${pid} started by the fetch is gone`);
+    });
+  });
+
+  it("sends SIGKILL after the grace to a group that ignores SIGTERM", async () => {
+    // The stub and its child ignore SIGTERM (an ignored signal is inherited).
+    const script = `trap '' TERM\necho $$ > "$0.pids"\nsleep 20 &\necho $! >> "$0.pids"\nwait`;
+    await withHangingRemote("kill", script, async (dir, stub) => {
+      const started = Date.now();
+      const result = await fetchBranch(dir, "wyrd-foo-v2", { timeoutMs: 300, graceMs: 700 });
+      const elapsed = Date.now() - started;
+      assert.deepEqual(result, { ok: false, message: "timed out after 0.3 s" });
+      assert.equal(pidsOf(stub).length, 2, "the fetch reached the stub ssh");
+      // The sleeping child would end by itself after 20 s.
+      assert.ok(elapsed >= 1_000 && elapsed < 10_000, `returned in ${elapsed} ms: after the grace, before the stub ends by itself`);
+      for (const pid of pidsOf(stub)) assert.ok(!isAlive(pid), `process ${pid} started by the fetch is gone`);
+    });
+  });
+
+  it("waits for the grace when git exits but a process it started, no longer on its stderr, ignores SIGTERM", async () => {
+    // Without git's stderr, the stub no longer holds the pipe that ends the run.
+    const script = `exec 2>/dev/null\ntrap '' TERM\necho $$ > "$0.pids"\nsleep 20 &\necho $! >> "$0.pids"\nwait`;
+    await withHangingRemote("detached", script, async (dir, stub) => {
+      const started = Date.now();
+      const result = await fetchBranch(dir, "wyrd-foo-v2", { timeoutMs: 300, graceMs: 700 });
+      const elapsed = Date.now() - started;
+      assert.deepEqual(result, { ok: false, message: "timed out after 0.3 s" });
+      assert.equal(pidsOf(stub).length, 2, "the fetch reached the stub ssh");
+      assert.ok(elapsed >= 1_000, `returned in ${elapsed} ms, after the grace`);
+      // SIGKILL was sent to the group; no pipe close waits for it to land.
+      for (const pid of pidsOf(stub)) assert.ok(await goneWithin(pid, 2_000), `process ${pid} started by the fetch is gone`);
+    });
+  });
+});
+
+/** True once `pid` is gone, polled every 20 ms up to `ms`. */
+async function goneWithin(pid: number, ms: number): Promise<boolean> {
+  for (const end = Date.now() + ms; Date.now() < end; await new Promise((done) => setTimeout(done, 20))) {
+    if (!isAlive(pid)) return true;
+  }
+  return !isAlive(pid);
+}
 
 /** True while the process runs; a zombie is gone. Reads /proc, so it does not guess from a name. */
 function isAlive(pid: number): boolean {
