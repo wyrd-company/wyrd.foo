@@ -13,7 +13,10 @@ import {
 
 // The fixture repos of the publisher tests. Names are generic samples.
 
-/** Two products in one map, one with two kinds, each with its own docs folder and docs unit. */
+/**
+ * Two products in one map, one with two kinds, each with its own docs folder
+ * (`docs/user/<key>/`) and docs unit. Asset fields are relative to that folder.
+ */
 export function alphaFiles(options: { withApp?: boolean } = {}): Files {
   const withApp = options.withApp ?? true;
   const products: Record<string, unknown> = {
@@ -38,17 +41,28 @@ export function alphaFiles(options: { withApp?: boolean } = {}): Files {
   return {
     "docs/user/docs.yml": yaml({
       schemaVersion: 1,
-      assets: ["assets/demo.svg", "assets/logo.svg", "assets/diagram.svg", "assets/unused.svg"],
+      assets: [
+        "alpha-cli/assets/demo.svg",
+        "alpha-cli/assets/logo.svg",
+        "alpha-cli/assets/diagram.svg",
+        ...(withApp ? ["alpha-app/assets/demo.svg"] : []),
+        "assets/unused.svg",
+      ],
       products,
     }),
-    "docs/user/assets/demo.svg": SQUARE_SVG,
-    "docs/user/assets/logo.svg": SQUARE_SVG,
-    "docs/user/assets/diagram.svg": SQUARE_SVG,
+    "docs/user/alpha-cli/assets/demo.svg": SQUARE_SVG,
+    "docs/user/alpha-cli/assets/logo.svg": SQUARE_SVG,
+    "docs/user/alpha-cli/assets/diagram.svg": SQUARE_SVG,
     "docs/user/assets/unused.svg": SQUARE_SVG,
-    "docs/user/alpha-cli/getting-started.md": page("alpha-cli", "Getting started", "![A screen](../assets/demo.svg)\n"),
-    "docs/user/alpha-cli/guides/deep.md": page("alpha-cli", "Deep", '<img src="../../assets/diagram.svg" alt="A diagram">\n'),
+    "docs/user/alpha-cli/getting-started.md": page("alpha-cli", "Getting started", "![A screen](assets/demo.svg)\n"),
+    "docs/user/alpha-cli/guides/deep.md": page("alpha-cli", "Deep", '<img src="../assets/diagram.svg" alt="A diagram">\n'),
     "docs/user/alpha-cli/CHANGELOG.md": changelog(["1.0.0", "Write the first sample page."]),
-    ...(withApp ? { "docs/user/alpha-app/getting-started.md": page("alpha-app", "Getting started") } : {}),
+    ...(withApp
+      ? {
+          "docs/user/alpha-app/getting-started.md": page("alpha-app", "Getting started"),
+          "docs/user/alpha-app/assets/demo.svg": SQUARE_SVG,
+        }
+      : {}),
     ".intentional/config.yml": intentional(units),
     "cli/CHANGELOG.md": changelog(["1.2.0", "Add the sample command."], ["1.1.0", "An older change."]),
     "app/CHANGELOG.md": changelog(["0.3.0", "Add the sample service."]),

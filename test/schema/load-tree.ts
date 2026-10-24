@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { parse } from "yaml";
 import {
@@ -28,7 +28,8 @@ export function readRawDocs(name: string): Raw {
 
 /**
  * Load a fixture as a docs/user/ tree, the way the publisher sees one. The
- * shared fixtures/assets/ folder is the tree's assets/ folder.
+ * shared fixtures/assets/ folder is the tree's assets/ folder, and the
+ * assets/ folder of each product that has its own folder.
  */
 export function loadTree(name: string, raw: unknown = readRawDocs(name)): LoadedTree {
   const root = join(FIXTURES, name);
@@ -45,7 +46,11 @@ export function loadTree(name: string, raw: unknown = readRawDocs(name)): Loaded
   }
   const files = new Map<string, Uint8Array>();
   for (const path of walk(root)) files.set(path, readFileSync(join(root, path)));
-  for (const path of walk(join(FIXTURES, "assets"))) files.set(`assets/${path}`, readFileSync(join(FIXTURES, "assets", path)));
+  // A product with its own folder (one docs unit per product) has its assets there.
+  const folders = ["", ...keys.filter((key) => existsSync(join(root, key))).map((key) => `${key}/`)];
+  for (const path of walk(join(FIXTURES, "assets"))) {
+    for (const folder of folders) files.set(`${folder}assets/${path}`, readFileSync(join(FIXTURES, "assets", path)));
+  }
   return { issues, tree: docs.ok ? { docsFile, docs: docs.data, pages, files } : undefined };
 }
 

@@ -1,9 +1,11 @@
 # An app that is also a dev container feature, and a second product in the
 # same repo with its own getting-started page.
 schemaVersion: 1
+# Each product has its own folder, so its asset fields are relative to it.
 assets:
-  - assets/demo.gif
-  - assets/social.jpg
+  - gadget/assets/demo.gif
+  - gadget/assets/social.jpg
+  - gizmo/assets/demo.gif
 products:
   gadget:
     name: gadget

@@ -9,6 +9,7 @@ import {
   isPageFile,
   pageSchema,
   parseWith,
+  productDocsFolder,
   releaseUnitOf,
   toolFeatureSchema,
   toolProductSchema,
@@ -140,22 +141,16 @@ async function readTree(ctx: Context): Promise<Tree | undefined> {
     if (!isPageFile(path, keys)) continue;
     const file = DOCS_ROOT + path;
     const source = new TextDecoder().decode(content);
-    for (const link of linksOutside(file, source, DOCS_ROOT)) {
+    const page = parsePage(ctx, file, source);
+    if (page !== undefined) pages.set(path, page);
+    // A page is published inside its product's docs folder, so a link that leaves it points at nothing.
+    const folder = page === undefined || !keys.includes(page.product) ? "" : productDocsFolder(page.product, files.keys());
+    for (const link of linksOutside(file, source, DOCS_ROOT + folder)) {
       findings.warning({
         file,
-        message: `line ${link.line}: link ${link.target} resolves to ${link.resolved}, outside ${DOCS_ROOT}; that file is not published`,
+        message: `line ${link.line}: link ${link.target} resolves to ${link.resolved}, outside ${DOCS_ROOT + folder}; that file is not published`,
       });
     }
-    const front = frontMatter(source);
-    if (front === undefined) {
-      findings.error({ file, message: "has no front matter" });
-      continue;
-    }
-    const data = parseYaml(ctx, file, new TextEncoder().encode(front));
-    if (data === undefined) continue;
-    const page = parseWith(pageSchema, data, file);
-    if (page.ok) pages.set(path, page.data);
-    else reportIssues(findings, page.issues);
   }
 
   const pageList = [...pages].map(([path, data]) => ({ path: DOCS_ROOT + path, data }));
@@ -164,12 +159,27 @@ async function readTree(ctx: Context): Promise<Tree | undefined> {
   return { docs: docs.data, files, pages };
 }
 
+function parsePage(ctx: Context, file: string, source: string): PageFrontMatter | undefined {
+  const front = frontMatter(source);
+  if (front === undefined) {
+    ctx.findings.error({ file, message: "has no front matter" });
+    return undefined;
+  }
+  const data = parseYaml(ctx, file, new TextEncoder().encode(front));
+  if (data === undefined) return undefined;
+  const page = parseWith(pageSchema, data, file);
+  if (page.ok) return page.data;
+  reportIssues(ctx.findings, page.issues);
+  return undefined;
+}
+
 function checkLogosSquare(findings: Findings, docs: DocsFile, files: Map<string, Uint8Array>) {
   for (const [key, entry] of Object.entries(docs.products) as [string, Entry][]) {
+    const folder = productDocsFolder(key, files.keys());
     const logos: [string, string | undefined][] = [["logo", entry.logo]];
     if (!isFeatureEntry(entry)) logos.push(["logo-dark", entry["logo-dark"]]);
     for (const [field, path] of logos) {
-      const bytes = path === undefined || !path.toLowerCase().endsWith(".svg") ? undefined : files.get(path);
+      const bytes = path === undefined || !path.toLowerCase().endsWith(".svg") ? undefined : files.get(folder + path);
       const problem = bytes === undefined ? undefined : squareProblem(bytes);
       if (problem !== undefined) findings.error({ key, file: DOCS_FILE, message: `products.${key}.${field}: ${path} ${problem}` });
     }
@@ -205,10 +215,15 @@ async function productOutput(ctx: Context, tree: Tree, key: string, entry: Produ
   if (changelog !== undefined) files.set(CODE_CHANGELOG, changelog);
   const release = unit === undefined ? undefined : await productRelease(ctx, key, unit, entry.version, changelog);
 
+  // content/<key>/docs/ mirrors the product's docs folder.
+  const folder = productDocsFolder(key, tree.files.keys());
   const productPages = [...tree.pages].filter(([, page]) => page.product === key).map(([path]) => path);
-  for (const path of productPages) files.set(`docs/${path}`, tree.files.get(path)!);
-  for (const path of usedAssets(tree, entry, productPages)) files.set(`docs/${path}`, tree.files.get(path)!);
-  const docsChangelog = docsChangelogOf(tree, key);
+  for (const path of productPages) {
+    if (path.startsWith(folder)) files.set(`docs/${path.slice(folder.length)}`, tree.files.get(path)!);
+    else ctx.findings.error({ key, file: DOCS_ROOT + path, message: `is outside the docs folder of product ${key}, ${DOCS_ROOT}${folder}` });
+  }
+  for (const path of usedAssets(ctx, tree, key, entry, folder, productPages)) files.set(`docs/${path.slice(folder.length)}`, tree.files.get(path)!);
+  const docsChangelog = tree.files.get(folder + DOCS_CHANGELOG);
   if (docsChangelog !== undefined) files.set(`docs/${DOCS_CHANGELOG}`, docsChangelog);
 
   const kinds = await Promise.all(entry.kinds.map((block) => (block.kind === "devcontainer-image" ? imageKind(ctx, key, entry, unit, block, files) : block)));
@@ -222,20 +237,23 @@ async function productOutput(ctx: Context, tree: Tree, key: string, entry: Produ
   return validated(ctx, key, tool, files, false);
 }
 
-/** The listed assets a product uses: the ones its fields name, and the ones its pages name. */
-function usedAssets(tree: Tree, entry: ProductEntry, pages: string[]): string[] {
-  const named = new Set([entry.logo, entry["logo-dark"], entry.favicon, entry["social-image"], ...entry.media.map((item) => item.src)]);
+/**
+ * The listed assets a product uses, by path relative to docs/user/: the ones
+ * its fields name (relative to its docs folder), and the ones its pages link
+ * to. A linked asset outside the product's docs folder is not published with
+ * it, so it gets a warning.
+ */
+function usedAssets(ctx: Context, tree: Tree, key: string, entry: ProductEntry, folder: string, pages: string[]): string[] {
+  const fields = [entry.logo, entry["logo-dark"], entry.favicon, entry["social-image"], ...entry.media.map((item) => item.src)];
+  const named = new Set(fields.flatMap((path) => (path === undefined ? [] : [folder + path])));
   const texts = pages.map((path) => ({ dir: posix.dirname(path), text: new TextDecoder().decode(tree.files.get(path)) }));
-  return tree.docs.assets.filter(
-    (asset) =>
-      tree.files.has(asset) &&
-      (named.has(asset) || texts.some(({ dir, text }) => text.includes(posix.relative(dir, asset)) || text.includes(asset))),
-  );
-}
-
-/** The docs unit changelog: `docs/user/<key>/CHANGELOG.md`, else `docs/user/CHANGELOG.md`. */
-function docsChangelogOf(tree: Tree, key: string): Uint8Array | undefined {
-  return tree.files.get(`${key}/${DOCS_CHANGELOG}`) ?? tree.files.get(DOCS_CHANGELOG);
+  const linked = (asset: string) => texts.some(({ dir, text }) => text.includes(posix.relative(dir, asset)));
+  return tree.docs.assets.filter((asset) => {
+    if (!tree.files.has(asset) || !(named.has(asset) || linked(asset))) return false;
+    if (asset.startsWith(folder)) return true;
+    ctx.findings.warning({ key, message: `a page links to ${DOCS_ROOT}${asset}, outside the docs folder ${DOCS_ROOT}${folder}; it is not published with ${key}` });
+    return false;
+  });
 }
 
 async function imageKind(
@@ -304,7 +322,8 @@ async function featureOutput(ctx: Context, tree: Tree, key: string, entry: Featu
   const changelog = unit === undefined ? undefined : await codeChangelog(ctx, key, unit);
   if (changelog !== undefined) files.set(CODE_CHANGELOG, changelog);
   const release = unit === undefined ? undefined : await tagRelease(ctx, key, unit, feature.version, changelog);
-  if (entry.logo !== undefined && tree.files.has(entry.logo)) files.set(`docs/${entry.logo}`, tree.files.get(entry.logo)!);
+  const logo = entry.logo === undefined ? undefined : tree.files.get(productDocsFolder(key, tree.files.keys()) + entry.logo);
+  if (logo !== undefined) files.set(`docs/${entry.logo}`, logo);
 
   const tool = {
     ...entry,

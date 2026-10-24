@@ -88,7 +88,7 @@ describe("publisher core: release data", () => {
 
 describe("publisher core: checks", () => {
   it("a logo that is not square fails the repo", async () => {
-    const files = { ...alphaFiles(), "docs/user/assets/logo.svg": WIDE_SVG };
+    const files = { ...alphaFiles(), "docs/user/alpha-cli/assets/logo.svg": WIDE_SVG };
     const result = await computeRepo(input(files));
     assert.equal(result.failed, true);
     assert.deepEqual(result.products, [], "no product of a failed repo is returned");
@@ -123,6 +123,41 @@ describe("publisher core: checks", () => {
     const result = await computeRepo(input(files));
     assert.equal(result.failed, true);
     assert.match(errors(result.findings).join("\n"), /contract/);
+  });
+});
+
+describe("publisher core: a product's docs folder", () => {
+  it("fails a page of a per-key product that sits outside the product's folder", async () => {
+    const files = { ...alphaFiles(), "docs/user/stray.md": "---\ntitle: Stray\nproduct: alpha-cli\n---\n\nBody.\n" };
+    const result = await computeRepo(input(files));
+    assert.equal(result.failed, true);
+    assert.deepEqual(errors(result.findings), ["is outside the docs folder of product alpha-cli, docs/user/alpha-cli/"]);
+  });
+
+  it("warns when a page links to a listed asset outside its product's folder, and does not publish it with the product", async () => {
+    const files = { ...alphaFiles() };
+    files["docs/user/alpha-cli/guides/deep.md"] = files["docs/user/alpha-cli/guides/deep.md"].toString() + "\n![Shared](../../assets/unused.svg)\n";
+    const result = await computeRepo(input(files));
+    assert.equal(result.failed, false);
+    const messagesOf = result.findings.filter((finding) => finding.key === "alpha-cli").map((finding) => finding.message);
+    assert.ok(messagesOf.includes("a page links to docs/user/assets/unused.svg, outside the docs folder docs/user/alpha-cli/; it is not published with alpha-cli"));
+    const cli = result.products.find((product) => product.key === "alpha-cli")!;
+    assert.ok(![...cli.files.keys()].some((path) => path.includes("unused.svg")));
+  });
+});
+
+describe("publisher core: hand-set versions", () => {
+  it("publishes a repo whose units cannot project into docs.yml, with the versions docs.yml sets by hand", async () => {
+    const files = alphaFiles();
+    // Code units away from the repo root, no projection into docs/user/docs.yml, and no docs units.
+    files[".intentional/config.yml"] = files[".intentional/config.yml"].toString().replace(/ {2}alpha-(cli|app)-docs:[\s\S]*?(?= {2}alpha-|$)/g, "");
+    assert.doesNotMatch(files[".intentional/config.yml"].toString(), /-docs:|projections: \[\s*\{/);
+    const result = await computeRepo(input(files));
+    assert.equal(result.failed, false);
+    assert.deepEqual(result.findings.filter((finding) => finding.severity === "error"), []);
+    const cli = result.products.find((product) => product.key === "alpha-cli")!;
+    assert.equal(cli.tool.version, "1.2.0");
+    assert.equal((cli.tool.release as { version: string }).version, "1.2.0");
   });
 });
 
@@ -343,7 +378,7 @@ describe("links outside docs/user/", () => {
     const warnings = result.findings.filter((finding) => finding.file === "docs/user/alpha-cli/guides/deep.md");
     assert.deepEqual(
       warnings.map((finding) => [finding.severity, finding.message]),
-      [["warning", "line 8: link ../../../../cli/main.go resolves to cli/main.go, outside docs/user/; that file is not published"]],
+      [["warning", "line 8: link ../../../../cli/main.go resolves to cli/main.go, outside docs/user/alpha-cli/; that file is not published"]],
     );
   });
 });
