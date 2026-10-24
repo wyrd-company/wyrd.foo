@@ -1,114 +1,158 @@
-# Plan: the wyrd.foo update
+# Plan: wyrd.foo v2
 
-Status: **planning.** This ties together what was decided across the design
-and publishing discussions, what is still open, and how the update ships.
-Details live in:
+This plan ties the v2 design to the work that builds it. The design is in:
 
-- [`REDESIGN.md`](REDESIGN.md): theme, home page, product page, docs, search.
-- [`PUBLISHING-PROPOSAL.md`](PUBLISHING-PROPOSAL.md): the `docs.yml` fields,
-  release and featured data, and schemas. Its pull-based mechanism is
-  reconsidered below.
-- [`PUBLISHING.md`](PUBLISHING.md): the current push-based flow, authoritative
-  until the cutover.
+- [`REDESIGN.md`](REDESIGN.md): theme, product marks, home page, product
+  page, docs, search.
+- [`PUBLISHING-PROPOSAL.md`](PUBLISHING-PROPOSAL.md): the `docs/user/`
+  contract, publishing requirements, the publisher core, local mode and
+  schemas.
+- [`PUBLISHING.md`](PUBLISHING.md): `publish-docs@v1`, which the live site
+  uses until the cutover.
 
-## Scope
+## Goal
 
-One coordinated update made of four parts:
+wyrd.foo v2 runs on a dev server, built from each tool repo's `wyrd-foo-v2`
+branch. This effort ends at user acceptance of the dev server.
 
-1. **Redesign** as recorded in `REDESIGN.md`.
-2. **Site schema** with the new `docs.yml` fields (`kind`, `install[].os`,
-   `highlights`, `nav`, `media`, `schemaVersion`; `language` dropped) and the
-   ingest-owned `release` and `featured` data.
-3. **Publishing** that validates against that schema before content reaches
-   `main` (mechanism still open; see below).
-4. **Migration** of every published tool to the new contract.
+Live wyrd.foo, every tool repo's default branch and every publish trigger
+stay as they are during this effort. v2 does not merge to wyrd.foo `main`,
+and nothing is published to a public platform.
 
-## Decided
+## Shape of the work
 
-- **Ship as one cutover.** The redesign branch does not merge until all four
-  parts are ready. The new schema rejects today's `tool.yaml`, so once it is on
-  `main`, the existing `content/` folders and any release still using
-  `publish-docs@v1` would break the site build.
-- **No transitional schema.** The site will not accept both formats; tool
-  repos move to the new contract during the cutover.
-- **Search** is Pagefind (done on the branch). Restyling and the `kind`
-  filter come with the redesign.
-- **Schemas** are published at versioned URLs
-  (`https://wyrd.foo/schemas/docs/v1.json`), generated from the site's Zod
-  schema so the two cannot drift.
-- **Release and featured data** as in the proposal: written into `tool.yaml`
-  by the publishing step, never by `docs.yml`; the front page picks its
-  featured product in the browser.
+- All v2 work is on one wyrd.foo branch, built from the branch that holds
+  Pagefind search and these design documents.
+- wyrd.foo is before 0.1.0. The site has one schema, with no transitional
+  schema; the content migration script is the only migration.
+- The site's Zod schema is the single source of truth for `docs.yml` and
+  page front matter. The site and the publisher import it, and
+  `/schemas/docs/v1.json` is generated from it.
+- Publishing is push: `publish-docs@v2`, a TypeScript action, called through
+  a reusable workflow. One publisher core runs in local mode (dev server) and
+  inside the action.
+- Each in-scope tool repo gets a `wyrd-foo-v2` branch with its public docs in
+  `docs/user/` in the v2 format. The default branch is not changed.
 
-## Open: the publishing mechanism
+## Repos and products
 
-The proposal's goals, against the push model that works today:
+| Repo | Product keys | Kinds | Gap against the publishing requirements |
+| --- | --- | --- | --- |
+| gitpr | gitpr | cli | — |
+| intentional | intentional | cli | — |
+| toha | toha | cli | Trigger is a push to `main` |
+| trowel | trowel | app, devcontainer-feature | — |
+| xolotl | xolotl | app | — |
+| wyrwood | wyrwood | app | — |
+| t3code-client | t3c, t3code-mcp | cli; mcp-server | — |
+| beholder | beholder | cli | No GitHub Release for 0.1.0 |
+| seek-cli | seek | cli | No intentional |
+| tagver | tagver | cli | No intentional |
+| agent-svgtools | agent-svgtools | cli | No intentional |
+| devcontainer-builder | dcb | cli | intentional on work branches only |
+| devcontainers | 17 feature entries, base | devcontainer-feature; devcontainer-image | No intentional, no GitHub Releases |
 
-| Goal | Push model today |
-| --- | --- |
-| Add a tool without changing wyrd.foo | Met: the site self-registers each `content/<slug>/`. |
-| Record release information | Possible: the action runs inside the release. |
-| Support more kinds | Independent: a schema change either way. |
-| Schema and validation owned by wyrd.foo | Not met: `publish-docs` checks only page front matter, so an invalid `tool.yaml` is caught at site build, after it is on `main`. |
+Every repo needs intentional 0.1.7 or later, the code version projection and
+a `<key>-docs` unit for each product that is not a feature entry.
+async-codex-mcp, async-claude-agentsdk-mcp and lore adopt intentional before
+they get a wyrd.foo page.
 
-Options:
+## Slices
 
-**A. Push, `publish-docs@v2`.** The action fetches the published schema for
-the repo's `schemaVersion`, validates `docs.yml` and the manifest, and refuses
-to push on failure. It writes `release` and `featured` from the release
-context and action inputs.
+| # | Slice | Contents |
+| --- | --- | --- |
+| 0 | v2 dev server | A wyrd.foo task that, for each tool repo, reads its `wyrd-foo-v2` branch from the local clone, runs the publisher core in local mode into a dev content folder (no commit, no push), and serves the v2 site. Release data comes from local tags when no GitHub Release is reachable. Unmet requirements are warnings. |
+| 1 | Schema and endpoint | Zod schema for `docs.yml`: products map, `kinds` (one block per kind), `install[]` with `method`, `os`, `default`, `label`; `highlights` up to six; `nav`; `media`; `version`, `docs-version`, `release-unit`; `order`; `logo`, `logo-dark`, `favicon`, `social-image`; feature entries; publisher-owned `release`, `featured`, `source`; `relationships` allowed; no `language`. Page schema: `product` required, no `docs` flag. The cross-checks in the publishing design. `/schemas/docs/v1.json` through `z.toJSONSchema`, in a module the publisher imports. |
+| 2 | Theme and shell | Tokens as CSS variables with dark and light values, Geist self-hosted, per-product favicon and `og:`/`twitter:` meta in the shared head, a theme toggle with no flash, a shared header and layout. The blueprint CSS goes. |
+| 3 | Home | Headline, featured card with the browser picker, the shared logo-or-monogram component, Recent releases, catalog with kind tabs (a product under each of its kinds), filter and Copy. |
+| 4 | Product page | `/tools/[key]`: hero with mark and facts, media, highlights, docs map. One install block for each kind: CLI and app (OS tabs and methods, with the site's APT/RPM setup), MCP (client tabs and tools table), feature (`devcontainer.json`), image (reference and tags table). App: screenshot tour. The abbreviated feature entry page. |
+| 5 | Docs | Sticky two-row header (product switcher with marks), sidebar for the current section with progress dots, "On this page" that tracks the last heading above the top of the viewport, Copy as Markdown, Edit on GitHub, version footer. Restyled Pagefind, product pages indexed, `kind` filter. |
+| 6 | `publish-docs@v2` | TypeScript action and reusable workflow around the publisher core. Pages from `docs/user/**`; release data and changelog from the intentional unit and the GitHub Release (feature entries: the annotated tag); generated data from workspace files; key ownership; `featured` carried forward; push with retry. |
+| 7 | Content migration | A script that changes every `content/` folder to the v2 format, and a PR build check workflow on wyrd.foo. |
+| 8 | Tool-repo branches | A `wyrd-foo-v2` branch in each existing repo and beholder: public pages and `docs.yml` moved to `docs/user/`, `docs.yml` in the v2 format, `product:` on every page, highlights, `nav` for toha and xolotl, categories cleaned up, logos, favicon and social image where the repo has them, the calling workflow for v2. t3code-client: one `docs.yml` with two products. One intent per repo where `.intentional/` exists. |
+| 8b | Requirements | The code version projection and a `<key>-docs` unit in every repo; publish triggers on code and docs tags. intentional adopted in seek-cli, tagver and agent-svgtools, and finished in dcb. A GitHub Release for beholder 0.1.0. Repos without intentional set `version` by hand on their `wyrd-foo-v2` branch. |
+| 8c | Toha onboarding template | A Toha template in a subdirectory of the wyrd.foo repo that onboards a tool repo: `docs/user/docs.yml` with one product, a starter page, the calling workflow for v2, and the intentional docs unit where `.intentional/` exists. Toha update mode carries later contract changes into repos that use it. Repos consume it by Git address tracking wyrd.foo `main`, with no template version tags. It starts when an accepted Toha release exists. |
+| 9 | devcontainers onboarding | intentional (one unit per feature, plus the base image's code unit with a json projection on `manifest.json` `/version`, and its docs unit) and GitHub Releases for the image. `docs/user/docs.yml` with 17 feature entries and a full entry for the base image. Highlights and media for the base image, with media captured by vhs or freeze. The v2 calling workflow in `cd.yml` and `images.yml`. |
 
-- Smallest change from today; meets the schema goal.
-- Tool repos keep the publisher App key, which has Contents: write on
-  wyrd.foo, and the rebase-retry loop stays.
+Order and dependencies:
 
-**B. Pull, triggered by `workflow_dispatch`.** The tool repo calls
-`POST /repos/wyrd-company/wyrd.foo/actions/workflows/ingest.yml/dispatches`
-with a credential scoped to **Actions: write** on wyrd.foo only. The ingest
-workflow holds the push key, validates, and commits; runs are serialized.
-
-- Tool repos can no longer push to wyrd.foo; no retry loop.
-- The trigger credential can still start, cancel, or re-run any workflow in
-  wyrd.foo, not only ingest.
-- `repo` and `ref` inputs are caller-supplied; see OIDC below.
-
-**C. Pull, triggered by polling.** A scheduled workflow in wyrd.foo finds
-opted-in repos (org custom property `wyrd-foo-publish`) and ingests new
-releases.
-
-- No credentials in tool repos; `repo` and `ref` come from GitHub, so OIDC is
-  unnecessary.
-- Up to one cron interval of delay; `feature` requests move into the release
-  (for example `wyrd-manifest.json`); docs-only fixes between releases need a
-  manual run.
-
-`repository_dispatch`, as the proposal has it, needs Contents: write, the
-same exposure as push, so it offers nothing over A.
-
-Leaning: **A for this update**, with B or C as a later, separate change if the
-key exposure or retry loop starts to matter. Not yet agreed.
-
-## Other open questions
-
-- **Caller identity (B only).** Verify a GitHub OIDC token in the dispatch
-  (`aud: wyrd.foo`; trust its `repository`, `ref`, `job_workflow_ref` claims)
-  instead of the caller-supplied inputs.
-- **Products without docs pages.** Whether apps or images get a product page
-  before they have any `docs: true` page.
-- **Release freeze or guard** during the cutover (see step 3 below).
+- Slice 0 is first: it is the goal of this effort.
+- Slices 2–5 run in parallel after slice 1.
+- Slice 8 and slice 9 do not wait for slice 8c.
+- Bob reviews the highlights for every product. That review is on the
+  critical path.
+- dcb joins when its docs branch merges.
 
 ## Cutover
 
-Tool repos to migrate (from `content/` on `main`): agent-svgtools, gitpr,
-intentional, seek-cli, t3code-client, tagver, toha, trowel, wyrwood, xolotl.
+The cutover is a separate effort after this one. It starts only when a
+freeze of tool releases is viable. Tool releases are frozen for the whole
+cutover.
 
-1. **Build on the branch:** schema and schema endpoint, redesign, the chosen
-   publishing mechanism, and every `content/<slug>/` migrated to the new
-   format in the same change.
-2. **Prepare, don't merge,** one PR per tool repo: new `docs.yml` fields and
-   the new publishing workflow. toha and wyrwood pin `publish-docs` by SHA.
-3. **Stop old-format publishes:** freeze tool releases for the window, or make
-   v1 publishing refuse once the new schema is live.
-4. **Merge wyrd.foo,** deploy, and check every product page and docs tree.
-5. **Merge the tool-repo PRs** and republish each one; check its pages.
-6. **Lift the freeze** and retire whatever the chosen mechanism replaces.
+1. **Freeze** tool releases.
+2. **Merge** v2 to wyrd.foo `main`, deploy, and check every product page and
+   docs tree.
+3. **Move each tool repo** to v2 on its default branch: `docs/user/`, the
+   calling workflow and the tag triggers (toha stops publishing on a push to
+   `main`). toha, trowel, wyrwood and t3code-client's MCP call pin
+   `publish-docs` by SHA, so each pin changes too. Republish each repo and
+   check its pages.
+4. **Retag** `publish-docs@v1` to fail with a message that names v2.
+5. **Lift the freeze.**
+
+## Open questions
+
+- **Two meanings of `source`.** In `docs.yml`, a feature entry's `source` is
+  a path in the repo (`src/features/caddy`). In `content/<key>/tool.yaml`,
+  `source` is the owner repo (`wyrd-company/devcontainers`). A feature
+  entry's `tool.yaml` needs the owner; the publisher reads the path only at
+  publish time.
+- **Feature entry release unit.** A feature entry holds no `release-unit`, so
+  its unit is its key. An existing unit whose id differs from the feature key
+  (for example `heddle-feature`) needs either a rename or a `release-unit`
+  field in the short entry.
+- **Feature entry `ref`.** A feature entry holds no `ref`. The
+  `devcontainer.json` snippet needs the feature's OCI reference, so the
+  publisher derives it, or the entry gets a `ref` field.
+- **The `repo` field.** The facts list shows the source repository. It can
+  be a product field in `docs.yml`, or the site can build it from the
+  publisher's `source`.
+- **MCP generated data.** Which file in the workspace holds an MCP server's
+  tools list, and how its kind block names it.
+- **Image tags table.** Where the publisher reads the image's registry tags
+  from.
+- **MCP client tabs.** t3code-mcp installs through npm and through the
+  Claude and Codex plugin marketplaces. The mockup's client tabs are Claude
+  Code, Claude Desktop, Cursor, VS Code and JSON. The `mcp-server` kind block
+  holds the data for the tabs; its fields follow from the tab set.
+- **Install methods without a `method`.** A run command through `npx`
+  (intentional), `cargo` from Git (agent-svgtools), `docker pull` and the
+  plugin marketplaces (t3code-mcp).
+- **Category list.** The canonical category names and their order.
+  "Developer Tools", "Development" and "Code Quality" are in use and not in
+  the site's category order.
+- **Catalog order without `order`.** Where products without `order` sort
+  relative to products with it.
+- **Featuring a tag-push release.** A tag push carries no inputs, so a
+  feature is requested by a manual run of the calling workflow.
+- **The "Releases" nav.** Where the header's "Releases" link goes: a page of
+  recent releases across products, or the changelog on each product page.
+- **`docs-version` without intentional.** A repo without intentional sets
+  `version` by hand on its `wyrd-foo-v2` branch; `docs-version` needs the
+  same rule.
+
+## Risks
+
+- intentional 0.2.0 plans a GitHub Release for every released unit. wyrd.foo
+  docs units and devcontainers feature units must stay tag-only, so v2 keeps
+  its own publishing until that is settled with intentional.
+- An intentional.foo website may overlap the wyrd.foo pages for intentional.
+  One of them is the canonical docs home.
+- A docs release from `main` can describe features that are not released
+  yet, while `version` names the last release. v2 cannot detect this.
+- Full-width GIFs on every product page make pages heavy. A poster frame
+  with MP4 or WebM is an option.
+- The featured picker reads the browser clock. A wrong clock shows a
+  different product; the build-time default is in the HTML.
+- Install commands must not use a product key where the package name
+  differs (seek-cli's formula is `seek-cli`, its key is `seek`).
