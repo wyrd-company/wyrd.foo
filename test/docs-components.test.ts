@@ -4,6 +4,7 @@ import DocsHeader from "../src/components/docs/DocsHeader.astro";
 import DocsSidebar from "../src/components/docs/DocsSidebar.astro";
 import DocsToc from "../src/components/docs/DocsToc.astro";
 import DocsVersionFooter from "../src/components/docs/DocsVersionFooter.astro";
+import { CONTENT_ROOT } from "../src/lib/content-root";
 import { docsProducts } from "../src/lib/docs-products";
 import type { ToolFile } from "../src/schema/index.ts";
 import { render } from "./render";
@@ -31,7 +32,7 @@ const tool = (name: string, extra: Record<string, unknown> = {}) =>
 
 const page = (folder: string, slug: string, title = slug) => ({
   id: `${folder}/${slug}`,
-  filePath: `root/${folder}/docs/${slug}.md`,
+  filePath: `${CONTENT_ROOT}/${folder}/docs/${slug}.md`,
   data: { title, product: folder, install: false },
 });
 
