@@ -108,14 +108,12 @@ export async function commitFolder(dir: string, folder: string, message: string,
 
 /** Push HEAD to the branch. Throws PushRejected when the remote refuses the update. */
 export async function pushSite(remote: SiteRemote, dir: string): Promise<void> {
-  let result;
+  // isomorphic-git returns only when every ref was updated; a refusal by the remote is a GitPushError.
   try {
-    result = await git.push({ fs, http: siteHttp, dir, remote: "origin", ref: "HEAD", remoteRef: `refs/heads/${remote.branch}`, onAuth: onAuth(remote) });
+    await git.push({ fs, http: siteHttp, dir, remote: "origin", ref: "HEAD", remoteRef: `refs/heads/${remote.branch}`, onAuth: onAuth(remote) });
   } catch (error) {
     if (error instanceof Errors.PushRejectedError) throw new PushRejected(error.data.reason);
     if (error instanceof Errors.GitPushError) throw new PushRejected(error.message);
     throw error;
   }
-  const update = result.refs[`refs/heads/${remote.branch}`];
-  if (!result.ok || update === undefined || !update.ok) throw new PushRejected(update?.error ?? result.error ?? "the remote did not accept the update");
 }
