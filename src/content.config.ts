@@ -46,8 +46,9 @@ const docs = defineCollection({
 
 // v2 collections, validated by the shared docs contract in src/schema/. The
 // publisher writes `<root>/<key>/tool.yaml`, and under `<root>/<key>/docs/`
-// the product's files from the repo's docs/user/: pages at any depth, assets,
-// and the docs changelog `CHANGELOG.md`, which is data, not a page.
+// the product's docs folder (docs/user/ or docs/user/<key>/): pages at any
+// depth, assets, and the docs changelog `CHANGELOG.md`, which is data, not a
+// page.
 // The root is WYRD_CONTENT_DIR (the dev content folder), default `.content-v2`.
 const products = defineCollection({
   loader: glob({

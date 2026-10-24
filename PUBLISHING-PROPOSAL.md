@@ -83,6 +83,14 @@ docs/
 A repo with several products may keep one folder per product under
 `docs/user/` (t3code-client keeps one folder per package).
 
+Each product has a docs folder. It is `docs/user/<key>/` when that folder
+exists (a repo with one docs unit per product), and otherwise `docs/user/`.
+The product's asset fields (`logo`, `logo-dark`, `favicon`, `social-image`
+and `media[].src`) are relative to its docs folder, so a product whose
+folder is `docs/user/t3c/` writes `logo: assets/logo.svg` for
+`docs/user/t3c/assets/logo.svg`. The `assets` list is relative to
+`docs/user/` for every product.
+
 ### `docs/user/docs.yml`
 
 One file per repo. Top-level fields:
@@ -150,11 +158,11 @@ products:
 | `order` | no | Integer catalog position, lower first. Products without `order` sort after the products with it, by `name`. |
 | `kinds` | yes | One or more kind blocks; the first is the primary kind. |
 | `highlights` | yes | Up to six one-line statements for "What it does". |
-| `media` | yes | Hero media; each `src` is listed in `assets`. |
+| `media` | yes | Hero media; each `src`, relative to the product's docs folder, is listed in `assets`. |
 | `nav` | no | Docs sections, groups and page order. |
-| `logo`, `logo-dark` | no | Square SVG marks, listed in `assets`. |
-| `favicon` | no | SVG or PNG, listed in `assets`. |
-| `social-image` | no | PNG or JPEG, 1200×630, listed in `assets`. |
+| `logo`, `logo-dark` | no | Square SVG marks, relative to the product's docs folder and listed in `assets`. |
+| `favicon` | no | SVG or PNG, relative to the product's docs folder and listed in `assets`. |
+| `social-image` | no | PNG or JPEG, 1200×630, relative to the product's docs folder and listed in `assets`. |
 
 `owner`, `release` and `featured` are owned by the publisher; `docs.yml`
 does not set them. `docs.yml` has no `repo` field: the site builds the
@@ -480,8 +488,10 @@ the result is the same for every trigger. The trigger only chooses the ref.
    - every slug is unique within its product;
    - every `nav` page exists for that product;
    - no page names a feature entry;
-   - every `media.src`, `logo`, `logo-dark`, `favicon` and `social-image` is
-     listed in `assets`, and every listed asset exists inside `docs/user/`;
+   - every `media.src`, `logo`, `logo-dark`, `favicon` and `social-image`,
+     resolved against the product's docs folder, is listed in `assets`, and
+     every listed asset exists inside `docs/user/`;
+   - every page of a product is inside the product's docs folder;
    - `logo` and `logo-dark` are SVG; `favicon` is SVG or PNG;
      `social-image` is PNG or JPEG at 1200×630. The file extension and the
      file content must both match;
@@ -565,19 +575,22 @@ content/<key>/
 ├── tool.yaml          # the product entry, plus owner, release and featured
 ├── CHANGELOG.md       # the code unit changelog: the product page's Releases section
 ├── manifest.json      # a devcontainer-image product: the image manifest
-└── docs/              # the product's files from docs/user/, at the same paths
+└── docs/              # the product's files from its docs folder, at the same paths
     ├── CHANGELOG.md   # the docs unit changelog, linked from the docs version footer
     ├── getting-started.md
     ├── guides/authoring.md
     └── assets/logo.svg
 ```
 
-- `docs/` mirrors the product's files under the repo's `docs/user/`: its
-  pages at their paths, and the listed assets that its fields name or its
-  pages link to. Asset paths in `docs.yml` are relative to `docs/user/`, so
-  they resolve under `content/<key>/docs/`.
-- The docs unit changelog is always `docs/CHANGELOG.md`, from
-  `docs/user/<key>/CHANGELOG.md` or else `docs/user/CHANGELOG.md`.
+- `docs/` mirrors the product's docs folder (`docs/user/<key>/` or
+  `docs/user/`): its pages at their paths in that folder, and the listed
+  assets in that folder that its fields name or its pages link to. The asset
+  fields are relative to the docs folder, so they resolve under
+  `content/<key>/docs/`. The publisher warns when a page links to a listed
+  asset outside the product's docs folder: that asset is not published with
+  the product.
+- The docs unit changelog is `CHANGELOG.md` in the product's docs folder,
+  so it is always `docs/CHANGELOG.md`.
 
 A feature entry's folder holds `tool.yaml`, its `README.md` (the page body),
 its `devcontainer-feature.json`, the code unit `CHANGELOG.md`, and its logo
