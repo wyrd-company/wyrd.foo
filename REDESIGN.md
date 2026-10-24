@@ -186,7 +186,9 @@ product's first page in reading order.
   callouts use the accent tint. No product card above the content.
 - **"On this page"** on the right: sticky, scrolls on its own, nested
   headings. It highlights the last heading that has scrolled past the top of
-  the viewport, so the highlight holds still while you read. Links: back to
+  the viewport, so the highlight holds still while you read. At the end of
+  the page, where the last headings cannot reach the top, it highlights the
+  last heading in view. Links: back to
   top, copy page as Markdown (the title as a heading, then the page body,
   also served at `/docs/<key>/<slug>.md`), edit on GitHub (the page's file
   on the repo's default branch, under the product's `docs-path`).
