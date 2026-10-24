@@ -1,0 +1,27 @@
+---
+/* One section of the product page: an anchor, a heading and its content. */
+interface Props {
+  id: string;
+  title: string;
+}
+const { id, title } = Astro.props;
+---
+
+<section class="product-section" id={id} aria-labelledby={`${id}-title`}>
+  <h2 class="product-section-title" id={`${id}-title`}>{title}</h2>
+  <slot />
+</section>
+
+<style>
+  .product-section {
+    padding-top: 72px;
+    scroll-margin-top: 16px;
+  }
+  .product-section-title {
+    margin: 0 0 22px;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+</style>

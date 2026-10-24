@@ -1,0 +1,69 @@
+---
+/*
+ * The install block of a CLI or app: platform tabs, method pills for each
+ * platform, and one code block with Copy for each method.
+ */
+import CodeBlock from "./CodeBlock.astro";
+import type { PlatformTab } from "../../lib/install-blocks";
+
+interface Props {
+  tabs: PlatformTab[];
+  /** Unique prefix for the tab and panel ids. */
+  id: string;
+}
+const { tabs, id } = Astro.props;
+const tabId = (platform: string) => `${id}-${platform}`;
+const methodId = (platform: string, index: number) => `${id}-${platform}-${index}`;
+---
+
+<div class="install-card" data-install-block="platforms">
+  <div class="install-tabs" role="tablist" aria-label="Platform">
+    {
+      tabs.map((tab) => (
+        <button
+          type="button"
+          role="tab"
+          id={`${tabId(tab.platform)}-tab`}
+          aria-controls={tabId(tab.platform)}
+          aria-selected={tab.selected ? "true" : "false"}
+          tabindex={tab.selected ? 0 : -1}
+        >
+          {tab.label}
+        </button>
+      ))
+    }
+  </div>
+  {
+    tabs.map((tab) => (
+      <div class="install-panel" role="tabpanel" id={tabId(tab.platform)} aria-labelledby={`${tabId(tab.platform)}-tab`} hidden={!tab.selected}>
+        <div class="install-pills" role="tablist" aria-label={`${tab.label} install method`}>
+          {tab.methods.map((method, index) => (
+            <button
+              type="button"
+              role="tab"
+              class="install-pill"
+              id={`${methodId(tab.platform, index)}-tab`}
+              aria-controls={methodId(tab.platform, index)}
+              aria-selected={method.selected ? "true" : "false"}
+              tabindex={method.selected ? 0 : -1}
+            >
+              {method.pill}
+            </button>
+          ))}
+        </div>
+        {tab.methods.map((method, index) => (
+          <div
+            class="install-method"
+            role="tabpanel"
+            id={methodId(tab.platform, index)}
+            aria-labelledby={`${methodId(tab.platform, index)}-tab`}
+            hidden={!method.selected}
+          >
+            {method.qualifier && <p class="install-qualifier">{method.qualifier}</p>}
+            <CodeBlock code={method.command} prompt={method.prompt} label={`${method.pill} install command`} />
+          </div>
+        ))}
+      </div>
+    ))
+  }
+</div>

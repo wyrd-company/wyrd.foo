@@ -96,6 +96,11 @@ describe("platformTabs", () => {
     expect(tabs.filter((t) => t.selected).map((t) => t.platform)).toEqual(["docker"]);
   });
 
+  it("shows a prompt before a one-line command only", () => {
+    const linux = platformTabs([brew, apt]).find((t) => t.platform === "linux")!;
+    expect(linux.methods.map((m) => m.prompt)).toEqual([true, false]);
+  });
+
   it("carries the full command, with the site's setup for apt", () => {
     const linux = platformTabs([apt])[0];
     expect(linux.methods[0].command).toBe(installCommand(apt));
@@ -126,6 +131,10 @@ describe("mcpClientTabs", () => {
     expect(mcpClientTabs(entries).filter((t) => t.selected).map((t) => t.label)).toEqual(["Claude Code"]);
   });
 
+  it("shows a prompt only before a one-line shell command", () => {
+    expect(mcpClientTabs(entries).map((t) => t.prompt)).toEqual([false, true, false, false, false]);
+  });
+
   it("marks plugin marketplace tabs", () => {
     expect(mcpClientTabs(entries).filter((t) => t.marketplace).map((t) => t.label)).toEqual([
       "Claude Code marketplace",
@@ -150,10 +159,12 @@ describe("heroInstall", () => {
     expect(heroInstall({ kind: "cli", install: [brew, cargo] })).toEqual({
       label: "Install with Homebrew (macOS, Linux)",
       command: "brew install example",
+      prompt: true,
     });
     expect(heroInstall({ kind: "app", install: [{ ...docker, default: true }] })).toEqual({
       label: "Run with Docker",
       command: "docker run --rm example",
+      prompt: true,
     });
     expect(heroInstall({ kind: "cli", install: [other] }).label).toBe("Install: Portable zip (Windows)");
   });
@@ -165,17 +176,19 @@ describe("heroInstall", () => {
         install: [{ method: "plugin", label: "Codex marketplace", command: "codex plugin install x" }],
         tools: [{ name: "t", description: "d", effect: "Read-only" }],
       }),
-    ).toEqual({ label: "Install from Codex marketplace", command: "codex plugin install x" });
+    ).toEqual({ label: "Install from Codex marketplace", command: "codex plugin install x", prompt: false });
   });
 
   it("is the devcontainer.json snippet of a feature or image kind", () => {
     expect(heroInstall({ kind: "devcontainer-feature", ref: "r:1" })).toEqual({
       label: "Add to devcontainer.json",
       command: devcontainerFeatureSnippet("r:1"),
+      prompt: false,
     });
     expect(heroInstall({ kind: "devcontainer-image", ref: "r:0" })).toEqual({
       label: "Use in devcontainer.json",
       command: devcontainerImageSnippet("r:0"),
+      prompt: false,
     });
   });
 });

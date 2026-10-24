@@ -1,4 +1,4 @@
-/* Display names of product kinds, for the search dialog's kind chips. */
+/* Display names of product kinds: the search dialog's kind chips and the product page's facts list. */
 import { KINDS, type Kind } from "../schema/vocabulary.ts";
 
 export const KIND_LABELS: Record<Kind, string> = {

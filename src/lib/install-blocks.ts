@@ -4,12 +4,21 @@
  * client tabs for MCP servers, devcontainer.json snippets for features and
  * images, and the default command the hero shows.
  */
-import type { InstallMethod, KindBlock, McpInstallMethod, OperatingSystem } from "../schema/index.ts";
+import type { InstallMethod, Kind, KindBlock, McpInstallMethod, OperatingSystem } from "../schema/index.ts";
 
 type InstallKind = Extract<KindBlock, { kind: "cli" | "app" }>;
 type McpKind = Extract<KindBlock, { kind: "mcp-server" }>;
 export type InstallEntry = InstallKind["install"][number];
 export type McpInstallEntry = McpKind["install"][number];
+
+/** The tab of each kind's block in the Install section of a product with more than one kind. */
+export const KIND_INSTALL_TABS: Record<Kind, string> = {
+  cli: "Install",
+  app: "Install",
+  "mcp-server": "MCP server",
+  "devcontainer-feature": "Dev container",
+  "devcontainer-image": "Dev container image",
+};
 
 export const METHOD_LABELS: Record<InstallMethod, string> = {
   homebrew: "Homebrew",
@@ -83,12 +92,19 @@ export function defaultInstall<E extends { default?: boolean }>(entries: readonl
   return entries.find((entry) => entry.default) ?? entries[0];
 }
 
+/** A "$" prompt shows before a one-line shell command, never before a snippet or several lines. */
+const shellPrompt = (shell: boolean, command: string) => shell && !command.includes("\n");
+
+/** MCP methods whose command runs in a shell. */
+const SHELL_MCP_METHODS: readonly McpInstallMethod[] = ["claude-code", "vscode"];
+
 export interface MethodOption {
   /** The pill text. */
   pill: string;
   /** The entry's label, shown beside the pills; none for `other`, whose pill is the label. */
   qualifier?: string;
   command: string;
+  prompt: boolean;
   selected: boolean;
 }
 
@@ -119,10 +135,12 @@ export function platformTabs(entries: readonly InstallEntry[]): PlatformTab[] {
     const methods = here.map((entry, index) => {
       const name = entry.method === "other" ? (entry.label ?? METHOD_LABELS.other) : METHOD_LABELS[entry.method];
       const repeated = entry.method !== "other" && counts.get(entry.method)! > 1 && entry.label !== undefined;
+      const command = installCommand(entry);
       return {
         pill: repeated ? `${name} · ${entry.label}` : name,
         qualifier: entry.method === "other" ? undefined : entry.label,
-        command: installCommand(entry),
+        command,
+        prompt: shellPrompt(true, command),
         selected: selected ? entry === chosen : index === 0,
       };
     });
@@ -133,6 +151,7 @@ export function platformTabs(entries: readonly InstallEntry[]): PlatformTab[] {
 export interface ClientTab {
   label: string;
   command: string;
+  prompt: boolean;
   /** A plugin marketplace, not an MCP client. */
   marketplace: boolean;
   selected: boolean;
@@ -149,6 +168,7 @@ export function mcpClientTabs(entries: readonly McpInstallEntry[]): ClientTab[] 
   return entries.map((entry) => ({
     label: mcpLabel(entry),
     command: entry.command.trimEnd(),
+    prompt: shellPrompt(SHELL_MCP_METHODS.includes(entry.method), entry.command.trimEnd()),
     marketplace: entry.method === "plugin",
     selected: entry === chosen,
   }));
@@ -167,6 +187,7 @@ export function devcontainerImageSnippet(ref: string): string {
 export interface HeroInstall {
   label: string;
   command: string;
+  prompt: boolean;
 }
 
 const systems = (entry: InstallEntry) => (entry.os ?? []).map((os) => PLATFORM_LABELS[os]).join(", ");
@@ -190,15 +211,17 @@ export function heroInstall(block: KindBlock): HeroInstall {
     case "cli":
     case "app": {
       const entry = defaultInstall(block.install);
-      return { label: installLabel(entry), command: installCommand(entry) };
+      const command = installCommand(entry);
+      return { label: installLabel(entry), command, prompt: shellPrompt(true, command) };
     }
     case "mcp-server": {
       const entry = defaultInstall(block.install);
-      return { label: mcpInstallLabel(entry), command: entry.command.trimEnd() };
+      const command = entry.command.trimEnd();
+      return { label: mcpInstallLabel(entry), command, prompt: shellPrompt(SHELL_MCP_METHODS.includes(entry.method), command) };
     }
     case "devcontainer-feature":
-      return { label: "Add to devcontainer.json", command: devcontainerFeatureSnippet(block.ref) };
+      return { label: "Add to devcontainer.json", command: devcontainerFeatureSnippet(block.ref), prompt: false };
     case "devcontainer-image":
-      return { label: "Use in devcontainer.json", command: devcontainerImageSnippet(block.ref) };
+      return { label: "Use in devcontainer.json", command: devcontainerImageSnippet(block.ref), prompt: false };
   }
 }
