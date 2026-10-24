@@ -16,7 +16,9 @@
     "test:site": "vitest run --project unit",
     "build:fixtures": "astro build --root test/fixtures/head-site",
     "test:dist": "pnpm build:fixtures && vitest run --project dist",
-    "typecheck": "tsc -p tsconfig.schema.json",
+    "typecheck": "pnpm typecheck:schema && pnpm typecheck:site",
+    "typecheck:schema": "tsc -p tsconfig.schema.json",
+    "typecheck:site": "astro check",
     "check": "pnpm typecheck && pnpm test && pnpm build && pnpm test:dist"
   },
   "dependencies": {
@@ -28,6 +30,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.12",
     "@types/node": "^24.19.2",
     "@types/semver": "^7.8.0",
     "ajv": "^8.20.0",
