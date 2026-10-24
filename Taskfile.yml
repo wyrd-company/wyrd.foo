@@ -21,3 +21,8 @@ tasks:
     cmds:
       - pnpm typecheck
       - pnpm test
+
+  check:
+    desc: Typecheck, run every test, build the site, then run the built-output checks
+    cmds:
+      - pnpm check

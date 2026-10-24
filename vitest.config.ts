@@ -9,6 +9,8 @@ export default getViteConfig({
     projects: [
       // Render components through the Astro container.
       { extends: true, test: { name: "unit", include: ["test/**/*.test.ts"] } },
+      // Read the built site in dist/; run after `pnpm build`.
+      { extends: true, test: { name: "dist", include: ["test/**/*.dist.ts"] } },
     ],
   },
 });
