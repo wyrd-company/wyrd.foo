@@ -19,6 +19,22 @@ describe("embeddedUnit", () => {
     expect(embeddedUnit(undefined, "/work/content")).toBeUndefined();
   });
 
+  it("is not a file name that the units object inherits", () => {
+    for (const name of ["constructor", "toString", "hasOwnProperty", "__proto__", "valueOf"]) {
+      expect(embeddedUnit(`/work/content/lantern/${name}`, "/work/content"), name).toBeUndefined();
+    }
+  });
+
+  it("is not a README.md outside the content root", () => {
+    const at = (path: string) => embeddedUnit(path, "/work/content");
+    expect(at("/work/README.md"), "one level above the root").toBeUndefined();
+    expect(at("/work/content/../README.md"), "written through the root").toBeUndefined();
+    expect(at("/work/other/README.md"), "a folder beside the root").toBeUndefined();
+    expect(at("/work/content-two/README.md"), "a folder whose name starts with the root's").toBeUndefined();
+    expect(at("/work/CHANGELOG.md")).toBeUndefined();
+    expect(at("/work/content/lantern/README.md"), "the control: inside the root").toBe("readme");
+  });
+
   it("reads the content root relative to the working folder, as WYRD_CONTENT_DIR is written", () => {
     expect(embeddedUnit(`${process.cwd()}/test/fixtures/product-content/lantern/README.md`, "test/fixtures/product-content")).toBe("readme");
   });
