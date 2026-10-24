@@ -1,10 +1,12 @@
 name: Publish to wyrd.foo
 
 # The only entry point for tool repos: a tool repo's publishing workflow calls
-# it on a push of a code tag or a docs tag, and on a manual run. It checks out
-# the tool repo at the ref, mints the publisher App token for wyrd.foo, and
-# runs the publish-docs@v2 action. `$/` resolves the action in this repo at
-# the commit of this workflow, so the workflow and the action never differ.
+# it on a push of a code tag or a docs tag, and on a manual run. It refuses
+# `feature: true` on any other event, so a tag push never features a product.
+# It then checks out the tool repo at the ref, mints the publisher App token
+# for wyrd.foo, and runs the publish-docs@v2 action. `$/` resolves the action
+# in this repo at the commit of this workflow, so the workflow and the action
+# never differ.
 # See PUBLISHING-PROPOSAL.md, "The calling workflow".
 
 on:
@@ -70,6 +72,15 @@ jobs:
       outcome: ${{ steps.publish.outputs.outcome }}
       commit: ${{ steps.publish.outputs.commit }}
     steps:
+      - name: Refuse feature outside a manual run
+        if: inputs.feature && github.event_name != 'workflow_dispatch'
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          echo "::error title=feature is only allowed on a manual run::The calling workflow ran on a ${EVENT_NAME} event with feature: true. Only a workflow_dispatch run may feature a product."
+          exit 1
+
       - name: Check out the tool repo at the ref
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

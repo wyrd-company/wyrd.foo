@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
@@ -20,6 +21,7 @@ interface Step {
   with?: Record<string, unknown>;
   env?: Record<string, string>;
   run?: string;
+  if?: string;
 }
 const text = (path: string) => readFileSync(join(ROOT, path), "utf8");
 const workflow = parse(text(WORKFLOW_FILE)) as {
@@ -101,6 +103,53 @@ describe("publish-docs reusable workflow", () => {
 
   it("runs one publish at a time per tool repo, without cancelling one", () => {
     assert.deepEqual(workflow.concurrency, { group: "publish-docs-${{ github.repository }}", "cancel-in-progress": false });
+  });
+
+  it("fails a run that features outside a manual run, before it mints a token or checks out", () => {
+    const guards = steps.filter((step) => step.if?.includes("inputs.feature"));
+    assert.equal(guards.length, 1, "one step guards on inputs.feature");
+    const guard = guards[0];
+    // Two `&&` conjuncts, nothing else: no `||` to exempt a case, no status
+    // function to override the failure state, no group to hide an alternative.
+    const condition = guard.if!;
+    assert.ok(!condition.includes("||"), `no || in: ${condition}`);
+    assert.ok(!/\b(success|failure|always|cancelled)\s*\(/.test(condition), `no status function in: ${condition}`);
+    assert.ok(!/[()]/.test(condition), `no group in: ${condition}`);
+    assert.deepEqual(condition.split("&&").map((part) => part.trim()).sort(), ["github.event_name != 'workflow_dispatch'", "inputs.feature"]);
+    // It fails, and it names the event and the manual-run rule in an annotation.
+    assert.match(guard.run ?? "", /^exit 1$/m);
+    assert.match(guard.run ?? "", /^echo "::error [^"]*\$\{EVENT_NAME\}[^"]*workflow_dispatch[^"]*"$/m);
+    assert.match(guard.run ?? "", /only allowed on a manual run/);
+    // Inputs and the event reach the script only through env.
+    assert.deepEqual(guard.env, { EVENT_NAME: "${{ github.event_name }}" });
+    assert.ok(!(guard.run ?? "").includes("${{"));
+    // It runs before the checkout and before the token mint.
+    const index = (match: (step: Step) => boolean) => steps.findIndex(match);
+    const guardAt = steps.indexOf(guard);
+    const mintAt = index((step) => step.uses?.startsWith("actions/create-github-app-token@") ?? false);
+    const checkoutAt = index((step) => step.uses?.startsWith("actions/checkout@") ?? false);
+    assert.ok(mintAt >= 0 && checkoutAt >= 0);
+    assert.ok(guardAt < mintAt, "the guard runs before the token mint");
+    assert.ok(guardAt < checkoutAt, "the guard runs before the checkout");
+  });
+
+  it("fires for feature on every event but a manual run, and for nothing else", () => {
+    const guard = steps.find((step) => step.if?.includes("inputs.feature"))!;
+    // The condition is valid JavaScript over the two names it reads.
+    const fires = (feature: boolean, event: string) => new Function("inputs", "github", `return ${guard.if}`)({ feature }, { event_name: event }) as boolean;
+    for (const event of ["push", "schedule", "pull_request", "release", "workflow_run", "repository_dispatch"]) {
+      assert.equal(fires(true, event), true, `feature on ${event}`);
+      assert.equal(fires(false, event), false, `no feature on ${event}`);
+    }
+    assert.equal(fires(true, "workflow_dispatch"), false);
+    assert.equal(fires(false, "workflow_dispatch"), false);
+  });
+
+  it("runs the guard's script: it exits non-zero and names the event", () => {
+    const guard = steps.find((step) => step.if?.includes("inputs.feature"))!;
+    const run = spawnSync("bash", ["--noprofile", "--norc", "-eo", "pipefail", "-c", guard.run!], { env: { PATH: process.env.PATH, EVENT_NAME: "push" }, encoding: "utf8" });
+    assert.notEqual(run.status, 0);
+    assert.match(run.stdout, /^::error title=feature is only allowed on a manual run::.*a push event/m);
   });
 
   it("defaults to a run that features nothing and pushes", () => {
