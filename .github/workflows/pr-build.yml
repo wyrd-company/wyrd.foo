@@ -44,3 +44,6 @@ jobs:
         env:
           WYRD_CONTENT_DIR: ${{ runner.temp }}/content-v2
         run: pnpm build
+
+      - name: Check the built output
+        run: pnpm test:dist
