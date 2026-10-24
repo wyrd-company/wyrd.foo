@@ -110,6 +110,17 @@ describe("publish mode", () => {
     assert.ok(report.findings.some((finding) => finding.severity === "warning" && /main moved to .*, retrying/.test(finding.message)));
   });
 
+  it("retries when main moved before the push started, which the pusher refuses itself as not a fast-forward", async () => {
+    let competing = "";
+    site.beforePushDiscovery = () => (competing = site.commit({ "content/other/extra.md": "x\n" }, "competing publish"));
+    const report = await publish(options(alpha()));
+    assert.equal(report.outcome, "published", JSON.stringify(report.findings));
+    assert.equal(report.attempts, 2);
+    assert.equal(site.pushes, 1, "the first attempt sent no pack");
+    assert.equal(site.rev("main~1"), competing);
+    assert.ok(report.findings.some((finding) => /push rejected: not-fast-forward; main moved/.test(finding.message)));
+  });
+
   it("gives up after the attempt limit when main keeps moving", async () => {
     const race = (count: number) => {
       site.commit({ [`content/other/race-${count}.md`]: "x\n" }, `race ${count}`);
@@ -158,7 +169,7 @@ describe("publish mode", () => {
     assert.equal(errors[0].key, "alpha-app");
     assert.equal(errors[0].requirement, "GitHub Release");
     assert.match(errors[0].message, /GitHub Release for tag alpha-app@0\.3\.0: not-found/);
-    assert.equal(site.pushes, 0);
+    assert.deepEqual(site.authorizations, [], "a failed repo does not reach the site");
     assert.equal(site.rev(), tip);
   });
 

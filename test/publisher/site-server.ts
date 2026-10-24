@@ -22,6 +22,8 @@ export interface SiteRepo {
   bare: string;
   /** Runs before the next push reaches the repo; it is cleared after it runs. */
   beforePush: ((count: number) => void) | undefined;
+  /** Runs before the next push asks for the repo's refs, so the pusher sees the moved branch; it is cleared after it runs. */
+  beforePushDiscovery: (() => void) | undefined;
   /** Every receive-pack (push) request so far. */
   pushes: number;
   /** The Authorization header of each request, in order. */
@@ -56,6 +58,7 @@ export async function siteRepo(files: Record<string, string>): Promise<SiteRepo>
     url: "",
     bare,
     beforePush: undefined,
+    beforePushDiscovery: undefined,
     pushes: 0,
     authorizations: [],
     commit(changes, message) {
@@ -86,6 +89,11 @@ export async function siteRepo(files: Record<string, string>): Promise<SiteRepo>
       return;
     }
     const url = new URL(request.url ?? "/", "http://localhost");
+    if (request.method === "GET" && url.pathname.endsWith("/info/refs") && url.searchParams.get("service") === "git-receive-pack") {
+      const hook = site.beforePushDiscovery;
+      site.beforePushDiscovery = undefined;
+      hook?.();
+    }
     if (request.method === "POST" && url.pathname.endsWith("/git-receive-pack")) {
       site.pushes += 1;
       const hook = site.beforePush;
