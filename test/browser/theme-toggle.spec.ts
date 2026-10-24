@@ -7,7 +7,7 @@ import {
   failStorageWrites,
   openPage,
   other,
-  PAGES,
+  HOME_PAGE,
   readyToggle,
   recordTheme,
   reloadPage,
@@ -19,7 +19,7 @@ import {
 } from "./support";
 
 const SYSTEMS: Theme[] = ["dark", "light"];
-const PAGE = PAGES[0];
+const PAGE = HOME_PAGE;
 
 for (const system of SYSTEMS) {
   test.describe(`system ${system}`, () => {

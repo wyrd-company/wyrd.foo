@@ -1,0 +1,117 @@
+---
+/*
+ * The docs sidebar: the current section's groups and pages, with reading
+ * progress dots (done, current, ahead). It scrolls on its own.
+ */
+import type { DocsPage } from "../../lib/docs";
+import type { DocsMapSection } from "../../lib/docs-map";
+import { pageHref, progressOf } from "../../lib/docs-pages";
+
+interface Props {
+  section: DocsMapSection<DocsPage>;
+  current: string;
+}
+const { section, current } = Astro.props;
+const progress = progressOf(section, current);
+// A product with no nav has one unnamed section that holds only "More": it
+// has no group heading.
+const headings = section.section !== null;
+const label = section.section ? `${section.section} pages` : "Pages";
+---
+
+<nav class="docs-sidebar" aria-label={label} data-pagefind-ignore>
+  {
+    section.groups.map((group) => (
+      <div class="docs-sidebar-group">
+        {headings && <p class="docs-sidebar-heading">{group.group}</p>}
+        <ol>
+          {group.pages.map((page) => (
+            <li data-progress={progress.get(page.slug)}>
+              <a href={pageHref(page.key, page.slug)} aria-current={page.slug === current ? "page" : undefined}>
+                <span class="docs-dot" aria-hidden="true" />
+                <span>{page.title}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </div>
+    ))
+  }
+</nav>
+
+<style>
+  .docs-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .docs-sidebar-heading {
+    margin: 0 0 8px;
+    font-family: var(--font-code);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+  }
+  /* The track the dots sit on. */
+  ol::before {
+    content: "";
+    position: absolute;
+    left: 4.5px;
+    top: 14px;
+    bottom: 14px;
+    width: 1px;
+    background: var(--divider);
+  }
+  li a {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 5px 8px 5px 0;
+    color: var(--text-2);
+    font-size: 14.5px;
+    line-height: 1.45;
+  }
+  li a:hover {
+    color: var(--text);
+    text-decoration: none;
+  }
+  .docs-dot {
+    position: relative;
+    top: 1px;
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    box-sizing: border-box;
+    border: 1.5px solid var(--text-faint);
+    background: var(--page);
+  }
+  li[data-progress="done"] .docs-dot {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+  li[data-progress="done"] a {
+    color: var(--text-faint);
+  }
+  li[data-progress="current"] .docs-dot {
+    border-color: var(--accent);
+    background: var(--page);
+    box-shadow:
+      0 0 0 3px var(--accent-tint),
+      inset 0 0 0 2px var(--page),
+      inset 0 0 0 5px var(--accent);
+  }
+  li a[aria-current="page"] {
+    color: var(--accent);
+    font-weight: 600;
+  }
+</style>

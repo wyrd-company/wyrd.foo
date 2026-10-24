@@ -1,0 +1,252 @@
+---
+/*
+ * The sticky two-row docs header (REDESIGN.md, "Docs"). Row one: wordmark,
+ * product switcher, search ranked to the product, Releases, theme toggle and
+ * the product's GitHub. Row two: the product's section tabs, when its nav
+ * has sections.
+ */
+import GitHub from "../icons/GitHub.astro";
+import Monogram from "../Monogram.astro";
+import ProductMark from "../ProductMark.astro";
+import Search from "../Search.astro";
+import ThemeToggle from "../ThemeToggle.astro";
+import type { DocsProduct } from "../../lib/docs";
+import { docsHome, pageHref } from "../../lib/docs-pages";
+
+interface Props {
+  product: DocsProduct;
+  products: DocsProduct[];
+  /** The section of the current page; null for a product with no sections. */
+  section: string | null;
+}
+const { product, products, section } = Astro.props;
+const tabs = product.map.filter((s) => s.section !== null);
+const switcherId = "docs-switcher";
+---
+
+<header class="docs-header">
+  <div class="docs-header-row site-width">
+    <a href="/" class="docs-wordmark" aria-label="Wyrd Tools home">
+      <Monogram name="Wyrd" size="row" />
+      <span>wyrd/tools</span>
+    </a>
+    <span class="docs-slash" aria-hidden="true">/</span>
+    <button
+      type="button"
+      class="docs-switcher-button"
+      popovertarget={switcherId}
+      aria-haspopup="true"
+      aria-label={`Switch product, current: ${product.name}`}
+    >
+      <ProductMark name={product.name} logo={product.logo} logoDark={product.logoDark} />
+      <span class="docs-switcher-name">{product.name}</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M6 9l6 6 6-6"></path>
+      </svg>
+    </button>
+    <div id={switcherId} class="docs-switcher" popover>
+      <p class="docs-switcher-label">Docs for</p>
+      <ul>
+        {
+          products.map((p) => (
+            <li>
+              <a href={docsHome(p.key)} aria-current={p.key === product.key ? "page" : undefined}>
+                <ProductMark name={p.name} logo={p.logo} logoDark={p.logoDark} />
+                <span class="docs-switcher-item-name">{p.name}</span>
+                <span class="docs-switcher-item-version">{p.data["docs-version"]}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+    <div class="docs-header-tools">
+      <Search product={product.key} productName={product.name} />
+      <a class="docs-releases" href={`/tools/${product.key}#releases`}>Releases</a>
+      <ThemeToggle />
+      <a class="docs-github" href={`https://github.com/${product.data.owner}`} aria-label={`${product.name} on GitHub`}>
+        <GitHub size={18} />
+      </a>
+    </div>
+  </div>
+  {
+    tabs.length > 0 && (
+      <nav class="docs-tabs site-width" aria-label="Documentation sections">
+        {tabs.map((s) => (
+          <a
+            href={pageHref(product.key, s.groups[0].pages[0].slug)}
+            aria-current={s.section === section ? "page" : undefined}
+          >
+            {s.section}
+          </a>
+        ))}
+      </nav>
+    )
+  }
+</header>
+
+<style>
+  .docs-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--page);
+    border-bottom: 1px solid var(--header-line);
+  }
+  .docs-header-row {
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .docs-wordmark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+  .docs-wordmark:hover {
+    text-decoration: none;
+  }
+  .docs-slash {
+    color: var(--divider);
+    font-size: 22px;
+    font-weight: 300;
+    margin-inline: 2px;
+  }
+  .docs-switcher-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 10px 0 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-code);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .docs-switcher-button:hover,
+  .docs-switcher-button:focus-visible {
+    border-color: var(--divider);
+    background: var(--surface);
+  }
+  .docs-switcher-button svg {
+    color: var(--text-faint);
+  }
+  .docs-switcher {
+    position: fixed;
+    inset: 64px auto auto max(var(--page-gutter), 20px);
+    margin: 0;
+    width: min(340px, calc(100vw - 40px));
+    max-height: calc(100vh - 96px);
+    overflow-y: auto;
+    padding: 8px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--divider);
+    border-radius: 10px;
+    box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.55);
+  }
+  .docs-switcher-label {
+    margin: 4px 10px 8px;
+    font-family: var(--font-code);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .docs-switcher ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .docs-switcher a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    color: var(--text);
+  }
+  .docs-switcher a:hover {
+    background: var(--surface-2);
+    text-decoration: none;
+  }
+  .docs-switcher a[aria-current="page"] {
+    background: var(--accent-tint);
+  }
+  .docs-switcher-item-name {
+    flex-grow: 1;
+    font-family: var(--font-code);
+    font-size: 14px;
+  }
+  .docs-switcher-item-version {
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--text-faint);
+  }
+  .docs-header-tools {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .docs-releases {
+    color: var(--text-2);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .docs-releases:hover {
+    color: var(--text);
+    text-decoration: none;
+  }
+  .docs-github {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    color: var(--text);
+  }
+  .docs-tabs {
+    display: flex;
+    gap: 4px;
+    height: 44px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .docs-tabs a {
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    white-space: nowrap;
+    color: var(--text-2);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .docs-tabs a:first-child {
+    margin-left: -14px;
+  }
+  .docs-tabs a:hover {
+    color: var(--text);
+    text-decoration: none;
+  }
+  .docs-tabs a[aria-current="page"] {
+    color: var(--accent);
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+  @media (max-width: 720px) {
+    .docs-wordmark span,
+    .docs-slash,
+    .docs-releases {
+      display: none;
+    }
+  }
+</style>

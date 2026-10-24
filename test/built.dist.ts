@@ -5,7 +5,6 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "node-html-parser";
 import { describe, expect, it } from "vitest";
-import { monogramDataUri } from "../src/lib/head";
 
 const DIST = "dist";
 
@@ -69,15 +68,5 @@ describe("built site", () => {
     for (const asset of ["favicon.svg", "favicon-32.png", "apple-touch-icon.png", "social.png"]) {
       expect(existsSync(join(DIST, asset)), asset).toBe(true);
     }
-  });
-
-  it("gives a docs page of a product with no favicon or logo its monogram favicon and the site image", () => {
-    const docs = readdirSync(join(DIST, "docs"));
-    expect(docs.length).toBeGreaterThan(0);
-    const root = page(join("docs", docs[0], "index.html"));
-    const name = root.querySelector("dialog.wsearch")?.getAttribute("data-product-name");
-    expect(name).toBeTruthy();
-    expect(root.querySelector('link[rel="icon"]')?.getAttribute("href")).toBe(monogramDataUri(name!));
-    expect(root.querySelector('meta[name="twitter:image"]')?.getAttribute("content")).toBe("https://wyrd.foo/social.png");
   });
 });

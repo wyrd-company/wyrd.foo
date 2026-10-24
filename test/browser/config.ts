@@ -1,9 +1,11 @@
 /*
  * The browser-test harness: Playwright Test against the built site. It starts
  * `astro preview` on a free port, serves dist/, and stops the server when the
- * run ends. The home page specs (home.spec.ts) run against a second server on
- * the home fixture build (dist-fixtures/home, `pnpm build:home-fixture`). The
- * harness tests (harness/) build variants of this config.
+ * run ends. The home page specs (home.spec.ts) and the docs specs
+ * (docs.spec.ts) each run against a server of their own on a fixture build
+ * (dist-fixtures/home, `pnpm build:home-fixture`; dist-fixtures/docs,
+ * `pnpm build:docs-fixture`). The harness tests (harness/) build variants of
+ * this config.
  */
 import { createServer } from "node:net";
 import { fileURLToPath } from "node:url";
@@ -31,16 +33,32 @@ export interface HarnessOptions {
   homePort?: number;
   /** The command that serves the home fixture on `homePort`. */
   homeCommand?: string;
+  /** The port of the docs fixture server; without it there is no docs project. */
+  docsPort?: number;
+  /** The command that serves the docs fixture on `docsPort`. */
+  docsCommand?: string;
   testDir?: string;
   testMatch?: string;
 }
 
-const HOME_SPEC = "**/home.spec.ts";
+/** A fixture build with its own server and the specs that run against it. */
+interface Fixture {
+  name: string;
+  spec: string;
+  outDir: string;
+  port?: number;
+  command?: string;
+}
 
 export function harnessConfig(options: HarnessOptions): PlaywrightTestConfig {
-  const { port, homePort, testDir = ".", testMatch = "**/*.spec.ts" } = options;
+  const { port, testDir = ".", testMatch = "**/*.spec.ts" } = options;
   const origin = `http://127.0.0.1:${port}`;
-  const homeOrigin = `http://127.0.0.1:${homePort}`;
+  const fixtures: Fixture[] = [
+    { name: "home", spec: "**/home.spec.ts", outDir: "dist-fixtures/home", port: options.homePort, command: options.homeCommand },
+    { name: "docs", spec: "**/docs.spec.ts", outDir: "dist-fixtures/docs", port: options.docsPort, command: options.docsCommand },
+  ];
+  const served = fixtures.filter((fixture) => fixture.port !== undefined);
+  const fixtureOrigin = (fixture: Fixture) => `http://127.0.0.1:${fixture.port}`;
   const server = (command: string, url: string) => ({
     command,
     cwd: ROOT,
@@ -57,28 +75,22 @@ export function harnessConfig(options: HarnessOptions): PlaywrightTestConfig {
     globalSetup: fileURLToPath(new URL("./global-setup.ts", import.meta.url)),
     use: { baseURL: origin },
     projects: [
-      { name: "site", testIgnore: HOME_SPEC, use: { browserName: "chromium" } },
-      ...(homePort
-        ? [
-            {
-              name: "home",
-              testMatch: HOME_SPEC,
-              use: { browserName: "chromium" as const, baseURL: homeOrigin },
-            },
-          ]
-        : []),
+      { name: "site", testIgnore: fixtures.map((fixture) => fixture.spec), use: { browserName: "chromium" } },
+      ...served.map((fixture) => ({
+        name: fixture.name,
+        testMatch: fixture.spec,
+        use: { browserName: "chromium" as const, baseURL: fixtureOrigin(fixture) },
+      })),
     ],
     webServer: [
       server(options.command ?? `pnpm exec astro preview --host 127.0.0.1 --port ${port}`, origin),
-      ...(homePort
-        ? [
-            server(
-              options.homeCommand ??
-                `pnpm exec astro preview --outDir dist-fixtures/home --host 127.0.0.1 --port ${homePort}`,
-              homeOrigin,
-            ),
-          ]
-        : []),
+      ...served.map((fixture) =>
+        server(
+          fixture.command ??
+            `pnpm exec astro preview --outDir ${fixture.outDir} --host 127.0.0.1 --port ${fixture.port}`,
+          fixtureOrigin(fixture),
+        ),
+      ),
     ],
   });
 }
@@ -87,11 +99,20 @@ export function harnessConfig(options: HarnessOptions): PlaywrightTestConfig {
  * The run's ports. The main process picks them and the workers inherit them
  * through the environment, so every process of one run uses the same ports.
  */
-export async function runPorts(): Promise<{ port: number; homePort: number }> {
+export async function runPorts(): Promise<{ port: number; homePort: number; docsPort: number }> {
   process.env.WYRD_BROWSER_PORT ??= String(await freePort());
   process.env.WYRD_BROWSER_HOME_PORT ??= String(await freePort());
+  process.env.WYRD_BROWSER_DOCS_PORT ??= String(await freePort());
   return {
     port: Number(process.env.WYRD_BROWSER_PORT),
     homePort: Number(process.env.WYRD_BROWSER_HOME_PORT),
+    docsPort: Number(process.env.WYRD_BROWSER_DOCS_PORT),
   };
+}
+
+/** The origin of the docs fixture server of this run (set by runPorts). */
+export function docsOrigin(): string {
+  const port = process.env.WYRD_BROWSER_DOCS_PORT;
+  if (!port) throw new Error("no docs fixture server in this run (WYRD_BROWSER_DOCS_PORT is not set)");
+  return `http://127.0.0.1:${port}`;
 }

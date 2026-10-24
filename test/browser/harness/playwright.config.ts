@@ -9,5 +9,7 @@ export default harnessConfig({
   command: process.env.INNER_COMMAND,
   homePort: process.env.INNER_HOME_PORT ? Number(process.env.INNER_HOME_PORT) : undefined,
   homeCommand: process.env.INNER_HOME_COMMAND,
+  docsPort: process.env.INNER_DOCS_PORT ? Number(process.env.INNER_DOCS_PORT) : undefined,
+  docsCommand: process.env.INNER_DOCS_COMMAND,
   testMatch: `**/${process.env.INNER_SPEC}.inner.ts`,
 });
