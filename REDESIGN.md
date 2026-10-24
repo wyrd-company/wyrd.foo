@@ -157,10 +157,12 @@ Documentation section.
   `method: apt` and `method: rpm` the site writes the repo.wyrd.foo setup
   lines above the product's install line. An app's media tour is the
   screenshot tour of its console.
-- **MCP server**: client tabs (Claude Code, Claude Desktop, Cursor, VS Code,
-  JSON) in place of install methods, and a table of the tools the server
-  exposes with their side effects. The media is an animated GIF of an agent
-  session.
+- **MCP server**: one tab for each `install` entry, in install order, in place
+  of install methods. An MCP client entry (Claude Code, Claude Desktop,
+  Cursor, VS Code, JSON) gets its client's name. A plugin marketplace entry
+  (`method: plugin`) gets its label and is tagged "Plugin". Below the tabs, a
+  table of the tools the server exposes with their side effects. The media is
+  an animated GIF of an agent session.
 - **Dev container feature**: a `devcontainer.json` snippet that adds the
   feature.
 - **Dev container image**: the image reference and a `devcontainer.json`
