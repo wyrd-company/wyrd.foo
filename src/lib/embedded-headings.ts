@@ -18,8 +18,11 @@ export const PREFIX_SEPARATOR = "--";
 export function embeddedUnit(path: string | undefined, contentRoot: string): string | undefined {
   if (!path) return undefined;
   const parts = relative(resolve(contentRoot), path).split(sep);
-  // `<key>/README.md`: a file in `<key>/docs/` has three parts and is a docs page.
-  return parts.length === 2 ? UNITS[parts[1]] : undefined;
+  // A file outside the content root, like a README.md one level above it, is no product's.
+  if (parts[0] === "..") return undefined;
+  // `<key>/README.md`: a file in `<key>/docs/` has three parts and is a docs page. The name must be one of the
+  // two, not an inherited property of the object that holds them (`constructor`).
+  return parts.length === 2 && Object.hasOwn(UNITS, parts[1]) ? UNITS[parts[1]] : undefined;
 }
 
 interface HastNode {
