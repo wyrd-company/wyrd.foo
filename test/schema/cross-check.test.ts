@@ -36,6 +36,22 @@ describe("cross-check: pages", () => {
     assertOneIssue(crossCheck(tree), { file: "cli/guides/extra.md", field: "product", message: /unknown-product.*does not list/ });
   });
 
+  it("a page whose product is an inherited object member, not a declared key, fails", () => {
+    const tree = treeFrom("cli");
+    tree.pages.find((p) => p.path.endsWith("extra.md"))!.data.product = "constructor";
+    assertOneIssue(crossCheck(tree), { file: "cli/guides/extra.md", field: "product", message: /constructor.*does not list/ });
+  });
+
+  it("a page whose product is a declared constructor key passes", () => {
+    const tree = treeFrom("cli", (raw) => {
+      raw.products.constructor = structuredClone(raw.products.widget);
+      delete raw.products.constructor.nav;
+    });
+    tree.pages.find((p) => p.path.endsWith("extra.md"))!.data.product = "constructor";
+    assert.ok(Object.hasOwn(tree.docs.products, "constructor"));
+    assert.deepEqual(crossCheck(tree), []);
+  });
+
   it("a page whose product is a feature entry fails", () => {
     const tree = treeFrom("cli", (raw) => {
       raw.products["sample-feature"] = { kinds: [{ kind: "devcontainer-feature" }], source: "src/features/sample-feature" };

@@ -233,7 +233,7 @@ export type KindBlock = z.output<typeof kindBlock>;
 
 /** True when the entry is a feature entry, the short entry for a dev container feature. */
 export function isFeatureEntry(entry: ProductEntry | FeatureEntry): entry is FeatureEntry {
-  return "source" in entry;
+  return Object.hasOwn(entry, "source");
 }
 
 /** The release unit of a product or feature entry: `release-unit`, or the key. */
