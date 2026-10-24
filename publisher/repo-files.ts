@@ -79,18 +79,18 @@ export function ownerRepoOf(url: string): string | undefined {
 /** The files of the commit `oid` in the clone at `dir`. */
 export function gitFiles(dir: string, oid: string): RepoFiles {
   const cache = {};
+  let paths: Promise<string[]> | undefined;
+  const all = () => (paths ??= git.listFiles({ fs, dir, ref: oid, cache }).then((list) => list.sort()));
   return {
     async list(prefix) {
-      return (await git.listFiles({ fs, dir, ref: oid, cache })).filter((path) => path.startsWith(prefix)).sort();
+      return (await all()).filter((path) => path.startsWith(prefix));
     },
+    // Only a path the commit's tree does not hold reads as missing; any other
+    // failure (a missing object in a damaged clone) is thrown.
     async read(path) {
-      try {
-        const { blob } = await git.readBlob({ fs, dir, oid, filepath: path, cache });
-        return blob;
-      } catch (error) {
-        if (isNotFound(error)) return undefined;
-        throw error;
-      }
+      if (!(await all()).includes(path)) return undefined;
+      const { blob } = await git.readBlob({ fs, dir, oid, filepath: path, cache });
+      return blob;
     },
   };
 }
