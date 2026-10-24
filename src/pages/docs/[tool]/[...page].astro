@@ -47,6 +47,7 @@ const num = (n: number) => String(n).padStart(2, "0");
 <SiteLayout
   title={`${tool.name} · ${page.title} — Wyrd Tools docs`}
   description={tool.tagline}
+  product={{ name: tool.name }}
 >
   <Fragment slot="head">
     <link rel="preconnect" href="https://fonts.googleapis.com" />
