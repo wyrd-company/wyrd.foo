@@ -28,6 +28,7 @@ import {
   type IntentionalConfig,
   type ReleaseUnit,
 } from "./intentional.ts";
+import { linksOutside } from "./links.ts";
 import { squareProblem } from "./logo.ts";
 import { releaseFromTag, ReleaseLookupError, type ReleaseData, type ReleaseLookup } from "./releases.ts";
 import { Findings, type Finding } from "./report.ts";
@@ -138,7 +139,14 @@ async function readTree(ctx: Context): Promise<Tree | undefined> {
   for (const [path, content] of files) {
     if (!isPageFile(path, keys)) continue;
     const file = DOCS_ROOT + path;
-    const front = frontMatter(new TextDecoder().decode(content));
+    const source = new TextDecoder().decode(content);
+    for (const link of linksOutside(file, source, DOCS_ROOT)) {
+      findings.warning({
+        file,
+        message: `line ${link.line}: link ${link.target} resolves to ${link.resolved}, outside ${DOCS_ROOT}; that file is not published`,
+      });
+    }
+    const front = frontMatter(source);
     if (front === undefined) {
       findings.error({ file, message: "has no front matter" });
       continue;
