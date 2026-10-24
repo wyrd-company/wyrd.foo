@@ -192,6 +192,29 @@ test.describe("search", () => {
     await chips.filter({ hasText: "CLI" }).click();
     await expect(titles(page), "with no chip, every result").toHaveText(["Getting started with gizmo", "Getting started"]);
   });
+
+  // The two tests below pick queries where the page's product is NOT first on Pagefind's own score, so only the boost
+  // (PRODUCT_BOOST in src/components/Search.astro) puts it first. The first-result checks of the test above hold
+  // without the boost.
+  const hrefs = (page: Page) => page.locator(".wsearch-link").evaluateAll((links) => links.map((a) => a.getAttribute("href")));
+
+  test("ranks the page's own product page above another product's stronger docs page", async ({ page, baseURL }) => {
+    // Unboosted: gadget's Install page (6.9) beats gizmo's product page (2.6).
+    await openDocs(page, baseURL, "/docs/gizmo/usage");
+    await search(page, "install");
+    const first = page.locator(".wsearch-item").first();
+    await expect(first.locator("a.wsearch-link")).toHaveAttribute("href", "/tools/gizmo/");
+    await expect(first.locator(".wsearch-where")).toHaveClass(/is-local/);
+    expect(await hrefs(page)).toContain("/docs/gadget/install/");
+  });
+
+  test("ranks the page's own docs above another product's stronger docs of the same title", async ({ page, baseURL }) => {
+    // Unboosted: gizmo's Getting started (15.6) beats gadget's (14.7).
+    await openDocs(page, baseURL, "/docs/gadget/install");
+    await search(page, "getting started");
+    await expect(page.locator(".wsearch-link").first()).toHaveAttribute("href", "/docs/gadget/getting-started/");
+    expect((await hrefs(page)).slice(0, 2)).toEqual(["/docs/gadget/getting-started/", "/docs/gizmo/getting-started/"]);
+  });
 });
 
 test.describe("Copy as Markdown", () => {
