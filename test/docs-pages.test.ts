@@ -14,11 +14,13 @@ import {
   versionLine,
   type PageSource,
 } from "../src/lib/docs-pages";
+import { CONTENT_ROOT } from "../src/lib/content-root";
 import { docsProducts } from "../src/lib/docs-products";
 import { activeHeading } from "../src/lib/docs-toc";
 import type { ToolFile } from "../src/schema/index.ts";
 
-const ROOT = "test/fixtures/root";
+// The pages of groupPages and docsProducts come from the content root they read by default.
+const ROOT = CONTENT_ROOT;
 const source = (folder: string, path: string, data: Partial<PageSource["data"]> = {}): PageSource => {
   const slug = path.split("/").pop()!.replace(/\.md$/, "");
   return {
@@ -48,17 +50,28 @@ const product = (name: string, extra: Record<string, unknown> = {}) =>
 
 describe("relPathOf", () => {
   it("keeps folders under the product's docs folder", () => {
-    expect(relPathOf(`${ROOT}/gadget/docs/guides/setup.md`, "gadget")).toBe("guides/setup.md");
-    expect(relPathOf(`${ROOT}/gadget/docs/setup.md`, "gadget")).toBe("setup.md");
+    expect(relPathOf(`${ROOT}/gadget/docs/guides/setup.md`, "gadget", ROOT)).toBe("guides/setup.md");
+    expect(relPathOf(`${ROOT}/gadget/docs/setup.md`, "gadget", ROOT)).toBe("setup.md");
   });
 
   it("keeps a nested docs folder that belongs to the page's path", () => {
-    expect(relPathOf(`${ROOT}/gadget/docs/docs/setup.md`, "gadget")).toBe("docs/setup.md");
-    expect(relPathOf(`${ROOT}/gadget/docs/gadget/docs/setup.md`, "gadget")).toBe("gadget/docs/setup.md");
+    expect(relPathOf(`${ROOT}/gadget/docs/docs/setup.md`, "gadget", ROOT)).toBe("docs/setup.md");
+    expect(relPathOf(`${ROOT}/gadget/docs/gadget/docs/setup.md`, "gadget", ROOT)).toBe("gadget/docs/setup.md");
+  });
+
+  it("does not match a <folder>/docs inside the content root's own path", () => {
+    const root = "work/gadget/docs/content";
+    expect(relPathOf(`${root}/gadget/docs/setup.md`, "gadget", root)).toBe("setup.md");
+    expect(relPathOf(`${root}/gadget/docs/guides/setup.md`, "gadget", `./${root}/`)).toBe("guides/setup.md");
+  });
+
+  it("matches a relative file path against an absolute content root", () => {
+    expect(relPathOf("content/gadget/docs/setup.md", "gadget", `${process.cwd()}/content`)).toBe("setup.md");
   });
 
   it("fails for a file outside the product's docs folder", () => {
-    expect(() => relPathOf(`${ROOT}/gadget/setup.md`, "gadget")).toThrow(/not under gadget\/docs/);
+    expect(() => relPathOf(`${ROOT}/gadget/setup.md`, "gadget", ROOT)).toThrow(/not under gadget\/docs/);
+    expect(() => relPathOf("elsewhere/gadget/docs/setup.md", "gadget", ROOT)).toThrow(/not under gadget\/docs/);
   });
 });
 

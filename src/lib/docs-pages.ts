@@ -3,6 +3,8 @@
  * link, the version footer and reading progress. lib/docs.ts applies them to
  * the published content.
  */
+import { resolve } from "node:path";
+import { CONTENT_ROOT } from "./content-root.ts";
 import { CHANGELOG_SLUG, isReservedSlug, type KindBlock } from "../schema/index.ts";
 import { readingOrder, type DocsMapPage, type DocsMapSection } from "./docs-map";
 
@@ -27,14 +29,15 @@ export const changelogHref = (key: string) => `/docs/${key}/${CHANGELOG_SLUG}`;
 
 /**
  * A page's path under its product's docs folder, from its file path:
- * `<content root>/<folder>/docs/<rel>`. `folder` is the product folder.
+ * `<root>/<folder>/docs/<rel>`. `root` is the content root and `folder` the
+ * product folder. Both paths are resolved against the working directory (the
+ * project root), so a `<folder>/docs` inside the root's own path never matches.
  */
-export function relPathOf(filePath: string, folder: string): string {
-  const parts = filePath.replace(/\\/g, "/").split("/");
-  for (let i = 0; i < parts.length - 2; i++) {
-    if (parts[i] === folder && parts[i + 1] === "docs") return parts.slice(i + 2).join("/");
-  }
-  throw new Error(`${filePath} is not under ${folder}/docs/`);
+export function relPathOf(filePath: string, folder: string, root: string): string {
+  const file = resolve(filePath).replace(/\\/g, "/");
+  const prefix = `${resolve(root).replace(/\\/g, "/").replace(/\/$/, "")}/${folder}/docs/`;
+  if (!file.startsWith(prefix)) throw new Error(`${filePath} is not under ${folder}/docs/ of the content root ${root}`);
+  return file.slice(prefix.length);
 }
 
 /** The GitHub edit link of a page: the repo's default branch (`HEAD`), `<docs-path>/<rel>`. */
@@ -102,11 +105,12 @@ export interface GroupedPage<E extends PageSource> {
 }
 
 /**
- * Pages by product key: the page's `product:`, and its file-name slug.
+ * Pages by product key: the page's `product:`, and its file-name slug. `root`
+ * is the content root the pages were read from.
  * Fails on the reserved `changelog` slug and on two pages of one product with
  * one slug.
  */
-export function groupPages<E extends PageSource>(entries: readonly E[]): Map<string, GroupedPage<E>[]> {
+export function groupPages<E extends PageSource>(entries: readonly E[], root: string = CONTENT_ROOT): Map<string, GroupedPage<E>[]> {
   const byProduct = new Map<string, GroupedPage<E>[]>();
   for (const entry of entries) {
     const key = entry.data.product;
@@ -118,7 +122,7 @@ export function groupPages<E extends PageSource>(entries: readonly E[]): Map<str
     const twin = list.find((page) => page.slug === slug);
     if (twin) throw new DuplicateSlugError(key, slug, [twin.entry.filePath ?? twin.entry.id, file]);
     const { title, order, install } = entry.data;
-    list.push({ key, slug, title, order, install, rel: relPathOf(file, folder), entry });
+    list.push({ key, slug, title, order, install, rel: relPathOf(file, folder, root), entry });
     byProduct.set(key, list);
   }
   return byProduct;
