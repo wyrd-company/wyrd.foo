@@ -25,6 +25,9 @@ interface Run {
   exit: Promise<number | null>;
 }
 
+/** The runs the current test started and has not stopped yet. */
+const started: Run[] = [];
+
 function startRun(
   spec: string,
   extra: Record<string, string> = {},
@@ -46,9 +49,27 @@ function startRun(
       child.once("close", (code) => resolve(code)),
     );
     const homePort = extra.INNER_HOME_PORT ? Number(extra.INNER_HOME_PORT) : undefined;
-    return { child, port, homePort, output: () => text, exit };
+    const run = { child, port, homePort, output: () => text, exit };
+    started.push(run);
+    return run;
   });
 }
+
+/**
+ * Stop a run by its exact process and wait until it has exited. Interrupted
+ * like a person's Ctrl-C, the run stops the servers it started.
+ */
+async function stopRun({ child, exit }: Run) {
+  if (child.exitCode === null && child.signalCode === null) child.kill("SIGINT");
+  await exit;
+}
+
+// Whether the test passes, fails or throws before it awaits `run.exit`, no
+// inner run outlives it. Each run is stopped by the PID its test recorded; no
+// process is found by pattern, since other sessions share the host.
+test.afterEach(async () => {
+  await Promise.all(started.splice(0).map(stopRun));
+});
 
 const listening = (port: number) =>
   new Promise<boolean>((resolve) => {
@@ -56,6 +77,15 @@ const listening = (port: number) =>
     socket.once("connect", () => (socket.destroy(), resolve(true)));
     socket.once("error", () => resolve(false));
   });
+
+const alive = (pid: number) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const serverStopped = (port: number) => expect.poll(() => listening(port)).toBe(false);
 
@@ -180,4 +210,36 @@ test("an interrupted run stops its server", async () => {
   run.child.kill("SIGINT");
   await run.exit;
   await serverStopped(run.port);
+});
+
+test.describe("a run left going by a failed test", () => {
+  test.describe.configure({ mode: "serial" });
+  let left: { pid: number; port: number } | undefined;
+
+  test("the outer test fails after it starts a run, before the run ends", async () => {
+    // The failure is the point of this test: it passes only by failing.
+    test.fail();
+    const run = await startRun("hang");
+    left = { pid: run.child.pid!, port: run.port };
+    await expect.poll(() => listening(run.port)).toBe(true);
+    expect(run.child.exitCode, "the run is still going").toBe(1);
+  });
+
+  test("its inner run is stopped, its port is free and its process is gone", async () => {
+    expect(left, "the test before it recorded its run").toBeDefined();
+    const { pid, port } = left!;
+    try {
+      await serverStopped(port);
+      expect(alive(pid), `process ${pid} is gone`).toBe(false);
+    } finally {
+      // Only the recorded PID, and only when the cleanup under test missed it.
+      // An interrupt lets the run stop its own servers.
+      try {
+        process.kill(pid, "SIGINT");
+      } catch {
+        // Gone already.
+      }
+      await expect.poll(() => alive(pid)).toBe(false);
+    }
+  });
 });
