@@ -49,12 +49,13 @@ describe("the site build on content/", () => {
     const { status, output } = buildOnCopy("broken", (root) => {
       const file = join(root, "beholder/tool.yaml");
       const source = readFileSync(file, "utf8");
-      assert.match(source, /^version: \S+$/m);
-      writeFileSync(file, source.replace(/^version: \S+$/m, "version: bogus"));
+      // A bad status fails both union branches, product and feature entry.
+      assert.match(source, /^status: \S+$/m);
+      writeFileSync(file, source.replace(/^status: \S+$/m, "status: bogus"));
     });
     assert.notEqual(status, 0, output);
     const text = plainText(output);
     assert.match(text, /\[InvalidContentEntryDataError\] products → beholder data does not match collection schema/);
-    assert.match(text, /^\s*version: must be a SemVer 2\.0\.0 version/m);
+    assert.match(text, /^\s*status: Invalid option/m);
   });
 });

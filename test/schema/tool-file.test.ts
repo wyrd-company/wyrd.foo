@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { formatIssue, parseWith, toolFileSchema, type ContractIssue } from "../../src/schema/index.ts";
+import { z } from "zod";
+import { formatIssue, parseWith, toolFileSchema, withClosestIssues, type ContractIssue } from "../../src/schema/index.ts";
 import { readRawDocs, type Raw } from "./load-tree.ts";
 
 // content/<key>/tool.yaml: a docs.yml entry with its defaults resolved, plus
@@ -103,5 +104,39 @@ describe("tool.yaml schema", () => {
     const product = ingestedProduct();
     product.featured.until = product.featured.from;
     assertIssue(issues(product), "featured.until", /before until/);
+  });
+});
+
+describe("withClosestIssues(toolFileSchema), the site's products schema", () => {
+  const schema = withClosestIssues(toolFileSchema);
+  const raw = (input: Raw) => {
+    const result = schema.safeParse(input);
+    return result.success ? [] : result.error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message }));
+  };
+
+  it("parses a valid product and feature to what toolFileSchema gives", () => {
+    for (const input of [ingestedProduct(), ingestedFeature()]) assert.deepEqual(schema.parse(input), toolFileSchema.parse(input));
+  });
+
+  it("keeps the input JSON Schema Astro generates for the collection", () => {
+    // Astro writes .astro/collections/products.schema.json with io: "input".
+    const json = (target: z.ZodType) => z.toJSONSchema(target, { io: "input", unrepresentable: "any" });
+    assert.deepEqual(json(schema), json(toolFileSchema));
+  });
+
+  it("names the field of a broken product: status, not a union failure at the root", () => {
+    const plain = toolFileSchema.safeParse({ ...ingestedProduct(), status: "bogus" });
+    assert.deepEqual(plain.success ? [] : plain.error.issues.map((issue) => [issue.code, issue.path.join(".")]), [["invalid_union", ""]], "control: the plain union names no field");
+    const found = raw({ ...ingestedProduct(), status: "bogus" });
+    assert.equal(found.length, 1, JSON.stringify(found));
+    assert.equal(found[0].path, "status");
+    assert.match(found[0].message, /Invalid option/);
+  });
+
+  it("names the field of a broken feature entry, nested paths and unknown keys included", () => {
+    const feature = ingestedFeature();
+    assert.deepEqual(raw({ ...feature, version: "two" }).map((issue) => issue.path), ["version"]);
+    assert.deepEqual(raw({ ...feature, release: { ...(feature.release as Raw), version: "two" } }).map((issue) => issue.path), ["release.version"]);
+    assert.deepEqual(raw({ ...ingestedProduct(), colour: "red" }), [{ path: "colour", message: "is not an allowed field" }]);
   });
 });
