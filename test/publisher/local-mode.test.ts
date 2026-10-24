@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { stringify } from "yaml";
@@ -217,6 +217,26 @@ describe("local mode: key ownership", () => {
     assert.equal(epsilon.outcome, "published");
     assert.equal(epsilon.ref, "refs/remotes/origin/wyrd-foo-v2");
     assert.equal(epsilon.oid, oid);
+  });
+});
+
+describe("local mode: a damaged clone", () => {
+  const ws = new Workspace();
+  after(() => ws.remove());
+
+  it("fails the repo with the read error, not as a missing file, and goes on", async () => {
+    const dir = ws.repo("gamma", gammaFiles());
+    ws.repo("alpha", alphaFiles(), { tags: ALPHA_TAGS });
+    const blob = git(dir, "rev-parse", "wyrd-foo-v2:docs/user/getting-started.md").trim();
+    rmSync(join(dir, ".git", "objects", blob.slice(0, 2), blob.slice(2)));
+    const reports = await runLocal({ config: config("gamma", "alpha"), toolsDir: ws.toolsDir, contentDir: ws.contentDir });
+    const gamma = reportOf(reports, "gamma");
+    assert.equal(gamma.outcome, "failed");
+    assert.deepEqual(gamma.findings.map((finding) => finding.severity), ["error"]);
+    assert.match(gamma.findings[0].message, /^failed: /);
+    assert.doesNotMatch(gamma.findings[0].message, /does not exist/);
+    assert.throws(() => ws.files("gamma-tool"));
+    assert.equal(reportOf(reports, "alpha").outcome, "published");
   });
 });
 
