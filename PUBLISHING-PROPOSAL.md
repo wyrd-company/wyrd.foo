@@ -1,81 +1,183 @@
-# Proposal: pull-based publishing
+# Publishing: `publish-docs@v2`
 
-Status: **proposed** — not implemented. [`PUBLISHING.md`](PUBLISHING.md)
-describes the current push-based flow and stays authoritative until this lands.
+This document is the design of how a tool repo publishes its products and
+docs to wyrd.foo v2: the data contract in `docs/user/`, the publishing
+requirements, the publisher and the content it writes. The site design is in
+[`REDESIGN.md`](REDESIGN.md). [`PUBLISHING.md`](PUBLISHING.md) describes
+`publish-docs@v1`, which the live site uses.
 
 ## Goals
 
 - Stand up a new tool without changing wyrd.foo.
-- Keep validation, the schema, and the content layout in one place (wyrd.foo),
-  so they can change without retagging an action or editing tool repos.
-- Record release information so the site can show recent releases and a
-  featured product.
-- Support more than CLIs: MCP servers, dev container features and images, and
-  apps with a web console.
+- Keep validation, the schema and the content layout in one place
+  (wyrd.foo): the site and the publisher import the same Zod schema.
+- Record release information for every product, so the site shows recent
+  releases, a featured product and a changelog.
+- Hold many products in one repo and many kinds in one product: CLIs, MCP
+  servers, apps, dev container features and dev container images.
 
 ## Overview
 
-The tool repo no longer pushes into wyrd.foo. It asks wyrd.foo to pull.
+The tool repo pushes. Its publishing workflow calls a reusable workflow in
+wyrd.foo, which runs the `publish-docs@v2` action. The action runs the
+publisher core inside the tool repo's workflow, validates, and commits the
+result to wyrd.foo `main`.
 
 ```text
-tool repo (release)                      wyrd.foo
-───────────────────                      ────────
-release published
-  └─ request-publish ── repository_dispatch ──▶ ingest workflow
-     (repo, ref, release,                       1. repo is in the org and opted in?
-      feature options)                          2. check out repo @ ref
-                                                3. download release asset (generated data)
-                                                4. validate against the site schema
-                                                5. carry forward release / featured
-                                                6. rewrite content/<slug>/, commit
-                                                7. report status back to the tool repo
-                                              ──▶ deploy (cd.yml)
+tool repo                                     wyrd.foo
+─────────                                     ────────
+push of a code tag or a docs tag,
+or a manual run
+  └─ calling workflow
+       └─ reusable workflow (wyrd.foo) @v2
+            └─ publish-docs@v2 (publisher core)
+                 1. read docs/user/ and .intentional/config.yml at the ref
+                 2. validate against the site schema
+                 3. resolve release data for every product
+                 4. check key ownership
+                 5. write content/<key>/ for every product ──push──▶ main
+                                                                     └─ deploy (cd.yml)
 ```
 
-## Opting a repository in
+The publisher core is one TypeScript module. The action runs it in publish
+mode; the dev server runs it in local mode (see "Local mode").
 
-Opt-in is an **organization custom repository property**, not a file in
-wyrd.foo.
+## Publishing requirements
 
-| Property           | Type    | Meaning                                  |
-| ------------------ | ------- | ---------------------------------------- |
-| `wyrd-foo-publish` | boolean | `true` lets wyrd.foo ingest this repo.   |
+A repo that publishes to wyrd.foo meets all of these:
 
-- Define it once at the org level with **"Allow repository actors to set this
-  property" turned off**, so only org owners (or a role granted to manage
-  properties) can opt a repo in. Repo admins cannot publish to the site on
-  their own.
-- Setting it to `false` (or removing it) opts the repo out. The next full
-  resync removes its `content/<slug>/`.
-
-Adding a tool is then:
-
-1. Set `wyrd-foo-publish: true` on the repo.
-2. Add the `request-publish` workflow call to its release workflow.
-3. Commit `docs/docs.yml` and pages.
+- The repo uses intentional, at version 0.1.7 or later.
+- Each product names one release unit in `release-unit:`. The default is the
+  product key.
+- Each release of a code unit has a GitHub Release on the unit's primary
+  tag. Feature entries are the exception: see "Feature entries".
+- Each product, except a feature entry, has a docs unit, `<key>-docs`. Docs
+  units are tag-only: they have no GitHub Release, so the repo's Releases list shows
+  only what users install.
 
 ## What a tool repo provides
 
-### Committed: `docs/`
+### `docs/user/`
 
-Unchanged from today in shape: `docs/docs.yml`, Markdown pages gated by
-`docs: true`, and listed assets. New fields in `docs.yml`:
+Public docs live in `docs/user/`: `docs/user/docs.yml` and
+`docs/user/**/*.md`. Everything under `docs/user/` is published. Nothing
+outside it is published, except the `README.md` of each feature entry, which
+the publisher reads through the entry's `source:`. Other `docs/` folders are
+private.
 
-- `kind` — `cli` | `mcp-server` | `devcontainer-feature` | `devcontainer-image` | `app`.
-- `install` — every install method, with the operating systems it supports
-  (see below). Replaces today's `install: [{label, command}]`.
-- `highlights` — up to six one-line statements for "What it does".
-- `nav` — sections, groups and page order for the docs sidebar (see below).
-- `media` — the product's hero media (each `src` must be listed in `assets`).
-- A kind-specific block, including the primary "get it" command shown in the
-  catalog (install command, `claude mcp add …`, `devcontainer.json` reference,
-  or run command).
-- `schemaVersion` — the major version of the site schema the file targets.
+```text
+docs/
+├── user/
+│   ├── docs.yml           # the repo's products
+│   ├── getting-started.md # a page (front matter names its product)
+│   ├── guides/
+│   │   └── authoring.md   # pages may be at any depth
+│   └── assets/
+│       ├── demo.gif
+│       └── logo.svg
+└── design/                # private
+```
 
-Language is no longer shown on the site and is dropped from the schema.
+A repo with several products may keep one folder per product under
+`docs/user/` (t3code-client keeps one folder per package).
 
-`install` describes each method once; the site generates the product page's
-install section and the hero's default command from it:
+### `docs/user/docs.yml`
+
+One file per repo. Top-level fields:
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `schemaVersion` | yes | The major version of the site schema the file targets. |
+| `assets` | no | Exact file paths, relative to `docs/user/`, that are published. |
+| `products` | yes | A map keyed by product key. |
+| `relationships` | no | Artifact metadata. The schema allows it; the publisher ignores it. |
+
+`products` is a map, not an array, so that intentional's yaml projection can
+write each product's version by key path (`/products/<key>/version`). The
+map also makes keys unique within the repo. The product key is the folder
+`content/<key>/`, the route `/tools/<key>` and the value of `product:` on
+each of the product's pages.
+
+```yaml
+# yaml-language-server: $schema=https://wyrd.foo/schemas/docs/v1.json
+schemaVersion: 1
+assets:
+  - assets/demo.gif
+  - assets/logo.svg
+products:
+  trowel:
+    name: trowel
+    version: 0.2.0               # code unit `trowel`, written by intentional
+    docs-version: 0.2.3          # docs unit `trowel-docs`, written by intentional
+    release-unit: trowel         # default = key
+    logo: assets/logo.svg
+    tagline: Relay webhooks into NATS JetStream, and JetStream messages back out.
+    blurb: >-
+      A small Go service that verifies and transforms incoming webhooks …
+    status: preview
+    category: Agent Infrastructure
+    order: 8
+    highlights:
+      - Verifies and transforms incoming webhooks before they reach JetStream.
+    media:
+      - src: assets/demo.gif
+        caption: Relaying a webhook into JetStream.
+    kinds:
+      - kind: app                # first = primary
+        install:
+          - method: apt
+            os: [linux]
+            command: sudo apt install trowel
+          - method: docker
+            command: docker run --rm -it ghcr.io/wyrd-company/trowel
+      - kind: devcontainer-feature
+        ref: ghcr.io/wyrd-company/trowel/trowel:1
+```
+
+### Product fields
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `name` | yes | Display name. |
+| `version` | yes | The installed version, from the product's code unit. Written by intentional. |
+| `docs-version` | yes | The docs version, from the docs unit `<key>-docs`. Written by intentional. |
+| `release-unit` | no | The product's code release unit. Default: the product key. |
+| `tagline`, `blurb` | yes | One line, and the description in the hero. |
+| `status` | yes | `stable`, `preview` or `planned`. |
+| `category` | yes | Catalog category. |
+| `order` | no | Integer catalog position, lower first. Products without `order` sort by `name`. |
+| `kinds` | yes | One or more kind blocks; the first is the primary kind. |
+| `highlights` | yes | Up to six one-line statements for "What it does". |
+| `media` | yes | Hero media; each `src` is listed in `assets`. |
+| `nav` | no | Docs sections, groups and page order. |
+| `logo`, `logo-dark` | no | Square SVG marks, listed in `assets`. |
+| `favicon` | no | SVG or PNG, listed in `assets`. |
+| `social-image` | no | PNG or JPEG, 1200×630, listed in `assets`. |
+
+`release`, `featured` and `source` are owned by the publisher; `docs.yml`
+does not set them.
+
+### Kinds
+
+`kinds` is an array of kind blocks. `kind` is one of `cli`, `mcp-server`,
+`app`, `devcontainer-feature` and `devcontainer-image`. `app` means a thing
+you run. Each kind block holds the data for that kind's install block on
+the product page:
+
+| Kind | Block |
+| --- | --- |
+| `cli`, `app` | `install`: the install methods (below). |
+| `mcp-server` | The data for the client tabs. The tools table comes from generated data. |
+| `devcontainer-feature` | `ref`: the feature's OCI reference. |
+| `devcontainer-image` | `ref`: the image reference. The tags table comes from the image's registry tags. |
+
+The first kind is the primary kind: its badge and its "get it" command show
+in the catalog row, and its default install command shows in the hero.
+
+### `install`
+
+Each install method is described once. The site builds the product page's
+install block and the hero's default command from it.
 
 ```yaml
 install:
@@ -84,11 +186,8 @@ install:
     command: brew install wyrd-company/tools/toha
   - method: apt
     os: [linux]
-    label: Debian, Ubuntu        # optional; shown beside the method
-    command: |
-      curl -fsSL https://[APT HOST]/key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/wyrd.gpg
-      echo "deb [signed-by=/etc/apt/keyrings/wyrd.gpg] https://[APT HOST] stable main" | sudo tee /etc/apt/sources.list.d/wyrd.list
-      sudo apt update && sudo apt install toha
+    label: Debian, Ubuntu
+    command: sudo apt install toha
   - method: cargo
     os: [macos, linux, windows]
     command: cargo install toha
@@ -101,19 +200,20 @@ install:
 | `method`  | yes      | One of `homebrew`, `apt`, `rpm`, `aur`, `nix`, `cargo`, `npm`, `pipx`, `go`, `winget`, `scoop`, `docker`, `archive`, `script`. The site owns each method's display name and icon. |
 | `os`      | yes, except `docker` | Any of `macos`, `linux`, `windows`. |
 | `command` | yes      | One line, or several (YAML block scalar). Shown as one code block with one Copy button. |
-| `label`   | no       | Short qualifier, e.g. "Debian, Ubuntu". |
+| `label`   | no       | Short qualifier, for example "Debian, Ubuntu". |
 | `default` | no       | `true` on at most one entry: the command shown in the hero. Otherwise the first entry. |
 
+For `method: apt` and `method: rpm`, `command` is only the install line. The
+site owns the repository setup (signing key and source list from
+repo.wyrd.foo) and shows it above the install line, so the setup has one
+source.
+
 The site derives the platform tabs from `os` (macOS, Linux, Windows, plus
-Docker when a `docker` entry exists); a method listed for several systems
+Docker when a `docker` entry exists). A method listed for several systems
 appears under each. A method may appear more than once with different `os`
 values when the command differs per system.
 
-`install` is for products you install and run (CLIs, MCP servers, apps).
-Dev container features and images get their own kind-specific block instead
-(`devcontainer.json` reference, options, tags), not a Docker tab.
-
-`nav` lives in `docs.yml` (no second config file):
+### `nav`
 
 ```yaml
 nav:
@@ -123,163 +223,285 @@ nav:
         pages: [template-interviews, template-flow, template-jinja]
 ```
 
-Pages that are published but not listed in `nav` fall into a trailing "More"
-group, so a page never silently disappears.
+`nav` belongs to one product and lists that product's page slugs. Published
+pages that `nav` does not list go into a trailing "More" group.
 
-Editors get completion and inline errors from the published schema:
+### Feature entries
+
+A dev container feature that keeps its own `README.md` and versioned
+`devcontainer-feature.json` in the repo has a short entry:
 
 ```yaml
-# yaml-language-server: $schema=https://wyrd.foo/schemas/docs/v1.json
+products:
+  caddy:
+    kinds: [{ kind: devcontainer-feature }]
+    source: src/features/caddy      # devcontainer-feature.json + README.md
+    category: Dev container features
+    logo: assets/caddy.svg          # optional
 ```
 
-### Generated: release asset `wyrd-manifest.json`
+- The entry holds only the key, `kinds`, `source` and an optional
+  `category` and `logo`. Each feature is listed by its own entry; `docs.yml`
+  has no glob.
+- Name, description, version and options come from
+  `devcontainer-feature.json` at `source`.
+- The page is the abbreviated feature page: the `devcontainer.json` snippet,
+  then `README.md` as it is. The README is inside the feature's release unit
+  (`src/features/<id>`), so a docs fix is a patch release of that feature.
+  Feature entries have no docs unit and no docs pages.
+- A feature entry needs no highlights and no media.
+- A feature entry needs no GitHub Release. Its release data comes from the
+  annotated intentional tag of its unit and the unit's changelog.
+- A feature entry is not listed in Recent releases and is never featured.
+- The publisher warns when the option names in `README.md` differ from the
+  options in `devcontainer-feature.json`.
 
-Data produced at build time — an MCP server's tools, resources and prompts; a
-feature's options from `devcontainer-feature.json`; an image's tags — is
-generated by the tool repo and attached to the GitHub release as
-`wyrd-manifest.json`. It is never hand-edited and never committed. wyrd.foo
-downloads it from the release named by `ref`.
+A dev container image has a full product entry, a docs unit and GitHub
+Releases, like any other product.
 
-### Workflow call
+### Pages
 
-Tool repos call a reusable workflow hosted in wyrd.foo. It is called two ways:
+Pages are Markdown files at any depth under `docs/user/`. The folder is the
+gate: every `.md` under it is published.
 
-- **On release** — passes the release (tag, version, date, URL) and optional
-  feature options.
-- **Manually** (`workflow_dispatch`) — republishes docs at a ref without a new
-  release. Existing `release` and `featured` values are kept.
+```markdown
+---
+title: Getting started # sidebar and heading label (required)
+product: trowel        # product key in docs.yml (required)
+order: 1               # page order where nav does not decide it
+install: true          # optional: render the install block at the top
+---
+
+Markdown body.
+```
+
+- `product:` names the product the page belongs to. It is a key in
+  `products`.
+- The slug is the file name without `.md`. It is unique within a product, so
+  two products in one repo can each have `getting-started.md`.
+- A page's URL is `/docs/<key>/<slug>`.
+
+## Release units
+
+intentional writes both versions into `docs.yml` as committed yaml
+projections. The code unit is the product's release unit; it projects
+`version`. The docs unit, `<key>-docs`, projects `docs-version`.
+
+```yaml
+# .intentional/config.yml
+release-units:
+  trowel:                          # code unit
+    path: .
+    projections:
+      - adapter: yaml
+        file: docs/user/docs.yml
+        mode: committed
+        pointer: /products/trowel/version
+  trowel-docs:                     # docs unit
+    path: docs/user
+    depends-on: [ trowel ]
+    projections:
+      - adapter: yaml
+        file: docs.yml
+        mode: committed
+        pointer: /products/trowel/docs-version
+    tags:
+      primary: { role: primary, template: "{id}@{version}" }
+```
+
+- `version` is the code unit's version: the version a user installs.
+- `docs-version` is the docs unit's version. The docs unit is
+  `<key>-docs`, at path `docs/user`, with `depends-on: [<code unit>]` and the
+  tag `<key>-docs@{version}`. Projection file paths are relative to the unit
+  path. A docs-only intent moves only `docs-version`, so docs release on
+  their own, with their own intents, changelog and tags.
+- The docs footer shows both: "Docs 0.2.3 · for trowel 0.2.0".
+
+### devcontainers tags
+
+intentional owns each dev container feature's release tag, `{id}@{version}`
+(for example `caddy@1.0.1`), as an annotated tag. The lightweight tag that
+`devcontainers/action` makes for the same release (`feature_caddy_1.0.1`) is
+a side effect and is not read. An image's date build tags (for example
+`20261018.123-noble`) are registry tags for the image's tags table, not
+release versions.
+
+## Generated data
+
+Data produced at build time is a file in the tool repo's workspace when the
+publisher runs, not a release asset:
+
+| Kind | Data | File |
+| --- | --- | --- |
+| `mcp-server` | Tools, with their side effects | The server's tools list |
+| `devcontainer-feature` | Name, description, version, options | `devcontainer-feature.json` |
+| `devcontainer-image` | Image version | `manifest.json` |
+
+## The calling workflow
+
+A tool repo calls the reusable workflow in wyrd.foo, not the action. The
+reusable workflow wraps the action, so the action's inputs and mechanism can
+change without editing tool repos.
 
 ```yaml
 name: Publish to wyrd.foo
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "[0-9]*"            # code unit tags ({version})
+      - "trowel-docs@*"     # docs unit tags
   workflow_dispatch:
     inputs:
       ref:
         description: Tag or commit to publish
         required: true
+      feature:
+        description: Feature this release on the front page
+        type: boolean
+        default: false
+      feature-days:
+        description: How long the feature lasts
+        default: "14"
+      feature-reason:
+        description: For example "New MCP server"; default "New release"
+        default: ""
 
 jobs:
   publish:
-    uses: wyrd-company/wyrd.foo/.github/workflows/request-publish.yml@v1
+    uses: wyrd-company/wyrd.foo/.github/workflows/publish-docs.yml@v2
     with:
-      ref: ${{ github.event.release.tag_name || inputs.ref }}
-      feature: false          # true to feature this release on the front page
-      feature-days: 14        # how long the feature lasts
-      feature-reason: ""      # e.g. "New MCP server"; default "New release"
+      ref: ${{ inputs.ref || github.ref_name }}
+      feature: ${{ inputs.feature || false }}
+      feature-days: ${{ inputs.feature-days || '14' }}
+      feature-reason: ${{ inputs.feature-reason || '' }}
     secrets: inherit
 ```
 
-## The dispatch
+- The trigger is a push of a code tag or a docs tag, plus a manual run. The
+  tag patterns follow the repo's tag templates in `.intentional/config.yml`.
+- A plain push to `main` does not publish.
 
-`request-publish` mints a token from the publisher App scoped to wyrd.foo and
-sends a `repository_dispatch` with `event_type: wyrd-foo-publish`:
+## The publisher
 
-```json
-{
-  "repo": "wyrd-company/<tool>",
-  "ref": "v1.4.0",
-  "release": { "version": "1.4.0", "date": "2026-10-01", "url": "https://github.com/…" },
-  "feature": { "days": 14, "reason": "New MCP server" }
-}
+Every run computes all of the repo's products from the files at the ref, so
+the result is the same for every trigger. The trigger only chooses the ref.
+
+1. **Read** `docs/user/docs.yml`, the pages under `docs/user/`, each feature
+   entry's `source` folder and `.intentional/config.yml` at the ref. From the
+   intentional config the publisher reads only release-unit configuration
+   (contract 1: each unit's primary tag template). It does not read
+   intentional's generated workflows.
+2. **Validate** `docs.yml` and every page against the site's Zod schema for
+   the declared `schemaVersion`, then run the checks the schema cannot
+   express:
+   - every page's `product:` is a key in `products`;
+   - every slug is unique within its product;
+   - every `nav` page exists for that product;
+   - every `media.src`, `logo`, `logo-dark`, `favicon` and `social-image` is
+     listed in `assets`, and every listed asset exists inside `docs/user/`;
+   - `logo` and `logo-dark` are SVG; `favicon` is SVG or PNG;
+     `social-image` is PNG or JPEG at 1200×630;
+   - for each feature entry, `devcontainer-feature.json` and `README.md`
+     exist at `source`.
+3. **Resolve release data** for each product. The publisher takes `version`
+   and `docs-version` from `docs.yml` at the ref, reads the code unit's
+   primary tag template, and builds the tag from `version`.
+   - For a product, the publisher fails if that tag has no GitHub Release.
+     From the release it reads version, date, URL and notes.
+   - For a feature entry, the publisher reads the version from
+     `devcontainer-feature.json`, and the date and notes from the annotated
+     tag.
+   - For both, it reads the changelog from the unit.
+4. **Check key ownership.** Each `content/<key>/tool.yaml` records its owner
+   in `source: <owner/repo>`. The publisher rejects a key that another repo
+   owns.
+5. **Write** `content/<key>/` for every product in the map (see "Content
+   written to wyrd.foo"). It carries
+   `featured` forward from the existing `tool.yaml` and applies the run's
+   `feature` inputs. It deletes every `content/<key>/` folder that this repo
+   owns and that is not in its map, so removing or renaming a product
+   needs no hand edits.
+6. **Push.** The publisher commits as the publisher App bot and pushes to
+   wyrd.foo `main`, with fetch, rebase and retry when another publish has
+   pushed first. The push starts `cd.yml`.
+
+### Local mode
+
+The dev server runs the same publisher core in local mode. For each tool
+repo, local mode reads the repo's `wyrd-foo-v2` branch from its local clone.
+It does not check out a branch in the clone's working tree, and it makes no
+commit and no push. It writes into a dev content folder in the wyrd.foo
+checkout, and the dev server serves the site from that folder.
+
+- When no GitHub Release is reachable, release data comes from the local
+  tags.
+- A requirement that a repo does not meet yet (for example, no intentional)
+  is a warning, not a failure. A repo without intentional sets `version` by
+  hand on its `wyrd-foo-v2` branch.
+
+## Content written to wyrd.foo
+
+`content/<key>/` holds `tool.yaml`, the product's pages by slug, the listed
+assets the product uses, the unit changelog, and the generated data for the
+product's kinds. A feature entry's folder holds its `README.md` as the page
+body.
+
+`tool.yaml` holds the validated product entry plus three fields that only
+the publisher writes:
+
+```yaml
+source: wyrd-company/trowel
+release:
+  version: 0.2.0
+  date: 2026-10-01
+  url: https://github.com/wyrd-company/trowel/releases/tag/0.2.0
+  notes: …
+featured:
+  from: 2026-10-01
+  until: 2026-10-15
+  reason: New MCP server
+  version: 0.2.0
 ```
-
-`release` is omitted on a manual publish. `feature` is omitted unless
-requested. (GitHub limits `client_payload` to 10 top-level keys.)
-
-## The ingest workflow (wyrd.foo)
-
-Runs on `repository_dispatch: wyrd-foo-publish` and on `workflow_dispatch` (for a
-full resync). It runs in a single `concurrency` group, so ingests are
-serialized and the old push-retry loop goes away.
-
-1. **Authorize.** Read the repo's custom property values via the API. Reject
-   unless the repo is in the org and `wyrd-foo-publish` is `true`. The payload's
-   `repo` is caller-supplied; this check is what makes it safe to trust.
-2. **Check out** the tool repo at `ref`.
-3. **Download** `wyrd-manifest.json` from the release, if present.
-4. **Validate** `docs.yml` and the manifest against the site schema for the
-   declared `schemaVersion`, then run checks JSON Schema cannot express:
-   every `nav` page exists and is marked `docs: true`; every `media.src` is in
-   `assets`; listed assets exist inside `docs/`.
-5. **Carry forward** `release` and `featured` from the existing
-   `content/<slug>/tool.yaml`, then apply the dispatch's `release` and
-   `feature`. These fields are owned by ingest; `docs.yml` may not set them.
-6. **Write** `content/<slug>/` (pages, assets, `tool.yaml`, manifest data),
-   commit as the App bot, and push. The push triggers `cd.yml`.
-7. **Report** success or failure as a commit status on the tool repo's tagged
-   commit, so a rejected publish is visible where the release was made.
-
-### Full resync
-
-`workflow_dispatch` on the ingest workflow with no repo re-ingests every
-opted-in repo at its latest release. The list comes from searching the org
-for repos with `wyrd-foo-publish` set to `true`; repos with content but no longer
-opted in are removed. Use it after schema or layout changes, and to clean up
-after a tool is renamed.
 
 ## Release and featured data
 
-Written by ingest into `tool.yaml`:
+The front page chooses its featured product in the browser, so a feature
+expires on time without a rebuild:
 
-```yaml
-release:  { version: 1.4.0, date: 2026-10-01, url: … }
-featured: { from: 2026-10-01, until: 2026-10-15, reason: New MCP server, version: 1.4.0 }
-```
-
-The front page chooses its hero in the browser, so features expire on time
-without a rebuild:
-
-1. An active feature (`from ≤ now < until`); if several, the latest `from` wins.
+1. An active feature (`from ≤ now < until`); if several, the latest `from`
+   wins.
 2. Otherwise the newest release in the last 14 days.
 3. Otherwise a weekly rotation (UTC week number modulo the pool) through
-   stable products that have media, sorted by slug.
+   stable products that have media, sorted by key.
 
-The build renders its own pick as the no-JavaScript default; the script swaps
-it only if the result differs.
+Feature entries are never in the pool. The build writes its own pick into
+the HTML as the default; the script swaps it only when its result differs.
 
 ## Schemas
 
 The site publishes JSON Schemas at stable, versioned URLs, for example
 `https://wyrd.foo/schemas/docs/v1.json`.
 
-- Generated at build time from the site's Zod schema (`z.toJSONSchema`, Zod 4)
-  via a static Astro endpoint, so the published schema and the site's own
-  content validation cannot drift.
-- Each schema's `$id` is its URL. A published version never changes; additive
-  changes go into the current version, breaking changes into a new one.
-- Ingest validates against the version a repo declares, so a repo is never
-  broken by a later site change.
+- The site's Zod schema is the single source of truth for `docs.yml` and
+  page front matter. It lives in a module that both the site and the
+  publisher import.
+- `/schemas/docs/v1.json` is generated from it at build time
+  (`z.toJSONSchema`, Zod 4) by a static Astro endpoint, so the published
+  schema and the site's own validation cannot drift.
+- Each schema's `$id` is its URL. A published version never changes;
+  additive changes go into the current version, breaking changes into a new
+  one.
+- The publisher validates against the version a repo declares, so a repo is
+  never broken by a later site change.
 
 ## Permissions and setup
 
-Publisher GitHub App:
+| Holder | Credential | Scope |
+| --- | --- | --- |
+| Publisher GitHub App `WYRD_TOOLS_DOCS_PUBLISHER` | Installation on wyrd.foo | Contents: read/write |
+| Tool repos | Org secrets `WYRD_TOOLS_DOCS_PUBLISHER_APP_ID`, `WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY` | Mint the App token inside the reusable workflow |
 
-| Scope                  | Permission                                   |
-| ---------------------- | -------------------------------------------- |
-| wyrd.foo               | Contents: read/write (push, receive dispatch) |
-| Tool repos             | Contents: read; Commit statuses: read/write  |
-| Organization           | Custom properties: read                      |
-
-Org secrets `WYRD_TOOLS_DOCS_PUBLISHER_APP_ID` and
-`WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY` remain, made available to tool repos
-so `request-publish` can mint its dispatch token.
-
-## Migration
-
-1. Ship the schema endpoint and the ingest workflow alongside the existing
-   `publish-docs` action.
-2. Set `wyrd-foo-publish: true` on the current tool repos.
-3. Switch each tool repo from `publish-docs` to `request-publish`; existing
-   `docs.yml` files are valid once `language` is dropped and `kind` added.
-4. Run a full resync, then retire the `publish-docs` action.
-
-## Open questions
-
-- **Stronger caller identity.** Optionally include the caller's GitHub OIDC
-  token in the dispatch and verify its signed `repository` and `ref` claims,
-  instead of relying on the property check alone.
-- **Products without docs pages.** Today a repo with no `docs: true` page is a
-  no-op. Apps or images may want a product page before they have docs.
+The reusable workflow mints the App token scoped to wyrd.foo, so the tool
+repo's own `GITHUB_TOKEN` needs no access to wyrd.foo. The App token push is
+a real actor, so it starts `cd.yml`.
