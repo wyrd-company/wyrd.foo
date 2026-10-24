@@ -3,7 +3,7 @@
  * (test/fixtures/docs-content) into dist-fixtures/docs/. Run after
  * `pnpm build:docs-fixture` (`pnpm test:dist`).
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse } from "node-html-parser";
 import { describe, expect, it } from "vitest";
@@ -13,6 +13,14 @@ const DIST = "dist-fixtures/docs";
 const file = (path: string) => readFileSync(join(DIST, path), "utf8");
 const page = (path: string) => parse(file(join(path, "index.html")));
 const text = (s: string | undefined) => s?.replace(/\s+/g, " ").trim();
+
+function htmlFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) return e.name === "pagefind" ? [] : htmlFiles(p);
+    return e.name.endsWith(".html") ? [p] : [];
+  });
+}
 
 describe("docs built from the fixture content", () => {
   it("has a build to check", () => {
@@ -39,6 +47,18 @@ describe("docs built from the fixture content", () => {
   it("edits a page of a repo with one docs unit under docs/user", () => {
     const edit = page("docs/sprocket/tools").querySelectorAll(".docs-toc-actions a").at(-1)?.getAttribute("href");
     expect(edit).toBe("https://github.com/example-org/sprocket/edit/HEAD/docs/user/tools.md");
+  });
+
+  it("sets the theme before any stylesheet on every docs page, the redirects too", () => {
+    const files = htmlFiles(join(DIST, "docs"));
+    expect(files).toContain(join(DIST, "docs/gadget/index.html"));
+    for (const path of files) {
+      const html = parse(readFileSync(path, "utf8")).querySelector("head")!.innerHTML;
+      const script = html.indexOf("wyrd-theme");
+      const stylesheet = html.search(/<link[^>]+rel="stylesheet"/);
+      expect(script, path).toBeGreaterThan(-1);
+      expect(stylesheet === -1 || script < stylesheet, path).toBe(true);
+    }
   });
 
   it("redirects /docs/<key>/ to the first page in reading order", () => {
