@@ -133,7 +133,7 @@ products:
           - method: docker
             command: docker run --rm -it ghcr.io/wyrd-company/trowel
       - kind: devcontainer-feature
-        ref: ghcr.io/wyrd-company/trowel/trowel:1
+        ref: ghcr.io/wyrd-company/trowel/trowel:0
 ```
 
 ### Product fields
