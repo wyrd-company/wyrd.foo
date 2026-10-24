@@ -1,7 +1,7 @@
 name: PR build
 
 # Fails a pull request, not a deploy, when the docs contract, the content in
-# content/ or the site build is broken.
+# content/, the site build, the built output or the browser tests are broken.
 
 on:
   pull_request:
@@ -44,3 +44,25 @@ jobs:
 
       - name: Check the built output
         run: pnpm test:dist
+
+      - name: Resolve the Playwright version
+        id: playwright
+        run: echo "version=$(pnpm exec playwright --version | awk '{ print $2 }')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install the Chromium system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      - name: Run the browser tests
+        run: pnpm test:browser

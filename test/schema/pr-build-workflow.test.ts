@@ -10,9 +10,12 @@ const REPO = new URL("../../", import.meta.url).pathname;
 const read = (path: string) => readFileSync(`${REPO}${path}`, "utf8");
 
 interface Step {
+  id?: string;
   name?: string;
   uses?: string;
+  if?: string;
   run?: string;
+  with?: Record<string, string>;
   env?: Record<string, string>;
 }
 const workflow = parse(read(".github/workflows/pr-build.yml"));
@@ -29,8 +32,8 @@ describe("the PR build workflow", () => {
     assert.deepEqual(workflow.permissions, { contents: "read" });
   });
 
-  it("runs the contract checks, the build and the built-output checks, in that order", () => {
-    const order = ["Validate the docs contract", "Build the site", "Check the built output"].map((name) =>
+  it("runs the contract checks, the build, the built-output checks and the browser tests, in that order", () => {
+    const order = ["Validate the docs contract", "Build the site", "Check the built output", "Run the browser tests"].map((name) =>
       steps.findIndex((candidate) => candidate.name?.startsWith(name)),
     );
     assert.ok(order.every((index) => index >= 0), `all steps present: ${order}`);
@@ -40,6 +43,32 @@ describe("the PR build workflow", () => {
     assert.match(validate, /^pnpm test$/m);
     assert.match(step(/^Build the site/).run ?? "", /^pnpm build$/);
     assert.match(step(/^Check the built output/).run ?? "", /^pnpm test:dist$/);
+    assert.match(step(/^Run the browser tests/).run ?? "", /^pnpm test:browser$/);
+  });
+
+  it("installs Chromium before the browser tests, from a cache keyed by the Playwright version", () => {
+    const at = (name: RegExp) => steps.indexOf(step(name));
+    const version = step(/^Resolve the Playwright version/);
+    assert.equal(version.id, "playwright");
+    assert.match(version.run ?? "", /pnpm exec playwright --version/);
+    assert.match(version.run ?? "", />> "\$GITHUB_OUTPUT"$/);
+
+    const cache = step(/^Cache the Playwright browsers/);
+    assert.equal(cache.id, "playwright-cache");
+    assert.match(cache.uses ?? "", /^actions\/cache@[0-9a-f]{40}$/);
+    assert.equal(cache.with?.path, "~/.cache/ms-playwright");
+    assert.match(cache.with?.key ?? "", /\$\{\{ steps\.playwright\.outputs\.version \}\}/);
+
+    const install = step(/^Install Chromium$/);
+    assert.equal(install.if, "steps.playwright-cache.outputs.cache-hit != 'true'");
+    assert.equal(install.run, "pnpm exec playwright install --with-deps chromium");
+    const deps = step(/^Install the Chromium system dependencies/);
+    assert.equal(deps.if, "steps.playwright-cache.outputs.cache-hit == 'true'");
+    assert.equal(deps.run, "pnpm exec playwright install-deps chromium");
+
+    const order = [/^Resolve the Playwright version/, /^Cache the Playwright browsers/, /^Install Chromium$/, /^Install the Chromium system/, /^Run the browser tests/].map(at);
+    assert.deepEqual(order, [...order].sort((a, b) => a - b));
+    assert.equal(step(/^Run the browser tests/).if, undefined, "the browser tests always run");
   });
 
   it("builds on content/, through the default of the variable the content config reads", () => {
