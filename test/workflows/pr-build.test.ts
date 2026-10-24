@@ -45,7 +45,7 @@ describe("the PR build workflow", () => {
     const migrate = step(/^Migrate content\//).run ?? "";
     const target = /--to "([^"]+)"/.exec(migrate)?.[1];
     assert.equal(target, "$RUNNER_TEMP/content-v2");
-    assert.match(read("src/content.config.ts"), /process\.env\.WYRD_CONTENT_DIR/);
+    assert.match(read("src/content.config.ts"), /process\.env\.WYRD_CONTENT_DIR\b/);
     assert.equal(step(/^Build the site/).env?.WYRD_CONTENT_DIR, "${{ runner.temp }}/content-v2");
   });
 
