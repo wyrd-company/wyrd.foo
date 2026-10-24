@@ -1,5 +1,6 @@
 ---
 title: Operations
+product: trowel
 order: 6
 ---
 

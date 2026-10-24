@@ -1,5 +1,6 @@
 ---
 title: Command behavior
+product: t3c
 order: 3
 relationships:
   references:

@@ -1,5 +1,6 @@
 ---
 title: Installation
+product: dcb
 order: 2
 install: true
 relationships:

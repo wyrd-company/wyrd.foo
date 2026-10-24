@@ -1,5 +1,6 @@
 ---
 title: Policies and client keys
+product: xolotl
 order: 5
 ---
 

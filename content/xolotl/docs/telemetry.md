@@ -1,5 +1,6 @@
 ---
 title: Telemetry
+product: xolotl
 order: 10
 ---
 

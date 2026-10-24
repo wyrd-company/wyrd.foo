@@ -1,5 +1,6 @@
 ---
 title: Operations and command reference
+product: wyrwood
 order: 5
 relationships:
   references:

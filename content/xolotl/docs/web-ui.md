@@ -1,5 +1,6 @@
 ---
 title: Web UI
+product: xolotl
 order: 8
 relationships:
   references: accounts

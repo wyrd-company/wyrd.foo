@@ -1,5 +1,6 @@
 ---
 title: Installation
+product: seek
 order: 2
 install: true
 ---

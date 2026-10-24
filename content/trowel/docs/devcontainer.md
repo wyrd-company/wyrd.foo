@@ -1,5 +1,6 @@
 ---
 title: Dev container Feature
+product: trowel
 order: 5
 ---
 

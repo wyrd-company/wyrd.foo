@@ -1,7 +1,7 @@
 name: PR build
 
-# Fails a pull request, not a deploy, when the docs contract, the migrated
-# content or the site build is broken.
+# Fails a pull request, not a deploy, when the docs contract, the content in
+# content/ or the site build is broken.
 
 on:
   pull_request:
@@ -37,12 +37,7 @@ jobs:
           pnpm typecheck
           pnpm test
 
-      - name: Migrate content/ to the v2 format
-        run: node scripts/migrate-content-v2.ts --from content --to "$RUNNER_TEMP/content-v2"
-
-      - name: Build the site on the v2 content
-        env:
-          WYRD_CONTENT_DIR: ${{ runner.temp }}/content-v2
+      - name: Build the site
         run: pnpm build
 
       - name: Check the built output

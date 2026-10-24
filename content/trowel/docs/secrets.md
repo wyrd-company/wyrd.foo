@@ -1,5 +1,6 @@
 ---
 title: Secrets
+product: trowel
 order: 4
 ---
 

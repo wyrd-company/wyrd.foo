@@ -1,5 +1,6 @@
 ---
 title: Clients
+product: xolotl
 order: 6
 ---
 

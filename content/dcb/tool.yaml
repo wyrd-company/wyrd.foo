@@ -1,25 +1,44 @@
-# ---
-# relationships:
-#   publishes-to: wyrd-foo
-#   references: [ README, manifest ]
-# ---
 name: dcb
+version: 0.1.0
+docs-version: 0.1.0
+release-unit: dcb
 tagline: Build and run development containers from devcontainer.json.
-blurb: >-
-  A single Go binary that builds devcontainer images on Docker's built-in BuildKit and creates, starts, and runs lifecycle commands in development containers through the Docker Engine API. Commands write one JSON result line, so scripts and agents can read the outcome.
-category: Developer Tools
-language: Go
+blurb: A single Go binary that builds devcontainer images on Docker's built-in BuildKit and creates,
+  starts, and runs lifecycle commands in development containers through the Docker Engine API.
+  Commands write one JSON result line, so scripts and agents can read the outcome.
 status: preview
-repo: https://github.com/wyrd-company/devcontainer-builder
+category: Dev Containers
 order: 9
-install:
-  - label: Homebrew
-    command: brew install wyrd-company/tools/dcb
-  - label: npm
-    command: npm install --global @wyrd-company/dcb
-  - label: APT
-    command: sudo apt install dcb
-  - label: RPM
-    command: sudo dnf install dcb
-  - label: AUR
-    command: paru -S dcb-bin
+kinds:
+  - kind: cli
+    install:
+      - method: homebrew
+        os:
+          - macos
+          - linux
+        default: true
+        command: brew install wyrd-company/tools/dcb
+      - method: npm
+        os:
+          - macos
+          - linux
+          - windows
+        command: npm install --global @wyrd-company/dcb
+      - method: apt
+        os:
+          - linux
+        command: sudo apt install dcb
+      - method: rpm
+        os:
+          - linux
+        command: sudo dnf install dcb
+      - method: aur
+        os:
+          - linux
+        command: paru -S dcb-bin
+highlights:
+  - Build and run development containers from devcontainer.json.
+media:
+  - src: assets/placeholder.svg
+    caption: Placeholder until the product has media.
+owner: wyrd-company/devcontainer-builder
