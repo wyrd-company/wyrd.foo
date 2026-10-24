@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
-import { crossCheck, formatIssue, productDocsFolder, type ContractIssue, type DocsTree } from "../../src/schema/index.ts";
+import { crossCheck, docsPathOf, formatIssue, productDocsFolder, type ContractIssue, type DocsTree } from "../../src/schema/index.ts";
 import { FIXTURES, loadTree, readRawDocs, type Raw } from "./load-tree.ts";
 
 // Each case starts from a valid fixture, breaks one rule, and expects exactly
@@ -203,6 +203,11 @@ describe("cross-check: a product's docs folder", () => {
     assert.equal(productDocsFolder("gadget", ["gadget/getting-started.md", "assets/x.svg"]), "gadget/");
     assert.equal(productDocsFolder("gadget", ["getting-started.md", "gadget-notes/x.md"]), "");
     assert.equal(productDocsFolder("gadget", []), "");
+  });
+
+  it("is written to tool.yaml as the repo path docs/user or docs/user/<key>", () => {
+    assert.equal(docsPathOf(""), "docs/user");
+    assert.equal(docsPathOf("gadget/"), "docs/user/gadget");
   });
 
   it("resolves a per-key product's asset fields under its folder", () => {
