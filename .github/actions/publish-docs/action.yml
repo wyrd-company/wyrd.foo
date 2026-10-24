@@ -43,7 +43,7 @@ inputs:
     description: Commit author and committer email (the publisher App bot).
     required: true
   feature:
-    description: '"true" to feature a product on the front page from now.'
+    description: '"true" to feature a product on the front page from now. Refused unless the run is a workflow_dispatch.'
     required: false
     default: "false"
   feature-product:
