@@ -21,6 +21,129 @@ async function openProduct(page: Page, baseURL: string | undefined, key: string)
 
 const visible = (page: Page, selector: string) => page.locator(`${selector}:not([hidden])`);
 
+/*
+ * What each kind of product shows, and what it does not: the sections of the
+ * page, the install blocks in view, and the hero's docs button, from the
+ * fixture products. A full product has "What it does" and its media; a
+ * feature entry has neither and shows its README.
+ */
+const SECTIONS = [
+  {
+    key: "widget",
+    why: "a CLI with docs pages",
+    sections: ["highlights", "install", "docs", "releases"],
+    blocks: ["platforms"],
+    docs: true,
+    media: true,
+    tour: false,
+  },
+  {
+    key: "gadget",
+    why: "an app with a console tour and no docs pages",
+    sections: ["highlights", "install", "releases"],
+    blocks: ["platforms"],
+    docs: false,
+    media: true,
+    tour: true,
+  },
+  {
+    key: "sprocket",
+    why: "an MCP server",
+    sections: ["highlights", "install", "docs", "releases"],
+    blocks: ["mcp-server"],
+    docs: true,
+    media: true,
+    tour: false,
+  },
+  {
+    key: "harbor",
+    why: "a dev container image",
+    sections: ["highlights", "install", "docs", "releases"],
+    blocks: ["devcontainer-image"],
+    docs: true,
+    media: true,
+    tour: false,
+  },
+  {
+    key: "gizmo",
+    why: "an app that is also a dev container feature: only the first kind's block is in view",
+    sections: ["highlights", "install", "docs", "releases"],
+    blocks: ["platforms"],
+    docs: true,
+    media: true,
+    tour: false,
+  },
+  {
+    key: "lantern",
+    why: "a feature entry",
+    sections: ["install", "readme", "releases"],
+    blocks: ["devcontainer-feature"],
+    docs: false,
+    media: false,
+    tour: false,
+  },
+  {
+    key: "beacon",
+    why: "a feature entry with no release data",
+    sections: ["install", "readme", "releases"],
+    blocks: ["devcontainer-feature"],
+    docs: false,
+    media: false,
+    tour: false,
+  },
+];
+
+test.describe("sections for each kind", () => {
+  for (const expected of SECTIONS) {
+    test(`${expected.key}: ${expected.why}`, async ({ page, baseURL }) => {
+      await openProduct(page, baseURL, expected.key);
+      const sections = await page.locator("article.product > section[id]").evaluateAll((els) => els.map((e) => e.id));
+      expect(sections, "the page's sections, in order").toEqual(expected.sections);
+      for (const id of expected.sections) await expect(page.locator(`#${id}`)).toBeVisible();
+
+      const blocks = await page
+        .locator("#install [data-install-block]:visible")
+        .evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.installBlock));
+      expect(blocks, "the install blocks in view").toEqual(expected.blocks);
+
+      await expect(page.locator(".hero-actions a.button-primary")).toHaveCount(expected.docs ? 1 : 0);
+      await expect(page.locator(".media-main")).toHaveCount(expected.media ? 1 : 0);
+      await expect(page.locator(".media-tour")).toHaveCount(expected.tour ? 1 : 0);
+    });
+  }
+
+  test("a product with one kind has no kind tabs; one with two kinds has a tab for each", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "harbor");
+    await expect(page.locator('#install [role="tablist"][aria-label="Kind"]')).toHaveCount(0);
+    await openProduct(page, baseURL, "gizmo");
+    await expect(page.locator('#install [role="tablist"][aria-label="Kind"] > [role="tab"]')).toHaveText(["Install", "Dev container"]);
+    await expect(page.locator('[data-install-block="devcontainer-feature"]')).toBeHidden();
+  });
+
+  test("the tables show only on the kinds that have them", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "sprocket");
+    await expect(page.locator("#install tbody tr")).toHaveCount(3);
+    await expect(page.locator("#install tbody tr").last()).toContainText("update_record");
+    await openProduct(page, baseURL, "harbor");
+    await expect(page.locator("#install tbody tr")).toHaveCount(3);
+    await expect(page.locator("#install tbody tr").first()).toContainText("debian-bookworm");
+    for (const key of ["widget", "gadget", "gizmo", "lantern", "beacon"]) {
+      await openProduct(page, baseURL, key);
+      await expect(page.locator("#install table"), key).toHaveCount(0);
+    }
+  });
+
+  test("a feature entry shows its README and the link to the install block says what it adds", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "lantern");
+    await expect(page.locator("#readme h2")).toHaveText(["README", "Example usage", "Options", "Notes"]);
+    await expect(page.locator(".hero-more")).toContainText("Add to devcontainer.json");
+    await expect(page.locator(".hero-install")).toHaveCount(0);
+    await openProduct(page, baseURL, "widget");
+    await expect(page.locator("#readme")).toHaveCount(0);
+    await expect(page.locator(".hero-more")).toContainText("Other install methods");
+  });
+});
+
 test.describe("install tabs", () => {
   test("a platform tab shows its methods, and a method pill shows its command", async ({ page, baseURL }) => {
     await openProduct(page, baseURL, "widget");
