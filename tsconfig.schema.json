@@ -9,6 +9,7 @@
     "src/schema/**/*.ts",
     "src/pages/schemas/**/*.ts",
     "test/schema/**/*.ts",
-    "test/publisher/**/*.ts"
+    "test/publisher/**/*.ts",
+    "test/browser/**/*.ts"
   ]
 }
