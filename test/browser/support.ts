@@ -1,18 +1,23 @@
 import type { BrowserContext, Page, Response } from "@playwright/test";
-import { docsOrigin } from "./config";
+import { docsOrigin, productsOrigin } from "./config";
 
 export const THEME_KEY = "wyrd-theme";
 
 export type Theme = "light" | "dark";
 
 /**
- * The home page and one docs page cover both layouts. The docs page is on the
- * docs fixture server: the site build has no docs content of its own.
+ * The home page, one docs page and one product page cover the layouts. The
+ * docs and product pages are on their fixture servers: the site build has no
+ * v2 content of its own.
  */
 export const HOME_PAGE = { name: "home page", path: "/" } as const;
 
 export function pages() {
-  return [HOME_PAGE, { name: "docs page", path: `${docsOrigin()}/docs/gadget/getting-started` }] as const;
+  return [
+    HOME_PAGE,
+    { name: "docs page", path: `${docsOrigin()}/docs/gadget/getting-started` },
+    { name: "product page", path: `${productsOrigin()}/tools/widget/` },
+  ] as const;
 }
 
 export const other = (theme: Theme): Theme => (theme === "light" ? "dark" : "light");

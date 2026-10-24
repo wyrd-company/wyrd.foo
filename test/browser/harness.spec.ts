@@ -106,6 +106,26 @@ test("a docs fixture server that does not start fails the run", async () => {
   await serverStopped(run.port);
 });
 
+test("a run with the product page fixture server passes, and stops both servers", async () => {
+  const productsPort = await freePort();
+  const run = await startRun("noop", { INNER_PRODUCTS_PORT: String(productsPort) });
+  expect(await run.exit, run.output()).toBe(0);
+  expect(run.output()).toContain("1 passed");
+  await serverStopped(run.port);
+  await serverStopped(productsPort);
+});
+
+test("a product page fixture server that does not start fails the run", async () => {
+  const run = await startRun("noop", {
+    INNER_PRODUCTS_PORT: String(await freePort()),
+    INNER_PRODUCTS_COMMAND: `${process.execPath} -e ""`,
+  });
+  expect(await run.exit).not.toBe(0);
+  expect(run.output()).toMatch(/webServer exited early/);
+  expect(run.output(), "the test itself did not run").not.toContain("1 passed");
+  await serverStopped(run.port);
+});
+
 test("a server that does not start fails the run", async () => {
   const run = await startRun("noop", { INNER_COMMAND: `${process.execPath} -e ""` });
   expect(await run.exit).not.toBe(0);
