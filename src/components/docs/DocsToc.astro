@@ -61,13 +61,17 @@ const shown = headings.filter((h) => h.depth === 2 || h.depth === 3);
     // A heading a TOC link scrolled to sits just under the header (its
     // scroll-margin-top), so the line allows for that margin.
     const line = (header?.getBoundingClientRect().bottom ?? 0) + 12;
-    const current = activeHeading(targets.map((el) => el.getBoundingClientRect().top), line);
+    const doc = document.documentElement;
+    const atEnd = Math.ceil(doc.scrollTop + doc.clientHeight) >= doc.scrollHeight - 2;
+    const current = activeHeading(
+      targets.map((el) => el.getBoundingClientRect().top),
+      { line, bottom: doc.clientHeight, atEnd },
+    );
     links.forEach((a, i) => {
       if (i === current) a.setAttribute("aria-current", "location");
       else a.removeAttribute("aria-current");
     });
     if (bar) {
-      const doc = document.documentElement;
       const span = doc.scrollHeight - doc.clientHeight;
       bar.style.transform = `scaleX(${span > 0 ? Math.min(1, doc.scrollTop / span) : 1})`;
     }

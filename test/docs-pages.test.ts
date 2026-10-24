@@ -179,13 +179,20 @@ describe("reading progress and neighbours", () => {
 });
 
 describe("activeHeading", () => {
+  const view = (atEnd = false) => ({ line: 105, bottom: 900, atEnd });
+
   it("is the last heading at or above the line", () => {
-    expect(activeHeading([-300, -10, 105, 400], 105)).toBe(2);
-    expect(activeHeading([-300, -10, 106, 400], 105)).toBe(1);
+    expect(activeHeading([-300, -10, 105, 400], view())).toBe(2);
+    expect(activeHeading([-300, -10, 106, 400], view())).toBe(1);
   });
 
   it("is none before the first heading reaches the line", () => {
-    expect(activeHeading([200, 400], 105)).toBe(-1);
+    expect(activeHeading([200, 400], view())).toBe(-1);
+  });
+
+  it("at the end of the page, is the last heading in view", () => {
+    expect(activeHeading([-10, 400, 880, 950], view(true))).toBe(2);
+    expect(activeHeading([-10, 400, 880, 950], view(false))).toBe(0);
   });
 });
 
