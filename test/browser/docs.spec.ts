@@ -85,6 +85,29 @@ test.describe("header", () => {
   });
 });
 
+test.describe("sticky header", () => {
+  const headerTop = (page: Page) =>
+    page.evaluate(() => document.querySelector(".docs-header")!.getBoundingClientRect().top);
+
+  test("stays at the top of the viewport while the page scrolls", async ({ page, baseURL }) => {
+    await openDocs(page, baseURL, "/docs/gadget/getting-started");
+    const header = page.locator("header.docs-header");
+    const room = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+    expect(room, "the page is long enough to scroll well past the header").toBeGreaterThan(400);
+    await expect(header).toBeInViewport({ ratio: 1 });
+    expect(await headerTop(page)).toBe(0);
+
+    for (const to of [200, Math.floor(room / 2), room]) {
+      await page.evaluate((y) => window.scrollTo(0, y), to);
+      await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+      expect(await page.evaluate(() => scrollY), `scrolled to ${to}`).toBeGreaterThan(to - 2);
+      expect(await headerTop(page), `header top at scroll ${to}`).toBe(0);
+      await expect(header).toBeInViewport({ ratio: 1 });
+      await expect(page.locator(".docs-switcher-button")).toBeInViewport();
+    }
+  });
+});
+
 test.describe("On this page", () => {
   test("marks the last heading that has scrolled under the header", async ({ page, baseURL }) => {
     await openDocs(page, baseURL, "/docs/gadget/getting-started");
@@ -124,6 +147,16 @@ test.describe("On this page", () => {
     await page.locator('[data-toc-target="start-the-service"]').click();
     await page.waitForURL(/#start-the-service$/);
     await expect.poll(() => currentToc(page)).toEqual(["start-the-service"]);
+    // The click moves to the section: its heading is in view, just under the header.
+    const position = () =>
+      page.evaluate(() => ({
+        heading: document.getElementById("start-the-service")!.getBoundingClientRect().top,
+        header: document.querySelector(".docs-header")!.getBoundingClientRect().bottom,
+      }));
+    await expect.poll(async () => {
+      const { heading, header } = await position();
+      return heading >= header && heading < header + 40;
+    }).toBe(true);
   });
 });
 
@@ -141,7 +174,7 @@ test.describe("search", () => {
     await openDocs(page, baseURL, "/docs/gizmo/usage");
     await search(page, "getting started");
     await expect(titles(page)).toHaveText(["Getting started with gizmo", "Getting started"]);
-    await expect(docsItems(page).first().locator(".wsearch-where")).toHaveClass(/is-local/);
+    await expect(page.locator(".wsearch-item").first().locator(".wsearch-where"), "the first result of all").toHaveClass(/is-local/);
 
     const chips = page.locator(".wsearch-kind");
     await expect(chips).toHaveText(["CLI", "MCP server", "App", "Dev container feature"]);
