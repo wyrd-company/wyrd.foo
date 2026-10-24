@@ -14,16 +14,16 @@ Discover additional skills by running `npx skills list -g`. Use relevant skills 
 
 ## Tests
 
-Three runners own the tests (vitest runs two projects). Each row names the config it is read from.
+Three runners own the tests (vitest runs two projects). Each row names the config it is read from, by script, project or key name.
 
 | Runner | Owns | Command | Read from |
 | --- | --- | --- | --- |
-| node:test | `test/schema/**/*.test.ts` | `pnpm test:schema` | `package.json:15` |
-| node:test | `test/publisher/**/*.test.ts` | `pnpm test:publisher` | `package.json:16` |
-| vitest `unit` | `test/**/*.test.ts`, minus `test/schema/**`, `test/publisher/**` and `test/build/**` | `pnpm test:site` | `vitest.config.ts:9` (exclude), `vitest.config.ts:12` (include), `package.json:17` |
-| node:test | `test/build/**/*.test.ts` | `pnpm test:build` | `package.json:18` |
-| vitest `dist` | `test/**/*.dist.ts` | `pnpm test:dist` (builds the fixtures first) | `vitest.config.ts:14`, `package.json:23` |
-| Playwright | `test/browser/**/*.spec.ts` | `pnpm test:browser` (builds the home, docs and product fixtures first) | `package.json:24`, `test/browser/config.ts:66` (`testDir`, `testMatch` defaults) |
+| node:test | `test/schema/**/*.test.ts` | `pnpm test:schema` | `package.json` script `test:schema` |
+| node:test | `test/publisher/**/*.test.ts` | `pnpm test:publisher` | `package.json` script `test:publisher` |
+| vitest `unit` | `test/**/*.test.ts`, minus `test/schema/**`, `test/publisher/**` and `test/build/**` | `pnpm test:site` | `vitest.config.ts` key `exclude`, `vitest.config.ts` project `unit`, `package.json` script `test:site` |
+| node:test | `test/build/**/*.test.ts` | `pnpm test:build` | `package.json` script `test:build` |
+| vitest `dist` | `test/**/*.dist.ts` | `pnpm test:dist` (builds the fixtures first) | `vitest.config.ts` project `dist`, `package.json` script `test:dist` |
+| Playwright | `test/browser/**/*.spec.ts` | `pnpm test:browser` (builds the home, docs and product fixtures first) | `package.json` script `test:browser`, `test/browser/config.ts` key `testMatch` (the `testDir` and `testMatch` defaults) |
 
 `pnpm test` runs the first four rows; `pnpm check` runs all of them.
 
