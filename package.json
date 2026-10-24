@@ -11,8 +11,9 @@
     "build": "astro build && pagefind --site dist",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "pnpm test:schema && pnpm test:site",
+    "test": "pnpm test:schema && pnpm test:publisher && pnpm test:site",
     "test:schema": "node --test 'test/schema/**/*.test.ts'",
+    "test:publisher": "node --test 'test/publisher/**/*.test.ts'",
     "test:site": "vitest run --project unit",
     "build:fixtures": "astro build --root test/fixtures/head-site && pnpm build:home-fixture",
     "build:home-fixture": "WYRD_CONTENT_DIR=test/fixtures/home-content astro build --outDir dist-fixtures/home",
@@ -27,6 +28,7 @@
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@tailwindcss/vite": "^4.2.1",
     "astro": "^6.0.1",
+    "isomorphic-git": "^1.44.3",
     "tailwindcss": "^4.2.1",
     "zod": "^4.6.7"
   },
