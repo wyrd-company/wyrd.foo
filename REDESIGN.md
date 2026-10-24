@@ -1,31 +1,52 @@
-# Redesign: decisions to build from
+# Redesign: the wyrd.foo v2 site
 
-Status: **designed, not implemented.** The site still uses the blueprint
-theme. This records what was agreed so it can be built without the design
-conversation. Mockups live on the canvas
-<https://claude.ai/artifact/5PBQBYLMokPDzwV6nm8hsH> (page "Combined · Wyrd";
-earlier explorations are on the other pages). Publishing and data changes
-are in [`PUBLISHING-PROPOSAL.md`](PUBLISHING-PROPOSAL.md).
+This document is the design of the wyrd.foo v2 site: theme, home page, product
+page, docs and search. The mockups are on the canvas
+<https://claude.ai/artifact/5PBQBYLMokPDzwV6nm8hsH> (page "Combined · Wyrd").
+The data contract and the publisher are in
+[`PUBLISHING-PROPOSAL.md`](PUBLISHING-PROPOSAL.md). The delivery plan is in
+[`PLAN.md`](PLAN.md).
 
-## Why
+## Purpose
 
-- The blueprint look is no longer distinctive, and the front page runs out of
-  room as products are added.
-- The catalog now covers more than CLIs: MCP servers, dev container features
-  and images, and apps with a web console.
-- Some products will have large docs sites that need more structure than a
-  flat page list.
+- The site has a look of its own, and the front page holds a catalog of a few
+  dozen products without running out of room.
+- The catalog holds five kinds of product: CLIs, MCP servers, apps (things you
+  run), dev container features and dev container images.
+- A product with a large docs site gets sections, groups and a page order.
+
+## Products and kinds
+
+A product is one entry in a repo's `docs/user/docs.yml`, under its product
+key. The key names the product everywhere: `content/<key>/`, `/tools/<key>`
+and the `product:` field of each of its docs pages.
+
+A product has one or more kinds, in a `kinds` array. Each kind is one of
+`cli`, `mcp-server`, `app`, `devcontainer-feature` and
+`devcontainer-image`. `app` means a thing you run (for example trowel,
+wyrwood, xolotl). The first kind is the primary kind: it gives the kind badge
+and the "get it" command wherever a product shows as one row or card. The
+product page and the facts list show all kinds.
+
+A **feature entry** is the short `docs.yml` entry for one dev container
+feature that keeps its own `README.md` and `devcontainer-feature.json` in the
+repo (for example each feature in the devcontainers repo). Its kinds are
+`[devcontainer-feature]`. A full product, such as trowel, can also have a
+`devcontainer-feature` kind; it is not a feature entry.
 
 ## Theme
 
-- **Dark by default**, with a light/dark toggle in the header.
-- **One accent: blue.** No second accent colour.
-- **Type:** Geist (text and headings) and Geist Mono (code, product names).
+- **Dark by default**, with a light/dark toggle in the header. An inline
+  script in the head sets the theme before the first paint, so the page never
+  shows the wrong theme first.
+- **One accent: blue.**
+- **Type:** Geist (text and headings) and Geist Mono (code, product names),
+  self-hosted.
 - **Header:** the page background with a 1px blue line along the bottom, in
   both modes. Left: a square "W" tile and the `wyrd/tools` wordmark in blue.
   Then nav (Catalog, Docs, Releases), search, theme toggle, GitHub.
-- **Code blocks** stay dark in both modes.
-- Text colours must meet 4.5:1; the blueprint's faint grey `#62798f` did not.
+- **Code blocks** are dark in both modes.
+- Every text colour meets a 4.5:1 contrast ratio on its background.
 
 | Token | Dark | Light |
 | --- | --- | --- |
@@ -42,76 +63,132 @@ are in [`PUBLISHING-PROPOSAL.md`](PUBLISHING-PROPOSAL.md).
 | Accent tint | `rgba(106,165,255,0.13)` | `#e6effa` |
 | Code background | `#0f0f12` | `#16161a` |
 
+The tokens are CSS variables with a dark and a light value. One shared layout
+holds the head, the header and the theme toggle for every page.
+
+## Product marks
+
+Every product shows a square mark in catalog rows, the featured card, Recent
+releases entries, the product page hero and the product switcher in the docs
+header.
+
+- **Logo.** A product's optional `logo` is a square SVG. An optional
+  `logo-dark` is the mark for the dark theme, for a mark that does not read
+  on both themes. Both are SVG only, so they stay sharp at every size and can
+  use `currentColor`.
+- **Monogram.** A product with no logo shows a monogram tile: the first
+  letter of its name, in the style of the site's "W" tile. Rows and cards
+  then stay aligned. One shared component draws the logo or the monogram.
+
+## Favicon and social image
+
+The product page and every docs page of a product use that product's
+favicon (`link rel="icon"`) and social image (`og:image`, `twitter:image`).
+The shared head writes these tags for each page.
+
+- `favicon` is an SVG or PNG asset in the tool repo. When a product has no
+  favicon, the page uses its logo; when it has no logo, the page uses its
+  monogram.
+- `social-image` is a PNG or JPEG asset in the tool repo, 1200×630. When a
+  product has no social image, the page uses the site's image.
+- wyrd.foo generates neither. The home page and the catalog use the site's
+  own favicon and image.
+
 ## Home page
 
 1. **Headline** ("Small, sharp tools for the people *and agents* who ship.";
    "and agents" in accent text) and the one-line deck.
 2. **Featured card** beside a **Recent releases** list.
-   - Featured: name, kind, status, tagline, one "Get started" button, and the
-     product's GIF. Clicking anywhere else on the card opens the product page.
-     Which product is featured is decided in the browser; see "Release and
-     featured data" in the publishing proposal.
-   - Recent releases: each entry is the name on its own line (long names wrap)
-     with "kind · version · date" underneath.
-3. **Catalog** with kind tabs (All, CLIs, MCP servers, Dev containers, Apps)
-   and a filter box. One row per product: name and kind, tagline and
-   category, the primary "get it" command with Copy, and one Docs button.
-   Clicking anywhere else on the row opens the product page. No GIFs in rows;
-   the language a tool is written in is not shown anywhere.
+   - Featured: mark, name, kind, status, tagline, one "Get started" button,
+     and the product's media. Clicking anywhere else on the card opens the
+     product page. The browser picks the featured product; see "Release and
+     featured data" in the publishing design. The build writes its own pick
+     into the HTML as the default, so the page has a featured product
+     without JavaScript.
+   - Recent releases: each entry is the mark and the name on one line (long
+     names wrap) with "kind · version · date" underneath. Feature entries
+     are not listed.
+3. **Catalog** with kind tabs (All, CLIs, MCP servers, Apps, Dev container
+   features, Dev container images) and a filter box. A product shows under
+   the tab of each of its kinds, and once under All. Each feature entry is
+   its own row, in All too. One row per product: mark, name and
+   primary kind badge, tagline and category, the primary kind's "get it"
+   command with Copy, and one Docs button when the product has docs pages.
+   Clicking anywhere else on the row opens the product page. Rows hold no
+   media. Rows sort by `order` (lower first), then by `name`.
 
-## Product page (`/tools/<slug>`)
+## Product page (`/tools/<key>`)
 
 In this order:
 
-1. **Hero**: name, tagline, description, the default install command with
-   Copy, then "Read the docs", "Star on GitHub" and an "Other install
-   methods ↓" link. A short facts list on the right (kind, status, latest
-   version and date, category, licence, source).
-2. **Media**: the GIF on its own full-width row, with a caption.
+1. **Hero**: mark, name, tagline, description, the default install command
+   of the primary kind with Copy, then "Read the docs", "Star on GitHub" and
+   an "Other install methods ↓" link. A short facts list on the right: all
+   kinds, status, latest version and date, category, licence, source.
+2. **Media**: the product's media on its own full-width row, with a caption.
 3. **What it does**: up to six `highlights`.
-4. **Install**: full width. Platform tabs (macOS, Linux, Windows, Docker)
-   generated from `install[].os`, method pills per platform, and one code
-   block (single or multi-line) with one Copy button per method.
+4. **Install**: full width. One tab group for each kind, in `kinds` order
+   (for example "Install" for an app and "Dev container" for a feature). The
+   block for each kind is in "Install blocks by kind" below.
 5. **Documentation**: a map of the docs sections and their pages.
 
-Other kinds use the same frame with a different install block and one extra
-section, filled from the release's `wyrd-manifest.json`:
+Every product page has highlights and media, except the pages of feature
+entries. Docs pages are optional. A product with no docs pages
+has no "Read the docs" button, no Docs button in its catalog row and no
+Documentation section.
 
+### Install blocks by kind
+
+- **CLI and app**: platform tabs (macOS, Linux, Windows, Docker) generated
+  from `install[].os`, method pills for each platform, and one code block
+  (single or multi-line) with one Copy button for each method. For
+  `method: apt` and `method: rpm` the site writes the repo.wyrd.foo setup
+  lines above the product's install line. An app adds a screenshot tour of
+  its console.
 - **MCP server**: client tabs (Claude Code, Claude Desktop, Cursor, VS Code,
-  JSON) instead of install methods; a table of exposed tools with their side
-  effects. The media is an animated GIF of an agent session.
-- **Dev container feature / image**: a `devcontainer.json` snippet instead of
-  install methods; an options table (feature) or tags table (image).
-- **App**: run commands (Docker Compose, image); a console screenshot tour.
+  JSON) in place of install methods, and a table of the tools the server
+  exposes with their side effects. The media is an animated GIF of an agent
+  session.
+- **Dev container feature**: a `devcontainer.json` snippet that adds the
+  feature.
+- **Dev container image**: the image reference and a `devcontainer.json`
+  snippet, then a tags table of the image's registry tags.
 
-## Docs
+### Feature entry page
 
-- **Sticky header** in two rows: wordmark, product switcher, search scoped to
-  the product, GitHub; then section tabs (e.g. Get started, Authoring, Using
-  templates). Products without sections get no tab row.
+A feature entry has an abbreviated page at `/tools/<key>`: the hero, the
+`devcontainer.json` snippet, then the feature's `README.md` as it is. The
+name, description, version and options come from the feature's
+`devcontainer-feature.json`. The README holds the feature's options table, so
+the page has no generated options table and no docs tree. A feature entry is
+never the featured product.
+
+## Docs (`/docs/<key>/<slug>`)
+
+- **Sticky header** in two rows: wordmark, product switcher (with each
+  product's mark), search scoped to the product, GitHub; then section tabs
+  (for example Get started, Authoring, Using templates). Products without
+  sections get no tab row.
 - **Left sidebar** for the current section only, with group headings and
   reading-progress dots (done, current, ahead). It scrolls on its own.
 - **Content**: breadcrumb, title, lead paragraph, prose up to ~720px wide. Tip
   callouts use the accent tint. No product card above the content.
 - **"On this page"** on the right: sticky, scrolls on its own, nested
-  headings. Highlight the last heading that has scrolled past the top of the
-  viewport (not whichever heading is visible), so it doesn't jump while
-  reading. Links: back to top, copy page as Markdown, edit on GitHub.
-- Sections, groups and page order come from `nav` in `docs.yml`.
+  headings. It highlights the last heading that has scrolled past the top of
+  the viewport, so the highlight holds still while you read. Links: back to
+  top, copy page as Markdown, edit on GitHub.
+- **Version footer**: "Docs 0.2.3 · for trowel 0.2.0", from the product's
+  `docs-version` and `version`.
+- Sections, groups and page order come from the product's `nav` in
+  `docs.yml`. Pages that `nav` does not list go into a trailing "More" group.
 
 ## Search
 
-Pagefind is implemented (`src/components/Search.astro`). Results from the
-product whose page you are on are boosted, not filtered. Still to do with the
-redesign:
+Search is Pagefind (`src/components/Search.astro`).
 
-- Restyle the dialog with the new tokens.
-- Index product pages with the same `product` filter.
-- Add a `kind` filter and the kind chips once `kind` exists in the schema.
-
-## Decided against
-
-- A carousel hero: hides all but one product and needs extra controls.
-- A media card grid for the catalog: grows too long past a few dozen products.
-- Blue with an amber accent: the two colours clashed.
-- A separate config file for docs navigation: `nav` lives in `docs.yml`.
+- The dialog uses the theme tokens.
+- Docs pages and product pages are indexed with a `product` filter. Results
+  from the product whose page you are on rank first; results from other
+  products still show.
+- A `kind` filter holds every kind of the page's product, and the dialog
+  shows it as kind chips.
