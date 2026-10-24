@@ -72,7 +72,9 @@ export function applyRepo(root: string, result: RepoResult): ApplyResult {
   if (findings.failed) return { findings: findings.list, failed: true, written: [], deleted: [] };
 
   const outputs = result.products.map((product) => {
-    const featured = product.feature ? undefined : existing.get(product.key)?.featured;
+    // A run's own `featured` (from a manual run's feature inputs) replaces the carried one.
+    const carry = !product.feature && product.tool.featured === undefined;
+    const featured = carry ? existing.get(product.key)?.featured : undefined;
     if (featured === undefined) return product;
     const tool = { ...product.tool, featured };
     if (toolFileSchema.safeParse(tool).success) return { ...product, tool };
