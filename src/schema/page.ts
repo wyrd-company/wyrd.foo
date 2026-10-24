@@ -19,3 +19,24 @@ export function pageSlugOf(path: string): string {
   const name = path.split("/").pop() ?? path;
   return name.replace(/\.md$/i, "");
 }
+
+/** The file name of a docs unit changelog. intentional writes it at the unit path. */
+export const DOCS_CHANGELOG = "CHANGELOG.md";
+
+/**
+ * The docs unit changelog paths, relative to `docs/user/`: `CHANGELOG.md` for
+ * a repo with one docs unit, and `<key>/CHANGELOG.md` for each product key
+ * when each docs unit has its own folder.
+ */
+export function docsChangelogPaths(productKeys: Iterable<string>): Set<string> {
+  return new Set([DOCS_CHANGELOG, ...[...productKeys].map((key) => `${key}/${DOCS_CHANGELOG}`)]);
+}
+
+/**
+ * True when `path`, relative to `docs/user/`, is a page: a `.md` file that is
+ * not a docs unit changelog. A changelog is data, not a page, and needs no
+ * front matter.
+ */
+export function isPageFile(path: string, productKeys: Iterable<string>): boolean {
+  return /\.md$/i.test(path) && !docsChangelogPaths(productKeys).has(path);
+}

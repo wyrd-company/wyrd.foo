@@ -1,7 +1,14 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { parse } from "yaml";
-import { docsFileSchema, pageSchema, parseWith, type ContractIssue, type DocsTree } from "../../src/schema/index.ts";
+import {
+  docsFileSchema,
+  isPageFile,
+  pageSchema,
+  parseWith,
+  type ContractIssue,
+  type DocsTree,
+} from "../../src/schema/index.ts";
 
 export const FIXTURES = new URL("./fixtures/", import.meta.url).pathname;
 export const KIND_FIXTURES = ["cli", "app", "mcp-server", "devcontainer-feature", "devcontainer-image"] as const;
@@ -30,7 +37,8 @@ export function loadTree(name: string, raw: unknown = readRawDocs(name)): Loaded
   const docs = parseWith(docsFileSchema, raw, docsFile);
   if (!docs.ok) issues.push(...docs.issues);
   const pages: DocsTree["pages"][number][] = [];
-  for (const path of walk(root).filter((p) => p.endsWith(".md"))) {
+  const keys = Object.keys((raw as Raw | undefined)?.products ?? {});
+  for (const path of walk(root).filter((p) => isPageFile(p, keys))) {
     const page = parseWith(pageSchema, frontMatter(readFileSync(join(root, path), "utf8")), `${name}/${path}`);
     if (page.ok) pages.push({ path: `${name}/${path}`, data: page.data });
     else issues.push(...page.issues);
