@@ -30,9 +30,22 @@ interface AssetRef {
 
 const SOCIAL_IMAGE_SIZE = { width: 1200, height: 630 };
 
-const EXTENSION_TYPES: Record<string, ImageType> = { svg: "svg", png: "png", jpg: "jpeg", jpeg: "jpeg" };
+const EXTENSION_TYPES = new Map<string, ImageType>([
+  ["svg", "svg"],
+  ["png", "png"],
+  ["jpg", "jpeg"],
+  ["jpeg", "jpeg"],
+]);
 
 const TYPE_NAMES: Record<ImageType, string> = { svg: "SVG", png: "PNG", jpeg: "JPEG" };
+
+/**
+ * The products of docs.yml by key. Keys are matched as own keys only, so a
+ * key such as `constructor` never matches an inherited object member.
+ */
+function productMap(docs: DocsFile): Map<string, Entry> {
+  return new Map(Object.entries(docs.products) as [string, Entry][]);
+}
 
 /** Every cross-file contract violation in the tree. An empty list means the tree passes. */
 export function crossCheck(tree: DocsTree): ContractIssue[] {
@@ -41,10 +54,11 @@ export function crossCheck(tree: DocsTree): ContractIssue[] {
 
 function checkPages({ docs, pages }: DocsTree): ContractIssue[] {
   const issues: ContractIssue[] = [];
+  const products = productMap(docs);
   const slugOwners = new Map<string, string>();
   for (const page of pages) {
     const key = page.data.product;
-    const entry: Entry | undefined = docs.products[key];
+    const entry = products.get(key);
     if (entry === undefined) {
       issues.push({ file: page.path, field: "product", message: `names product ${key}, which docs.yml does not list` });
       continue;
@@ -66,7 +80,7 @@ function checkPages({ docs, pages }: DocsTree): ContractIssue[] {
 
 function checkNav({ docsFile, docs, pages }: DocsTree): ContractIssue[] {
   const issues: ContractIssue[] = [];
-  for (const [key, entry] of Object.entries(docs.products) as [string, Entry][]) {
+  for (const [key, entry] of productMap(docs)) {
     if (isFeatureEntry(entry) || entry.nav === undefined) continue;
     const slugs = new Set(pages.filter((page) => page.data.product === key).map((page) => pageSlugOf(page.path)));
     entry.nav.forEach((section, s) =>
@@ -94,7 +108,7 @@ function checkAssets({ docsFile, docs, files }: DocsTree): ContractIssue[] {
     }
   });
   const listed = new Set(docs.assets);
-  for (const [key, entry] of Object.entries(docs.products) as [string, Entry][]) {
+  for (const [key, entry] of productMap(docs)) {
     for (const ref of assetRefs(key, entry)) {
       const field = fieldPath(ref.field);
       if (!listed.has(ref.path)) {
@@ -128,7 +142,7 @@ function imageProblem(ref: AssetRef, bytes: Uint8Array | undefined): string | un
   if (ref.types === undefined) return undefined;
   const expected = ref.types.map((type) => TYPE_NAMES[type]).join(" or ");
   const extension = ref.path.split(".").pop()?.toLowerCase() ?? "";
-  const named = EXTENSION_TYPES[extension];
+  const named = EXTENSION_TYPES.get(extension);
   if (named === undefined || !ref.types.includes(named)) return `${ref.path} must be ${expected}; its file extension is .${extension}`;
   if (bytes === undefined) return undefined;
   const header = readImageHeader(bytes);
