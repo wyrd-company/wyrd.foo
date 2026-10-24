@@ -8,6 +8,17 @@ Discover additional skills by running `npx skills list -g`. Use relevant skills 
 
 - `@astrojs/check` runs on TypeScript 6 (`.pnpmfile.cjs`), because TypeScript 7 has no programmatic API yet. The rest of the project uses TypeScript 7. Remove the hook when `@astrojs/check` supports TypeScript 7.
 
+## Workflow lint
+
+After a change under `.github/`, run both linters from the repo root:
+
+```sh
+actionlint
+uvx zizmor@1.31.1 .github/
+```
+
+zizmor reads `.github/zizmor.yml`; add `--offline` when there is no network.
+
 ## Lint exceptions
 
 - `.github/actionlint.yaml` ignores actionlint's "invalid format" message for the `$/.github/actions/publish-docs` call in `.github/workflows/publish-docs.yml`, because actionlint does not know the `$/` self-repository syntax yet (rhysd/actionlint#760). `test/publisher/workflow.test.ts` checks that call's inputs against the action. Remove the ignore when actionlint supports `$/`.
