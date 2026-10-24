@@ -122,9 +122,11 @@ test.describe("sections for each kind", () => {
 
   test("the tables show only on the kinds that have them", async ({ page, baseURL }) => {
     await openProduct(page, baseURL, "sprocket");
+    await expect(page.locator("#install table")).toBeVisible();
     await expect(page.locator("#install tbody tr")).toHaveCount(3);
     await expect(page.locator("#install tbody tr").last()).toContainText("update_record");
     await openProduct(page, baseURL, "harbor");
+    await expect(page.locator("#install table")).toBeVisible();
     await expect(page.locator("#install tbody tr")).toHaveCount(3);
     await expect(page.locator("#install tbody tr").first()).toContainText("debian-bookworm");
     for (const key of ["widget", "gadget", "gizmo", "lantern", "beacon"]) {
