@@ -76,6 +76,23 @@ task validate:repo -- ../gitpr                    # one checkout's working tree
 task validate:repo -- ../gitpr --ref wyrd-foo-v2  # one ref of a checkout
 ```
 
+## Browser tests
+
+Behaviour that only a real browser shows (the theme before the first paint, the
+toggle, the system preference) is checked with
+[Playwright Test](https://playwright.dev/docs/test-intro) in `test/browser/`.
+The suite serves the built site (`dist/`) with `astro preview` on a free port,
+and stops the server when the run ends, however it ends.
+
+```sh
+pnpm exec playwright install chromium   # once; the version is pinned by @playwright/test
+pnpm build                              # the suite reads dist/
+pnpm test:browser                       # or: task test:browser
+```
+
+With the browser missing, the run fails and names the install step. `pnpm check`
+includes the suite.
+
 ## Deploy
 
 Deployment runs from `.github/workflows/cd.yml` on push to `main`. The target is

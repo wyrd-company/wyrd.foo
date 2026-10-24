@@ -29,3 +29,6 @@ pnpm-debug.log*
 
 # fixture site builds (pnpm build:fixtures)
 dist-fixtures/
+
+# browser test output
+test-results/

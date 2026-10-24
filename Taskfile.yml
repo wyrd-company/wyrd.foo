@@ -43,7 +43,12 @@ tasks:
       - pnpm typecheck
       - pnpm test
 
+  test:browser:
+    desc: Run the browser tests against the built site (run `task build` first)
+    cmds:
+      - pnpm test:browser
+
   check:
-    desc: Typecheck, run every test, build the site, then run the built-output checks
+    desc: Typecheck, run every test, build the site, then run the built-output and browser checks
     cmds:
       - pnpm check
