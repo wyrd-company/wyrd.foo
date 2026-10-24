@@ -104,6 +104,13 @@ test("a failing test fails the run, and the server stops", async () => {
   await serverStopped(run.port);
 });
 
+test("a committed test.only fails the run", async () => {
+  const run = await startRun("only");
+  expect(await run.exit).not.toBe(0);
+  expect(run.output()).toMatch(/forbidOnly/);
+  await serverStopped(run.port);
+});
+
 test("an interrupted run stops its server", async () => {
   const run = await startRun("hang");
   await expect.poll(() => listening(run.port)).toBe(true);
