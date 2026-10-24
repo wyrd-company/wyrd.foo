@@ -51,3 +51,10 @@ describe("theme script", () => {
     expect(run(s, new Error("SecurityError"), false)).toBe("dark");
   });
 });
+
+describe("theme storage key", () => {
+  it("is the same in the head script and the toggle", async () => {
+    const { THEME_KEY } = await import("../src/lib/theme");
+    expect(await themeScript()).toContain(`localStorage.getItem("${THEME_KEY}")`);
+  });
+});
