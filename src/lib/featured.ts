@@ -51,3 +51,22 @@ export function pickFeatured(candidates: readonly FeaturedCandidate[], now: numb
   if (pool.length === 0) return undefined;
   return pool[utcWeek(now) % pool.length].key;
 }
+
+/** What the browser does to the featured slot: keep it, swap in another card, or clear it. */
+export type SlotChange = "keep" | "clear" | { swap: string };
+
+/**
+ * The change to the featured slot for the browser's pick. `shown` is the card
+ * the build wrote (none when the build had no pick); `hasCard` tells whether
+ * the page holds a card for a key. A card whose feature has ended must not
+ * stay: with no pick, or a pick with no card, the slot is cleared.
+ */
+export function slotChange(
+  shown: string | undefined,
+  pick: string | undefined,
+  hasCard: (key: string) => boolean,
+): SlotChange {
+  if (pick === shown) return "keep";
+  if (pick !== undefined && hasCard(pick)) return { swap: pick };
+  return shown === undefined ? "keep" : "clear";
+}
