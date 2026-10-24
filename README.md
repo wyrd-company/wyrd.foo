@@ -8,37 +8,44 @@ documentation. It is a static build with no backend.
 
 ## Content model
 
-Tool metadata and documentation are **data, not code**. Each tool ships a
-self-contained folder under `content/<tool>/`:
+Product metadata and documentation are **data, not code**. Each product has a
+self-contained folder under `content/<key>/`, in the layout the publisher
+(`publisher/`) writes from the tool repository's `docs/user/` folder:
 
 ```
-content/<tool>/
-├── tool.yaml        # catalog metadata: name, tagline, category, status, install, repo
-└── docs/*.md        # documentation pages (frontmatter: title, order, install)
+content/<key>/
+├── tool.yaml        # catalog metadata: name, tagline, category, status, kinds, highlights, media, version
+├── README.md        # feature entries only: the page body
+├── CHANGELOG.md     # the code changelog
+└── docs/            # pages at any depth (front matter: title, product, order, install),
+                     # assets, and the docs changelog CHANGELOG.md
 ```
 
-A tool self-registers by adding its folder — it then appears on the front-page
-catalogue and, if it ships `docs/`, in the documentation navigation. No page
-code changes are required. Content is read through Astro content collections
-(`src/content.config.ts`) via helpers in `src/lib/catalog.ts`.
+A product self-registers by adding its folder: it then appears in the
+front-page catalog, gets a product page at `/tools/<key>` and, if it ships
+pages, a docs section at `/docs/<key>`. No page code changes are required.
+The docs contract in `src/schema/` validates `tool.yaml` and page front matter,
+and the Astro content collections (`src/content.config.ts`) read the folders
+through it, so a product that breaks the contract fails the build.
 
-In production this `content/` tree is a "tap": each tool repository publishes its
-`tool.yaml` and `docs/` into it, and a push triggers a rebuild. The collection
-loader is the only thing that knows where content comes from, so the source can
-change without touching pages or styles.
+The collections read `content/` unless `WYRD_CONTENT_DIR` names another
+folder, such as the dev content folder or a test fixture.
 
 ## Structure
 
 ```
-content/                     # the tool tap (metadata + docs)
+content/                     # one folder per product (metadata + docs)
 src/
-├── content.config.ts        # content collections (tools, docs)
-├── lib/catalog.ts           # read/query helpers
+├── content.config.ts        # content collections (products, pages, changelogs, feature READMEs)
+├── schema/                  # the docs contract, shared with the publisher
+├── lib/                     # read/query helpers
 ├── layouts/SiteLayout.astro # base document shell
-├── components/icons/        # shared icons
+├── components/              # shared, home, product and docs components
 └── pages/
-    ├── index.astro          # front-page catalogue
-    └── docs/[tool]/[...page].astro
+    ├── index.astro          # front-page catalog
+    ├── tools/[key].astro    # product pages
+    └── docs/[key]/          # docs pages
+publisher/                   # the publisher core: local mode and validation
 ```
 
 ## Develop
