@@ -360,6 +360,8 @@ Markdown body.
 - The slug is the file name without `.md`. It is unique within a product, so
   two products in one repo can each have `getting-started.md`.
 - A page's URL is `/docs/<key>/<slug>`.
+- The slug `changelog` is reserved: `/docs/<key>/changelog` shows the docs
+  unit changelog. The site build fails on a page with that slug.
 
 ## Release units
 
