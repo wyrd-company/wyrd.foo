@@ -11,7 +11,10 @@ export interface DocsTree {
   docsFile: string;
   /** docs.yml, parsed with docsFileSchema. */
   docs: DocsFile;
-  /** Every page, parsed with pageSchema. `path` is named in messages; its file name is the slug. */
+  /**
+   * Every page (each file `isPageFile` accepts), parsed with pageSchema.
+   * `path` is named in messages; its file name is the slug.
+   */
   pages: readonly { path: string; data: PageFrontMatter }[];
   /** The files under docs/user/, keyed by their path relative to docs/user/. */
   files: ReadonlyMap<string, Uint8Array>;

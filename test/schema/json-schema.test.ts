@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import Ajv2020 from "ajv/dist/2020.js";
 import { GET } from "../../src/pages/schemas/docs/v1.json.ts";
-import { DOCS_SCHEMA_URL, docsJsonSchema } from "../../src/schema/index.ts";
+import { DOCS_SCHEMA_URL, docsJsonSchema, isPageFile } from "../../src/schema/index.ts";
 import { FIXTURES, frontMatter, KIND_FIXTURES, readRawDocs } from "./load-tree.ts";
 
 // The published JSON Schema must accept what the Zod schema accepts, and
@@ -30,9 +30,11 @@ describe("docs JSON Schema", () => {
 
   for (const name of KIND_FIXTURES) {
     it(`accepts the ${name} fixture and its pages`, () => {
-      assert.ok(validateDocs(readRawDocs(name)), ajv.errorsText(validateDocs.errors));
+      const raw = readRawDocs(name);
+      assert.ok(validateDocs(raw), ajv.errorsText(validateDocs.errors));
       const dir = join(FIXTURES, name);
-      const pages = readdirSync(dir, { recursive: true }).map(String).filter((path) => path.endsWith(".md"));
+      const keys = Object.keys(raw.products);
+      const pages = readdirSync(dir, { recursive: true }).map(String).filter((path) => isPageFile(path, keys));
       for (const path of pages) {
         const data = frontMatter(readFileSync(join(dir, path), "utf8"));
         assert.ok(validatePage(data), `${path}: ${ajv.errorsText(validatePage.errors)}`);
