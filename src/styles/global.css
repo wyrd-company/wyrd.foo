@@ -25,6 +25,9 @@
   /* The "W" tile and product monograms. */
   --tile: var(--accent);
   --tile-text: #0b0b0c;
+  /* Product status dots and labels. */
+  --status-stable: #3fb950;
+  --status-preview: #d29922;
 }
 
 :root[data-theme="light"] {
@@ -44,6 +47,8 @@
   --code-bg: #16161a;
   --tile: var(--accent);
   --tile-text: #ffffff;
+  --status-stable: #116329;
+  --status-preview: #8a5c00;
 }
 
 /* Code blocks are dark in both themes, so their text is always light. */
@@ -71,6 +76,8 @@
   --color-accent-tint: var(--accent-tint);
   --color-code-bg: var(--code-bg);
   --color-code-text: var(--code-text);
+  --color-status-stable: var(--status-stable);
+  --color-status-preview: var(--status-preview);
   --font-sans: var(--font-text);
   --font-mono: var(--font-code);
 }

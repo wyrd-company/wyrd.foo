@@ -1,0 +1,40 @@
+---
+/* A product's status: a coloured dot and its label. */
+import { STATUS_LABEL } from "../../lib/home";
+import type { Status } from "../../schema/vocabulary.ts";
+
+interface Props {
+  status: Status;
+}
+const { status } = Astro.props;
+---
+
+<span class="home-status" data-status={status}><span class="home-status-dot" aria-hidden="true"></span>{STATUS_LABEL[status]}</span>
+
+<style>
+  .home-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-faint);
+    white-space: nowrap;
+  }
+  .home-status[data-status="stable"] {
+    color: var(--status-stable);
+  }
+  .home-status[data-status="preview"] {
+    color: var(--status-preview);
+  }
+  .home-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .home-status[data-status="planned"] .home-status-dot {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px currentColor;
+  }
+</style>

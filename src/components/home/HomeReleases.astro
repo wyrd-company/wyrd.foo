@@ -1,0 +1,99 @@
+---
+/*
+ * Recent releases (#releases): each entry is the product's mark and name,
+ * with "kind · version · date" underneath. Feature entries are not listed.
+ */
+import ProductMark from "../ProductMark.astro";
+import { formatDate, KIND_LABEL, productUrl, type RecentRelease } from "../../lib/home";
+
+interface Props {
+  releases: RecentRelease[];
+}
+const { releases } = Astro.props;
+---
+
+<aside class="home-releases" id="releases" aria-labelledby="home-releases-title">
+  <h2 class="home-releases-title" id="home-releases-title">Recent releases</h2>
+  {
+    releases.length === 0 ? (
+      <p class="home-releases-empty">No releases yet.</p>
+    ) : (
+      <ol class="home-releases-list">
+        {releases.map((release) => (
+          <li>
+            <a class="home-release" href={`${productUrl(release.key)}#releases`} data-release-key={release.key}>
+              <ProductMark name={release.name} logo={release.logo} logoDark={release.logoDark} size="row" />
+              <span class="home-release-name">{release.name}</span>
+              <span class="home-release-meta">
+                {KIND_LABEL[release.kind]} · {release.version} ·{" "}
+                <time datetime={release.date.toISOString().slice(0, 10)}>{formatDate(release.date)}</time>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    )
+  }
+</aside>
+
+<style>
+  .home-releases {
+    padding: 22px 22px 12px;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    min-width: 0;
+  }
+  .home-releases-title {
+    margin: 0 0 4px;
+    font-family: var(--font-code);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-2);
+  }
+  .home-releases-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .home-releases-list li + li .home-release {
+    border-top: 1px solid var(--divider);
+  }
+  .home-release {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 2px 12px;
+    padding: 11px 0;
+    color: var(--text);
+  }
+  .home-release:hover {
+    text-decoration: none;
+  }
+  .home-release:hover .home-release-name {
+    color: var(--accent);
+  }
+  .home-release > :global(:first-child) {
+    grid-row: span 2;
+    align-self: start;
+    margin-top: 2px;
+  }
+  .home-release-name {
+    font-family: var(--font-code);
+    font-size: 14px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .home-release-meta {
+    font-size: 12.5px;
+    color: var(--text-faint);
+  }
+  .home-releases-empty {
+    margin: 8px 0;
+    color: var(--text-faint);
+    font-size: 14px;
+  }
+</style>
