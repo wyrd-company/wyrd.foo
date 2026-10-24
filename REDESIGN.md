@@ -171,11 +171,15 @@ never the featured product.
 
 ## Docs (`/docs/<key>/<slug>`)
 
+`/docs/` lists every product that has docs. `/docs/<key>/` goes to the
+product's first page in reading order.
+
 - **Sticky header** in two rows: wordmark, product switcher (with each
   product's mark), search scoped to the product, a "Releases" link to the
   product page's Releases section (`/tools/<key>#releases`), GitHub; then
   section tabs (for example Get started, Authoring, Using templates).
-  Products without sections get no tab row.
+  Products without sections get no tab row. A section tab opens the
+  section's first page.
 - **Left sidebar** for the current section only, with group headings and
   reading-progress dots (done, current, ahead). It scrolls on its own.
 - **Content**: breadcrumb, title, lead paragraph, prose up to ~720px wide. Tip
@@ -183,11 +187,20 @@ never the featured product.
 - **"On this page"** on the right: sticky, scrolls on its own, nested
   headings. It highlights the last heading that has scrolled past the top of
   the viewport, so the highlight holds still while you read. Links: back to
-  top, copy page as Markdown, edit on GitHub.
+  top, copy page as Markdown (the title as a heading, then the page body,
+  also served at `/docs/<key>/<slug>.md`), edit on GitHub (the page's file
+  on the repo's default branch, under the product's `docs-path`).
 - **Version footer**: "Docs 0.2.3 · for trowel 0.2.0", from the product's
-  `docs-version` and `version`.
+  `docs-version` and `version`. "Docs 0.2.3" links the docs unit changelog
+  at `/docs/<key>/changelog` when the product publishes one.
 - Sections, groups and page order come from the product's `nav` in
-  `docs.yml`. Pages that `nav` does not list go into a trailing "More" group.
+  `docs.yml`. Pages that `nav` does not list go into a trailing "More" group
+  in the last section, by `order`, then title. A product with no `nav` has
+  one section with no tab and its pages in that order, with no group
+  heading.
+- A page with `install: true` starts with the primary kind's default
+  install command, with Copy and a link to every install method on the
+  product page.
 
 ## Search
 
@@ -198,4 +211,8 @@ Search is Pagefind (`src/components/Search.astro`).
   from the product whose page you are on rank first; results from other
   products still show.
 - A `kind` filter holds every kind of the page's product, and the dialog
-  shows it as kind chips.
+  shows it as kind chips: one chip for each kind in the index. Chosen chips
+  keep only results of those kinds; with none chosen, every result shows.
+- A page is indexed through `src/components/SearchIndexMeta.astro` inside
+  its `data-pagefind-body`, which writes the `product` and `kind` filters
+  and the product name shown beside each result.
