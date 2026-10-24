@@ -13,5 +13,7 @@ export default harnessConfig({
   docsCommand: process.env.INNER_DOCS_COMMAND,
   productsPort: process.env.INNER_PRODUCTS_PORT ? Number(process.env.INNER_PRODUCTS_PORT) : undefined,
   productsCommand: process.env.INNER_PRODUCTS_COMMAND,
+  // A strict inner run is the real config's rule: every fixture needs a port.
+  optionalFixtures: !process.env.INNER_STRICT,
   testMatch: `**/${process.env.INNER_SPEC}.inner.ts`,
 });

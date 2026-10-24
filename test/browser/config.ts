@@ -42,6 +42,13 @@ export interface HarnessOptions {
   productsPort?: number;
   /** The command that serves the product page fixture on `productsPort`. */
   productsCommand?: string;
+  /**
+   * Let a fixture have no port. By default every fixture needs one, because a
+   * fixture without a port gets no project and its specs are skipped while
+   * the run passes. Only the harness tests' inner runs, which run no fixture
+   * spec, set this.
+   */
+  optionalFixtures?: boolean;
   testDir?: string;
   testMatch?: string;
 }
@@ -70,6 +77,12 @@ export function harnessConfig(options: HarnessOptions): PlaywrightTestConfig {
     },
   ];
   const served = fixtures.filter((fixture) => fixture.port !== undefined);
+  const unserved = fixtures.filter((fixture) => fixture.port === undefined).map((fixture) => fixture.name);
+  if (unserved.length > 0 && !options.optionalFixtures) {
+    throw new Error(
+      `no port for the fixture server of: ${unserved.join(", ")}. Its specs would be skipped and the run would still pass.`,
+    );
+  }
   const fixtureOrigin = (fixture: Fixture) => `http://127.0.0.1:${fixture.port}`;
   const server = (command: string, url: string) => ({
     command,
