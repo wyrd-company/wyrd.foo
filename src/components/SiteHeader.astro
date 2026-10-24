@@ -7,12 +7,13 @@ import GitHub from "./icons/GitHub.astro";
 import Monogram from "./Monogram.astro";
 import Search from "./Search.astro";
 import ThemeToggle from "./ThemeToggle.astro";
-import { NAV, type NavItem } from "../lib/site";
+import { nav, type NavItem } from "../lib/site";
 
 interface Props {
   /** The nav item for the current page, shown as current. */
   current?: NavItem;
-  /** Key and name of the product whose results search ranks first. */
+  /** Key and name of the page's product: search ranks its results first,
+   * and Releases goes to its product page. */
   product?: string;
   productName?: string;
 }
@@ -28,7 +29,7 @@ const { current, product, productName } = Astro.props;
     </a>
     <nav class="site-nav" aria-label="Site">
       {
-        NAV.map((item) => (
+        nav(product).map((item) => (
           <a href={item.href} aria-current={item.id === current ? "page" : undefined}>
             {item.label}
           </a>
