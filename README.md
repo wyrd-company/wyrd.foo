@@ -68,9 +68,13 @@ branch and serves the site on it:
    writes nothing and the run goes on.
 3. `astro dev` starts with `WYRD_CONTENT_DIR` set to that folder.
 
+Arguments after `--` go to the publisher; `ASTRO_ARGS` goes to `astro dev`.
+
 ```sh
 task dev:v2               # reads GitHub Releases (GITHUB_TOKEN or GH_TOKEN if set)
 task dev:v2 -- --offline  # no fetch; release data from local tags only
+task dev:v2 ASTRO_ARGS="--port 4417"                # options for astro dev
+task dev:v2 ASTRO_ARGS="--port 4417 --host" -- --offline  # both
 task publish:local        # the publisher step only
 task validate:repo -- ../gitpr                    # one checkout's working tree
 task validate:repo -- ../gitpr --ref wyrd-foo-v2  # one ref of a checkout
