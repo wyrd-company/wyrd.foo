@@ -1,0 +1,46 @@
+name: PR build
+
+# Fails a pull request, not a deploy, when the docs contract, the migrated
+# content or the site build is broken.
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: pr-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate the docs contract
+        run: |
+          pnpm typecheck
+          pnpm test
+
+      - name: Migrate content/ to the v2 format
+        run: node scripts/migrate-content-v2.ts --from content --to "$RUNNER_TEMP/content-v2"
+
+      - name: Build the site on the v2 content
+        env:
+          WYRD_CONTENT_DIR: ${{ runner.temp }}/content-v2
+        run: pnpm build
