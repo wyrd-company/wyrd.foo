@@ -1,0 +1,40 @@
+# An app that is also a dev container feature, and a second product in the
+# same repo with its own getting-started page.
+schemaVersion: 1
+assets:
+  - assets/demo.gif
+  - assets/social.jpg
+products:
+  gadget:
+    name: gadget
+    version: 0.2.0
+    docs-version: 0.2.3
+    release-unit: gadget-service
+    social-image: assets/social.jpg
+    tagline: Run a sample service.
+    blurb: A long-running service used as a test fixture.
+    status: preview
+    category: Agent Infrastructure
+    highlights: [Starts a sample service.]
+    media: [{ src: assets/demo.gif, caption: The sample console., alt: A console. }]
+    kinds:
+      - kind: app
+        install:
+          - { method: apt, os: [linux], command: sudo apt install gadget }
+          - { method: docker, command: docker run --rm -it ghcr.io/example-org/gadget }
+      - kind: devcontainer-feature
+        ref: ghcr.io/example-org/gadget/gadget:1
+  gizmo:
+    name: gizmo
+    version: 0.1.0
+    docs-version: 0.1.0
+    tagline: A second product in the same repo.
+    blurb: Shares the repo with gadget.
+    status: planned
+    category: Agent Infrastructure
+    highlights: [Exists.]
+    media: [{ src: assets/demo.gif, caption: Nothing yet. }]
+    kinds:
+      - kind: app
+        install:
+          - { method: archive, os: [linux, macos], command: curl -fsSL https://example.com/gizmo.tar.gz | tar -xz }

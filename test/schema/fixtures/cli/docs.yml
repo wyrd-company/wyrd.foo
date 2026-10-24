@@ -1,0 +1,64 @@
+# A CLI product with every optional mark, a nav and pages at two depths.
+schemaVersion: 1
+assets:
+  - assets/demo.gif
+  - assets/logo.svg
+  - assets/favicon.png
+  - assets/social.png
+relationships:
+  describes: widget
+products:
+  widget:
+    name: widget
+    version: 1.4.0
+    docs-version: 1.4.2
+    logo: assets/logo.svg
+    logo-dark: assets/logo.svg
+    favicon: assets/favicon.png
+    social-image: assets/social.png
+    tagline: Turn sample input into sample output.
+    blurb: >-
+      A small command-line tool used as a test fixture for the docs contract.
+    status: stable
+    category: Agent Tooling
+    order: 1
+    highlights:
+      - Reads sample input.
+      - Writes sample output.
+    media:
+      - src: assets/demo.gif
+        caption: Running widget on sample input.
+    nav:
+      - section: Get started
+        groups:
+          - group: Basics
+            pages: [getting-started, configuration]
+    kinds:
+      - kind: cli
+        install:
+          - method: homebrew
+            os: [macos, linux]
+            command: brew install example-org/tap/widget
+          - method: apt
+            os: [linux]
+            label: Debian, Ubuntu
+            command: sudo apt install widget
+          - method: rpm
+            os: [linux]
+            command: sudo dnf install widget
+          - method: cargo
+            os: [macos, linux, windows]
+            label: From Git
+            default: true
+            command: cargo install --git https://example.com/example-org/widget.git
+          - method: npx
+            os: [macos, linux, windows]
+            command: npx --yes @example-org/widget --version
+          - method: docker
+            command: docker pull ghcr.io/example-org/widget:latest
+          - method: other
+            os: [linux]
+            label: From source
+            command: |
+              git clone https://example.com/example-org/widget.git
+              cd widget && make install

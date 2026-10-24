@@ -1,0 +1,32 @@
+# An MCP server with client tabs and the two plugin marketplaces.
+schemaVersion: 1
+assets: [assets/demo.gif]
+products:
+  sprocket-mcp:
+    name: sprocket-mcp
+    version: 0.3.1
+    docs-version: 0.3.1
+    tagline: Let an agent read sample records.
+    blurb: An MCP server used as a test fixture.
+    status: preview
+    category: Agent Tooling
+    highlights: [Lists sample records., Updates a sample record.]
+    media: [{ src: assets/demo.gif, caption: An agent session. }]
+    kinds:
+      - kind: mcp-server
+        install:
+          - method: claude-code
+            default: true
+            command: claude mcp add sprocket -- npx -y @example-org/sprocket-mcp
+          - method: json
+            command: |
+              { "mcpServers": { "sprocket": { "command": "npx", "args": ["-y", "@example-org/sprocket-mcp"] } } }
+          - method: plugin
+            label: Claude plugin marketplace
+            command: /plugin install sprocket-mcp
+          - method: plugin
+            label: Codex plugin marketplace
+            command: Add the example-org marketplace, then install sprocket-mcp.
+        tools:
+          - { name: list_records, description: Lists sample records., effect: Read-only }
+          - { name: update_record, description: Updates a sample record., effect: Writes }
