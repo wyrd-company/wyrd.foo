@@ -49,6 +49,32 @@ describe("tool.yaml schema", () => {
     assert.deepEqual(issues(ingestedFeature()), []);
   });
 
+  it("defaults a product's docs-path to docs/user", () => {
+    const result = parseWith(toolFileSchema, ingestedProduct(), "tool.yaml");
+    assert.ok(result.ok && "docs-path" in result.data);
+    assert.equal(result.data["docs-path"], "docs/user");
+  });
+
+  it("keeps a product's docs-path for a repo with more than one docs unit", () => {
+    const product = ingestedProduct();
+    product["docs-path"] = "docs/user/widget";
+    const result = parseWith(toolFileSchema, product, "tool.yaml");
+    assert.ok(result.ok && "docs-path" in result.data);
+    assert.equal(result.data["docs-path"], "docs/user/widget");
+  });
+
+  it("rejects a docs-path outside the repository", () => {
+    const product = ingestedProduct();
+    product["docs-path"] = "../docs/user";
+    assertIssue(issues(product), "docs-path", /relative path inside the repository/);
+  });
+
+  it("allows no docs-path on a feature entry, which has no pages", () => {
+    const feature = ingestedFeature();
+    feature["docs-path"] = "docs/user";
+    assertIssue(issues(feature), "docs-path", /not an allowed field/);
+  });
+
   it("requires owner and the resolved release unit", () => {
     const noOwner = ingestedProduct();
     delete noOwner.owner;

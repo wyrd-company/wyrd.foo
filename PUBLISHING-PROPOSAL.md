@@ -164,7 +164,7 @@ products:
 | `favicon` | no | SVG or PNG, relative to the product's docs folder and listed in `assets`. |
 | `social-image` | no | PNG or JPEG, 1200×630, relative to the product's docs folder and listed in `assets`. |
 
-`owner`, `release` and `featured` are owned by the publisher; `docs.yml`
+`owner`, `docs-path`, `release` and `featured` are owned by the publisher; `docs.yml`
 does not set them. `docs.yml` has no `repo` field: the site builds the
 GitHub link from `owner`. Every other field is rejected.
 
@@ -597,10 +597,11 @@ its `devcontainer-feature.json`, the code unit `CHANGELOG.md`, and its logo
 under `docs/`.
 
 `tool.yaml` holds the validated product entry, with `release-unit` filled
-in, plus three fields that only the publisher writes:
+in, plus the fields that only the publisher writes:
 
 ```yaml
 owner: wyrd-company/trowel
+docs-path: docs/user
 release:
   version: 0.2.0
   date: 2026-10-01
@@ -616,7 +617,12 @@ featured:
 A feature entry's `tool.yaml` holds the entry with `release-unit` and the
 kind block's `ref` filled in, `name`, `description` and `version` from
 `devcontainer-feature.json`, `owner`, and `release` from the annotated tag
-(no `url`). It has no `featured`.
+(no `url`). It has no `featured` and no `docs-path`.
+
+`docs-path` is the repo folder that holds the product's pages: `docs/user`,
+or `docs/user/<key>` in a repo with one docs unit per product. The default is
+`docs/user`. The site builds each page's "Edit on GitHub" link from `owner`,
+`docs-path` and the page's path under `content/<key>/docs/`.
 
 The site reads `tool.yaml` and the pages with the same module's schemas.
 
