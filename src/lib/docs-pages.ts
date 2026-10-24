@@ -30,8 +30,15 @@ export const changelogHref = (key: string) => `/docs/${key}/${CHANGELOG_SLUG}`;
 /**
  * A page's path under its product's docs folder, from its file path:
  * `<root>/<folder>/docs/<rel>`. `root` is the content root and `folder` the
- * product folder. Both paths are resolved against the working directory (the
- * project root), so a `<folder>/docs` inside the root's own path never matches.
+ * product folder. Both paths are resolved against the working directory, so a
+ * `<folder>/docs` inside the root's own path never matches.
+ *
+ * It assumes the working directory is the Astro project root: Astro's entry
+ * `filePath` is relative to that root, and `resolve` reads it against the
+ * working directory. In a build run from another directory (`astro build
+ * --root <dir>`), a page path can resolve outside the content root and fail
+ * with "is not under", for example with an absolute WYRD_CONTENT_DIR. The only
+ * `--root` build (`build:fixtures`, the head-site fixture) has no docs pages.
  */
 export function relPathOf(filePath: string, folder: string, root: string): string {
   const file = resolve(filePath).replace(/\\/g, "/");
