@@ -3,11 +3,8 @@
  * link, the version footer and reading progress. lib/docs.ts applies them to
  * the published content.
  */
-import type { KindBlock } from "../schema/index.ts";
+import { CHANGELOG_SLUG, isReservedSlug, type KindBlock } from "../schema/index.ts";
 import { readingOrder, type DocsMapPage, type DocsMapSection } from "./docs-map";
-
-/** The page slug the docs changelog route takes (`/docs/<key>/changelog`). No page may use it. */
-export const CHANGELOG_SLUG = "changelog";
 
 export class ReservedSlugError extends Error {
   constructor(key: string, file: string) {
@@ -116,7 +113,7 @@ export function groupPages<E extends PageSource>(entries: readonly E[]): Map<str
     const folder = entry.id.split("/")[0];
     const file = entry.filePath ?? entry.id;
     const slug = entry.id.slice(folder.length + 1);
-    if (slug === CHANGELOG_SLUG) throw new ReservedSlugError(key, file);
+    if (isReservedSlug(slug)) throw new ReservedSlugError(key, file);
     const list = byProduct.get(key) ?? [];
     const twin = list.find((page) => page.slug === slug);
     if (twin) throw new DuplicateSlugError(key, slug, [twin.entry.filePath ?? twin.entry.id, file]);

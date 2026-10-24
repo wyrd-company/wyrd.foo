@@ -71,6 +71,29 @@ describe("cross-check: pages", () => {
     });
   });
 
+  for (const path of ["cli/changelog.md", "cli/guides/changelog.md", "cli/guides/Changelog.md"]) {
+    it(`a page at ${path} fails: the slug changelog is reserved in any letter case`, () => {
+      const tree = treeFrom("cli");
+      const original = tree.pages.find((p) => p.path === "cli/getting-started.md")!;
+      (tree.pages as DocsTree["pages"][number][]).push({ path, data: { ...original.data } });
+      assertOneIssue(crossCheck(tree), { file: path, field: "slug", message: /^[Cc]hangelog is reserved for the docs changelog of product widget/ });
+    });
+  }
+
+  it("a page whose slug only starts with changelog passes", () => {
+    const tree = treeFrom("cli");
+    const original = tree.pages.find((p) => p.path === "cli/getting-started.md")!;
+    (tree.pages as DocsTree["pages"][number][]).push({ path: "cli/changelog-notes.md", data: { ...original.data } });
+    assert.deepEqual(crossCheck(tree), []);
+  });
+
+  it("the docs unit changelog CHANGELOG.md is data: not a page and not reported", () => {
+    const tree = treeFrom("cli");
+    assert.ok(tree.files.has("CHANGELOG.md"), "the fixture has a docs unit changelog");
+    assert.ok(!tree.pages.some((p) => p.path.toLowerCase().endsWith("changelog.md")));
+    assert.deepEqual(crossCheck(tree), []);
+  });
+
   it("one slug in two products passes", () => {
     const tree = treeFrom("app");
     const slugs = tree.pages.map((p) => p.path.split("/").pop());

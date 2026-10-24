@@ -104,6 +104,15 @@ describe("groupPages", () => {
     expect(() => groupPages([source("gadget", "guides/changelog.md")])).toThrow(/gadget\/docs\/guides\/changelog\.md: page slug "changelog" is reserved/);
   });
 
+  it("fails on the reserved changelog slug in any letter case", () => {
+    expect(() => groupPages([source("gadget", "Changelog.md")])).toThrow(ReservedSlugError);
+    expect(() => groupPages([source("gadget", "guides/CHANGELOG.md")])).toThrow(/gadget\/docs\/guides\/CHANGELOG\.md: page slug "changelog" is reserved/);
+  });
+
+  it("accepts a slug that only starts with changelog", () => {
+    expect(groupPages([source("gadget", "changelog-notes.md")]).get("gadget")![0]).toMatchObject({ slug: "changelog-notes" });
+  });
+
   it("fails on two pages of one product with one slug", () => {
     const twins = [source("gadget", "setup.md"), source("gizmo", "guides/setup.md", { product: "gadget" })];
     expect(() => groupPages(twins)).toThrow(DuplicateSlugError);
