@@ -63,12 +63,14 @@ Public docs live in `docs/user/`: `docs/user/docs.yml` and
 `docs/user/**/*.md`. Everything under `docs/user/` is published. Nothing
 outside it is published, except the `README.md` of each feature entry, which
 the publisher reads through the entry's `source:`. Other `docs/` folders are
-private.
+private. A relative link from a page to a file outside `docs/user/` points
+at a file the site does not have, so the publisher warns about it.
 
 ```text
 docs/
 ├── user/
 │   ├── docs.yml           # the repo's products
+│   ├── CHANGELOG.md       # the docs unit changelog (data, not a page)
 │   ├── getting-started.md # a page (front matter names its product)
 │   ├── guides/
 │   │   └── authoring.md   # pages may be at any depth
@@ -328,7 +330,9 @@ Releases, like any other product.
 ### Pages
 
 Pages are Markdown files at any depth under `docs/user/`. The folder is the
-gate: every `.md` under it is published.
+gate: every `.md` under it is a page, except the docs unit changelog
+`CHANGELOG.md` at the `docs/user/` root or in a `docs/user/<key>/` folder of
+a product key. The changelog is data: it has no front matter.
 
 ```markdown
 ---
@@ -383,6 +387,10 @@ release-units:
   tag `<key>-docs@{version}`. Projection file paths are relative to the unit
   path. A docs-only intent moves only `docs-version`, so docs release on
   their own, with their own intents, changelog and tags.
+- A repo with one docs unit keeps it at `docs/user`, so its changelog is
+  `docs/user/CHANGELOG.md`. A repo with more than one docs unit gives each
+  unit the path `docs/user/<key>/`, so each changelog is
+  `docs/user/<key>/CHANGELOG.md`.
 - The docs footer shows both: "Docs 0.2.3 · for trowel 0.2.0".
 
 ### devcontainers tags
@@ -403,9 +411,12 @@ publisher runs, not a release asset:
 | --- | --- | --- |
 | `devcontainer-feature` | Name, description, version, options | `devcontainer-feature.json` |
 | `devcontainer-image` | Image version | `manifest.json` |
-| `devcontainer-image` | Registry tags | The image build config, when the publisher can read it; otherwise the kind block's `tags` |
+| `devcontainer-image` | Registry tags | The kind block's `tags`; without them, one tag per `variants` entry of `manifest.json`, with its `architectures` |
 
-An MCP server's tools table is the `tools` list in its kind block.
+The publisher finds an image's `manifest.json` through the json projection
+of the image's code unit in `.intentional/config.yml`, and warns when its
+`version` differs from `version` in `docs.yml`. An MCP server's tools table
+is the `tools` list in its kind block.
 
 ## The calling workflow
 
@@ -474,50 +485,99 @@ the result is the same for every trigger. The trigger only chooses the ref.
    - `logo` and `logo-dark` are SVG; `favicon` is SVG or PNG;
      `social-image` is PNG or JPEG at 1200×630. The file extension and the
      file content must both match;
+   - `logo` and `logo-dark` are square: the SVG `viewBox` (else its `width`
+     and `height`) has equal sides;
    - for each feature entry, `devcontainer-feature.json` and `README.md`
-     exist at `source`.
+     exist at `source`, and `devcontainer-feature.json` has an `id`, a
+     SemVer `version`, a `name` and a `description`.
+
+   The publisher warns, and does not fail, when a feature's `README.md`
+   option names differ from its `devcontainer-feature.json` options, and
+   when a page links to a file outside `docs/user/`.
 3. **Resolve release data** for each product. The publisher takes `version`
    and `docs-version` from `docs.yml` at the ref, reads the code unit's
    primary tag template, and builds the tag from `version`.
    - For a product, the publisher fails if that tag has no GitHub Release.
-     From the release it reads version, date, URL and notes.
+     From the release it reads date, URL and notes; the version is
+     `version`.
    - For a feature entry, the publisher reads the version from
-     `devcontainer-feature.json`, and the date and notes from the annotated
-     tag.
-   - For both, it reads the changelog from the unit.
+     `devcontainer-feature.json` and builds the tag from it. The date is the
+     annotated tag's date, and the notes are the version's section of the
+     unit changelog (intentional's tag message is a machine record, not
+     notes).
+   - For both, it reads the code unit changelog, `CHANGELOG.md` in the unit
+     folder, and the docs unit changelog.
 4. **Check key ownership.** Each `content/<key>/tool.yaml` records its owner
    in `owner: <owner/repo>`. The publisher rejects a key that another repo
-   owns.
+   owns, and a key whose folder names no owner it can read.
 5. **Write** `content/<key>/` for every product in the map (see "Content
-   written to wyrd.foo"). It carries
-   `featured` forward from the existing `tool.yaml` and applies the run's
-   `feature` inputs. It deletes every `content/<key>/` folder that this repo
-   owns and that is not in its map, so removing or renaming a product
-   needs no hand edits.
+   written to wyrd.foo"). It carries `featured` forward from the existing
+   `tool.yaml` (it drops a `featured` block that is not valid, with a
+   warning) and applies the run's `feature` inputs. It deletes every
+   `content/<key>/` folder that this repo owns and that is not in its map,
+   so removing or renaming a product needs no hand edits.
+
+   An error in any product fails the whole repo: the run writes nothing for
+   it, and the content folder keeps what the last good run wrote.
 6. **Push.** The publisher commits as the publisher App bot and pushes to
    wyrd.foo `main`, with fetch, rebase and retry when another publish has
    pushed first. The push starts `cd.yml`.
 
 ### Local mode
 
-The dev server runs the same publisher core in local mode. For each tool
-repo, local mode reads the repo's `wyrd-foo-v2` branch from its local clone.
-It does not check out a branch in the clone's working tree, and it makes no
-commit and no push. It writes into a dev content folder in the wyrd.foo
-checkout, and the dev server serves the site from that folder.
+The dev server (`task dev:v2`) runs the same publisher core in local mode.
+For each tool repo in `publisher/local-repos.yml`, local mode reads the
+repo's `wyrd-foo-v2` branch (the local branch, else `origin/wyrd-foo-v2`)
+from its local clone through git objects only. It does not check out a
+branch or change the clone's working tree or index, and it makes no commit,
+no fetch and no push. It writes into a dev content folder in the wyrd.foo
+checkout (`WYRD_CONTENT_DIR`, default `.content-v2`), and the dev server
+serves the site from that folder. It prints each repo's warnings and errors.
 
 - When no GitHub Release is reachable, release data comes from the local
-  tags.
-- A requirement that a repo does not meet yet (for example, no intentional)
-  is a warning, not a failure. A repo without intentional sets `version` and
+  tag: the annotated tag's date, and the version's section of the unit
+  changelog as notes. The GitHub API is read with `GITHUB_TOKEN` or
+  `GH_TOKEN` when one is set; `--offline` reads local tags only.
+- A requirement that a repo does not meet yet is a warning, not a failure:
+  no `wyrd-foo-v2` branch, no intentional, no release unit or docs unit, no
+  GitHub Release, no release tag, no unit changelog, no image
+  `manifest.json`. A repo without intentional sets `version` and
   `docs-version` by hand on its `wyrd-foo-v2` branch.
+- Local mode does not read docs unit tags, so a docs unit with no tag yet
+  is not a finding.
+- A schema or check error fails that repo only. The run goes on with the
+  next repo.
+
+`task validate:repo -- <repo path>` runs the same checks on one tool repo
+checkout and writes nothing. It reads the working tree as it is on disk, or
+a ref with `--ref`, and exits 1 when the repo would fail.
 
 ## Content written to wyrd.foo
 
-`content/<key>/` holds `tool.yaml`, the product's pages as
-`docs/<slug>.md`, the listed assets the product uses, the unit changelog,
-and the generated data for the product's kinds. A feature entry's folder
-holds its `README.md` as the page body.
+For a product, `content/<key>/` holds:
+
+```text
+content/<key>/
+├── tool.yaml          # the product entry, plus owner, release and featured
+├── CHANGELOG.md       # the code unit changelog: the product page's Releases section
+├── manifest.json      # a devcontainer-image product: the image manifest
+└── docs/              # the product's files from docs/user/, at the same paths
+    ├── CHANGELOG.md   # the docs unit changelog, linked from the docs version footer
+    ├── getting-started.md
+    ├── guides/authoring.md
+    └── assets/logo.svg
+```
+
+- `docs/` mirrors the product's files under the repo's `docs/user/`: its
+  pages at their paths, and the listed assets that its fields name or its
+  pages link to. Asset paths in `docs.yml` are relative to `docs/user/`, so
+  they resolve under `content/<key>/docs/`.
+- The docs unit changelog is always `docs/CHANGELOG.md`, from
+  `docs/user/<key>/CHANGELOG.md` or else `docs/user/CHANGELOG.md`.
+
+A feature entry's folder holds `tool.yaml`, its `README.md` (the page body),
+its `devcontainer-feature.json`, the code unit `CHANGELOG.md`, and its logo
+under `docs/`.
 
 `tool.yaml` holds the validated product entry, with `release-unit` filled
 in, plus three fields that only the publisher writes:
@@ -544,6 +604,10 @@ kind block's `ref` filled in, `name`, `description` and `version` from
 The site reads `tool.yaml` and the pages with the same module's schemas.
 
 ## Release and featured data
+
+A tag push writes no `featured`: rule 2 below shows a fresh code release
+without any input. `featured` comes only from the `feature` inputs of a
+manual run, for a set reason or length.
 
 The front page chooses its featured product in the browser, so a feature
 expires on time without a rebuild:
