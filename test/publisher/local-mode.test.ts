@@ -407,7 +407,10 @@ describe("local mode: fetch from origin", () => {
     await withStubSsh(`echo $$ > "$0.pids"\nsleep 20 &\necho $! >> "$0.pids"\nwait`, async ({ dir: stubDir }) => {
       const pidFile = join(stubDir, "ssh.pids");
       try {
+        const started = Date.now();
         const reports = await runLocal({ config: repos("pi"), toolsDir: ws.toolsDir, contentDir: ws.contentDir, fetch: true, fetchTimeoutMs: 300 });
+        // The stub's child sleeps 20 s: a call that returns before then did not wait for it to finish by itself.
+        assert.ok(Date.now() - started < 10_000, "the call returned soon after the bound");
         assert.ok(existsSync(pidFile), "the fetch reached the stub ssh");
         pids = readFileSync(pidFile, "utf8").split("\n").filter(Boolean).map(Number);
         assert.equal(pids.length, 2, "the stub recorded ssh and its child");
