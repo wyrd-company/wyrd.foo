@@ -7,7 +7,6 @@ relationships:
 */
 import SiteLayout from "../../../layouts/SiteLayout.astro";
 import GitHub from "../../../components/icons/GitHub.astro";
-import Search from "../../../components/Search.astro";
 import { getDocTools, getToolPages, getCatalog, STATUS_LABEL } from "../../../lib/catalog";
 import { render } from "astro:content";
 
@@ -47,7 +46,8 @@ const num = (n: number) => String(n).padStart(2, "0");
 <SiteLayout
   title={`${tool.name} · ${page.title} — Wyrd Tools docs`}
   description={tool.tagline}
-  product={{ name: tool.name }}
+  nav="docs"
+  product={{ key: tool.slug, name: tool.name }}
 >
   <Fragment slot="head">
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -59,24 +59,6 @@ const num = (n: number) => String(n).padStart(2, "0");
   </Fragment>
 
   <div class="blueprint docs">
-    <!-- Masthead -->
-    <header class="mast">
-      <a class="wordmark" href="/">
-        <span class="wm-glyph" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-            <rect x="1.5" y="1.5" width="21" height="21" stroke="currentColor" stroke-width="1" />
-            <path d="M12 1.5v21M1.5 12h21M4 4l16 16M20 4L4 20" stroke="currentColor" stroke-width="0.6" opacity="0.5" />
-            <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1" />
-          </svg>
-        </span>
-        <span class="wm-text">WYRD<span class="wm-slash">/</span>TOOLS</span>
-      </a>
-      <nav class="mast-nav">
-        <a href="/#catalog">Tools</a>
-        <a href={`/docs/${docTools[0].slug}`} class="cur">Docs</a>
-        <Search product={tool.slug} productName={tool.name} />
-      </nav>
-    </header>
 
     <!-- Top nav: switch which tool's docs you are reading -->
     <div class="toolbar">
@@ -147,7 +129,7 @@ const num = (n: number) => String(n).padStart(2, "0");
       </aside>
 
       <!-- Main -->
-      <main
+      <article
         class="doc"
         data-pagefind-body={indexable ? "" : undefined}
         data-pagefind-filter={`product:${tool.slug}`}
@@ -222,29 +204,9 @@ const num = (n: number) => String(n).padStart(2, "0");
             Star {tool.name} on GitHub
           </a>
         </footer>
-      </main>
+      </article>
     </div>
 
-    <div class="foot-wrap">
-      <footer class="foot">
-        <div class="foot-block foot-title">
-          <p class="ft-name">WYRD COMPANY</p>
-          <a class="ft-link" href="https://wyrd.company" target="_blank" rel="noopener"
-            >wyrd.company</a
-          >
-        </div>
-        <div class="foot-block">
-          <span class="ft-key">Notes</span>
-          <p class="ft-val">
-            Built to streamline our own work — offered to anyone who shares the friction.
-          </p>
-        </div>
-        <div class="foot-block">
-          <span class="ft-key">License</span>
-          <p class="ft-val">© Wyrd Company. Tools released under open-source licenses.</p>
-        </div>
-      </footer>
-    </div>
   </div>
 </SiteLayout>
 

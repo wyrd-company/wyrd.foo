@@ -1,17 +1,25 @@
 ---
 /*
- * The page layout for every page: the shared head and the page content.
+ * The page layout for every page: the shared head, the site header, the page
+ * content and the footer. A page can replace the header with its own through
+ * the "header" slot (the docs pages have a two-row header).
  */
+import SiteFooter from "../components/SiteFooter.astro";
 import SiteHead from "../components/SiteHead.astro";
+import SiteHeader from "../components/SiteHeader.astro";
 import type { HeadProduct } from "../lib/head";
+import type { NavItem } from "../lib/site";
 
 interface Props {
   title: string;
   description?: string;
-  /** The product this page belongs to: its favicon and social image. */
-  product?: HeadProduct;
+  /** The product this page belongs to: its favicon and social image, and
+   * search ranks its results first. */
+  product?: HeadProduct & { key: string };
+  /** The header nav item for this page. */
+  nav?: NavItem;
 }
-const { title, description, product } = Astro.props;
+const { title, description, product, nav } = Astro.props;
 ---
 
 <!doctype html>
@@ -21,6 +29,12 @@ const { title, description, product } = Astro.props;
     <slot name="head" />
   </head>
   <body>
-    <slot />
+    <slot name="header">
+      <SiteHeader current={nav} product={product?.key} productName={product?.name} />
+    </slot>
+    <main class="site-main">
+      <slot />
+    </main>
+    <SiteFooter />
   </body>
 </html>

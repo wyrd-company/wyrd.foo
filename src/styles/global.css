@@ -51,6 +51,8 @@
   --code-text: #ededef;
   --font-text: "Geist Variable", system-ui, sans-serif;
   --font-code: "Geist Mono Variable", ui-monospace, monospace;
+  /* Side padding of the page: 120px at 1440px wide. */
+  --page-gutter: clamp(20px, 8.4vw, 120px);
 }
 
 /* Tailwind utilities that read the tokens: bg-surface, text-text-2, ... */
@@ -115,9 +117,21 @@
     overflow-x: auto;
   }
 
+  .site-main {
+    flex: 1 0 auto;
+  }
+
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 }
 
+/* The page width: header, footer and page sections line up on it. */
+@utility site-width {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--page-gutter);
+}
