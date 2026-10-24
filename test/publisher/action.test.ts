@@ -77,12 +77,12 @@ describe("publish-docs@v2 action", () => {
     ws.remove();
   });
 
-  /** Run the action's root and publish steps, as the runner would, with these inputs. */
-  async function runAction(source: string, inputs: Record<string, string>): Promise<Run> {
+  /** Run the action's root and publish steps, as the runner would, with these inputs, on `event` (a tag push by default; null for none). */
+  async function runAction(source: string, inputs: Record<string, string>, event: string | null = "push"): Promise<Run> {
     const github = { repository: ALPHA, token: RELEASE_TOKEN, api_url: api.url };
     const runner = join(ws.root, "runner");
     mkdirSync(runner, { recursive: true });
-    const base = { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", GITHUB_WORKSPACE: ws.root, GITHUB_ACTION_PATH: ACTION_DIR, RUNNER_TEMP: runner };
+    const base = { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", GITHUB_WORKSPACE: ws.root, GITHUB_ACTION_PATH: ACTION_DIR, RUNNER_TEMP: runner, ...(event === null ? {} : { GITHUB_EVENT_NAME: event }) };
 
     const rootOutput = join(runner, "root-output");
     writeFileSync(rootOutput, "");
@@ -152,8 +152,22 @@ describe("publish-docs@v2 action", () => {
     assert.ok(!run.stdout.split("\n").some((candidate) => /^\s*unclosed/.test(candidate)), "no line of the YAML error escapes the annotation");
   });
 
+  it("refuses feature on any event but a manual run, or with no event, before it touches the site", async () => {
+    const tip = site.rev();
+    const source = alpha();
+    for (const event of ["push", "schedule", "workflow_call", null]) {
+      const run = await runAction(source, { ref: "wyrd-foo-v2", feature: "true", "feature-product": "alpha-cli" }, event);
+      assert.equal(run.code, 1, `${event}: ${run.stdout}`);
+      const named = event === null ? "an unknown" : `a ${event}`;
+      assert.match(run.stdout, new RegExp(`^::error::input: PUBLISH_FEATURE is true on ${named} event; only a workflow_dispatch run may feature a product$`, "m"));
+      assert.deepEqual(run.outputs, {});
+    }
+    assert.equal(site.pushes, 0);
+    assert.equal(site.rev(), tip);
+  });
+
   it("features the named product from the feature inputs", async () => {
-    const run = await runAction(alpha(), { ref: "wyrd-foo-v2", feature: "true", "feature-product": "alpha-cli", "feature-days": "3", "feature-reason": "A new sample" });
+    const run = await runAction(alpha(), { ref: "wyrd-foo-v2", feature: "true", "feature-product": "alpha-cli", "feature-days": "3", "feature-reason": "A new sample" }, "workflow_dispatch");
     assert.equal(run.code, 0, run.stdout);
     const featured = parse(site.show("content/alpha-cli/tool.yaml")).featured;
     assert.equal(featured.reason, "A new sample");
