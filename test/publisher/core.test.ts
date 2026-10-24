@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, it } from "node:test";
 import {
+  applyRepo,
   computeRepo,
   featureRef,
   gitHubReleases,
@@ -181,6 +185,20 @@ describe("publisher core: requirements and generated data", () => {
     const result = await computeRepo(input(files, { ownerRepo: `${OWNER}/beta` }));
     assert.equal(result.failed, true);
     assert.match(errors(result.findings).join("\n"), /content\/sample-feature\/tool\.yaml: name: must be one line/);
+  });
+});
+
+describe("content writes", () => {
+  it("applyRepo writes nothing for a failed result, even one that holds products", () => {
+    const root = mkdtempSync(join(tmpdir(), "publisher-content-"));
+    try {
+      const product = { key: "sample", feature: false, tool: { owner: `${OWNER}/alpha` }, files: new Map<string, Uint8Array>() };
+      const applied = applyRepo(root, { ownerRepo: `${OWNER}/alpha`, products: [product], findings: [], failed: true });
+      assert.deepEqual([applied.failed, applied.written], [true, []]);
+      assert.deepEqual(readdirSync(root), []);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 
