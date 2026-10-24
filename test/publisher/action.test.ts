@@ -143,6 +143,15 @@ describe("publish-docs@v2 action", () => {
     assert.equal(site.pushes, 0);
   });
 
+  it("keeps a multi-line finding in one annotation", async () => {
+    const run = await runAction(alpha({ ...alphaFiles(), "docs/user/docs.yml": "products: [\n  unclosed\n" }), { ref: "wyrd-foo-v2" });
+    assert.equal(run.code, 1);
+    const [line, ...rest] = run.stdout.split("\n").filter((candidate) => candidate.startsWith("::error"));
+    assert.deepEqual(rest, []);
+    assert.match(line, /^::error file=docs\/user\/docs\.yml::error docs\/user\/docs\.yml: is not YAML: .*%0A/);
+    assert.ok(!run.stdout.split("\n").some((candidate) => /^\s*unclosed/.test(candidate)), "no line of the YAML error escapes the annotation");
+  });
+
   it("features the named product from the feature inputs", async () => {
     const run = await runAction(alpha(), { ref: "wyrd-foo-v2", feature: "true", "feature-product": "alpha-cli", "feature-days": "3", "feature-reason": "A new sample" });
     assert.equal(run.code, 0, run.stdout);
