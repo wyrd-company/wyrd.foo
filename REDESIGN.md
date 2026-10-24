@@ -131,10 +131,10 @@ In this order:
    kinds, status, latest version and date, category, repository.
 2. **Media**: the first media item on its own full-width row, with its
    caption; the other items follow as a numbered tour. An MP4 or WebM file
-   shows as a muted, looping video with a Pause/Play button next to it; any
-   other file, GIFs included, shows as an image. The video plays on load, but
-   not when the visitor's `prefers-reduced-motion` is `reduce`: then it waits
-   for the button. Without script the video does not play and keeps its
+   shows as a muted, looping video with a Pause/Play button over its
+   bottom-left corner; any other file, GIFs included, shows as an image. The
+   video plays on load, but not when the visitor's `prefers-reduced-motion` is
+   `reduce`: then it waits for the button. Without script the video does not play and keeps its
    native controls.
 3. **What it does**: up to six `highlights`.
 4. **Install**: full width. One tab group for each kind, in `kinds` order
