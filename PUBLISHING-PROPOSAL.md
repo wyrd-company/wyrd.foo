@@ -87,7 +87,7 @@ One file per repo. Top-level fields:
 
 | Field | Required | Meaning |
 | --- | --- | --- |
-| `schemaVersion` | yes | The major version of the site schema the file targets. |
+| `schemaVersion` | yes | The site schema version the file targets: `1`. |
 | `assets` | no | Exact file paths, relative to `docs/user/`, that are published. |
 | `products` | yes | A map keyed by product key. |
 | `relationships` | no | Artifact metadata. The schema allows it; the publisher ignores it. |
@@ -392,9 +392,9 @@ the result is the same for every trigger. The trigger only chooses the ref.
    intentional config the publisher reads only release-unit configuration
    (contract 1: each unit's primary tag template). It does not read
    intentional's generated workflows.
-2. **Validate** `docs.yml` and every page against the site's Zod schema for
-   the declared `schemaVersion`, then run the checks the schema cannot
-   express:
+2. **Validate** `docs.yml` and every page against the site's Zod schema. A
+   `schemaVersion` other than `1` fails validation. Then the publisher runs
+   the checks the schema cannot express:
    - every page's `product:` is a key in `products`;
    - every slug is unique within its product;
    - every `nav` page exists for that product;
@@ -480,7 +480,7 @@ the HTML as the default; the script swaps it only when its result differs.
 
 ## Schemas
 
-The site publishes JSON Schemas at stable, versioned URLs, for example
+The site publishes its JSON Schema at
 `https://wyrd.foo/schemas/docs/v1.json`.
 
 - The site's Zod schema is the single source of truth for `docs.yml` and
@@ -489,11 +489,10 @@ The site publishes JSON Schemas at stable, versioned URLs, for example
 - `/schemas/docs/v1.json` is generated from it at build time
   (`z.toJSONSchema`, Zod 4) by a static Astro endpoint, so the published
   schema and the site's own validation cannot drift.
-- Each schema's `$id` is its URL. A published version never changes;
-  additive changes go into the current version, breaking changes into a new
-  one.
-- The publisher validates against the version a repo declares, so a repo is
-  never broken by a later site change.
+- The schema's `$id` is its URL.
+- The schema has one version, `1`. Every `docs.yml` declares
+  `schemaVersion: 1`. The site and the publisher validate against that one
+  schema and reject any other `schemaVersion`.
 
 ## Permissions and setup
 
