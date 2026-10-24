@@ -129,6 +129,31 @@ describe("migrating the content folders", () => {
   });
 });
 
+describe("choosing media", () => {
+  it("skips an image whose file is not in docs/ and one without alt text", () => {
+    const from = fresh("from");
+    v1(from, "widget", TOOL, "---\ntitle: Overview\norder: 1\n---\n![](assets/blank.gif)\n![Missing](assets/missing.gif)\n");
+    mkdirSync(join(from, "widget/docs/assets"));
+    writeFileSync(join(from, "widget/docs/assets/blank.gif"), "gif");
+    const to = fresh("to");
+    const result = migrate(from, to);
+    const tool = parse(readFileSync(join(to, "widget/tool.yaml"), "utf8"));
+    assert.equal(tool.media[0].src, "assets/placeholder.svg");
+    assert.ok(result.fills.some((fill) => fill.startsWith("widget: media: placeholder")));
+  });
+
+  it("takes the image of the page with the lowest order, not the first file name", () => {
+    const from = fresh("from");
+    v1(from, "widget", TOOL, "---\ntitle: Second\norder: 2\n---\n![Later](assets/b.gif)\n");
+    writeFileSync(join(from, "widget/docs/aaa.md"), "---\ntitle: First\norder: 1\n---\n![Earlier](assets/a.gif)\n");
+    mkdirSync(join(from, "widget/docs/assets"));
+    for (const name of ["a.gif", "b.gif"]) writeFileSync(join(from, "widget/docs/assets", name), "gif");
+    const to = fresh("to");
+    migrate(from, to);
+    assert.deepEqual(parse(readFileSync(join(to, "widget/tool.yaml"), "utf8")).media, [{ src: "assets/a.gif", caption: "Earlier" }]);
+  });
+});
+
 describe("migrating a folder that cannot be converted", () => {
   it("writes nothing for any folder when one folder fails (all or nothing)", () => {
     const from = fresh("from");
