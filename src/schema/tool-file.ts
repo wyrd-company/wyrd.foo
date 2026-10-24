@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { featureEntryShape, productEntryShape } from "./docs-file.ts";
-import { oneLine, ociRef, ownerRepo, releaseUnitId, semver } from "./fields.ts";
+import { oneLine, ociRef, ownerRepo, releaseUnitId, repoPath, semver } from "./fields.ts";
 
 // The schema of `content/<key>/tool.yaml`: a validated docs.yml entry, with
 // its defaults resolved, plus the fields only the publisher writes.
@@ -32,10 +32,16 @@ const ingestShape = {
   release: releaseSchema.optional(),
 };
 
+/** The docs folder of a product in its repo when the publisher names none. */
+export const DEFAULT_DOCS_PATH = "docs/user";
+
 /** tool.yaml for a full product entry. */
 export const toolProductSchema = z.strictObject({
   ...productEntryShape,
   ...ingestShape,
+  "docs-path": repoPath
+    .default(DEFAULT_DOCS_PATH)
+    .describe("The repo folder that holds the product's pages: docs/user, or docs/user/<key> in a repo with more than one docs unit."),
   featured: featuredSchema.optional(),
 });
 
