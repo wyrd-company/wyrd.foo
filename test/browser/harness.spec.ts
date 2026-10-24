@@ -257,8 +257,9 @@ test.describe("a run left going by a failed test", () => {
     expect(left, "the test before it recorded its run").toBeDefined();
     const { pid, port } = left!;
     try {
-      await serverStopped(port);
+      // First, with no wait: the cleanup returned only after the process exited.
       expect(alive(pid), `process ${pid} is gone`).toBe(false);
+      await serverStopped(port);
     } finally {
       // Only the recorded PID, and only when the cleanup under test missed it.
       // An interrupt lets the run stop its own servers.
