@@ -3,7 +3,8 @@
  * Site search, backed by the Pagefind index that `pnpm build` writes to
  * dist/pagefind/. When the page belongs to a product (its docs, or later its
  * product page), that product's results are boosted rather than filtered, so
- * a strong match elsewhere can still outrank a weak local one.
+ * a strong match elsewhere can still outrank a weak local one. Kind chips
+ * narrow the results to products of the chosen kinds.
  */
 interface Props {
   /** Slug of the product this page belongs to, if any. */
@@ -44,6 +45,7 @@ const { product, productName } = Astro.props;
     />
     <kbd>esc</kbd>
   </div>
+  <div class="wsearch-kinds" role="group" aria-label="Filter by kind" hidden></div>
   <ul id="wsearch-results" class="wsearch-results" role="listbox" aria-label="Results"></ul>
   <p class="wsearch-status" aria-live="polite"></p>
   <div class="wsearch-foot">
@@ -60,6 +62,8 @@ const { product, productName } = Astro.props;
     score: number;
     data: () => Promise<PagefindData>;
   };
+  import { indexedKinds, KIND_LABELS } from "../lib/kinds";
+
   type PagefindData = {
     url: string;
     excerpt: string;
@@ -67,6 +71,7 @@ const { product, productName } = Astro.props;
     sub_results?: { title: string; url: string }[];
   };
   type Pagefind = {
+    filters: () => Promise<Record<string, Record<string, number>>>;
     search: (q: string, opts?: object) => Promise<{ results: PagefindResult[] } | null>;
     debouncedSearch: (q: string, opts?: object, ms?: number) => Promise<{ results: PagefindResult[] } | null>;
   };
@@ -79,7 +84,9 @@ const { product, productName } = Astro.props;
   const input = dialog.querySelector<HTMLInputElement>(".wsearch-input")!;
   const list = dialog.querySelector<HTMLUListElement>(".wsearch-results")!;
   const status = dialog.querySelector<HTMLParagraphElement>(".wsearch-status")!;
+  const kindsBox = dialog.querySelector<HTMLDivElement>(".wsearch-kinds")!;
   const product = dialog.dataset.product || "";
+  const kinds = new Set<string>();
 
   let pagefind: Pagefind | null = null;
   let active = -1;
@@ -91,11 +98,41 @@ const { product, productName } = Astro.props;
       // Built by `pagefind --site dist` after `astro build`; absent in `astro dev`.
       const url = "/pagefind/pagefind.js";
       pagefind = (await import(/* @vite-ignore */ url)) as Pagefind;
+      showKinds(await pagefind.filters());
       return pagefind;
     } catch {
       status.textContent = "Search is available in the built site (run pnpm build).";
       return null;
     }
+  }
+
+  // One chip per kind in the index. A chosen chip keeps only results of that
+  // kind; with none chosen, every result shows.
+  function showKinds(filters: Record<string, Record<string, number>>) {
+    const present = indexedKinds(filters.kind);
+    kindsBox.replaceChildren(
+      ...present.map((kind) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "wsearch-kind";
+        chip.dataset.kind = kind;
+        chip.textContent = KIND_LABELS[kind];
+        chip.setAttribute("aria-pressed", "false");
+        chip.addEventListener("click", () => {
+          const on = !kinds.has(kind);
+          if (on) kinds.add(kind);
+          else kinds.delete(kind);
+          chip.setAttribute("aria-pressed", String(on));
+          search(input.value);
+        });
+        return chip;
+      }),
+    );
+    kindsBox.hidden = present.length === 0;
+  }
+
+  function kindFilter() {
+    return kinds.size ? { kind: { any: [...kinds] } } : {};
   }
 
   function open() {
@@ -114,13 +151,13 @@ const { product, productName } = Astro.props;
       status.textContent = "";
       return;
     }
-    const all = await pf.debouncedSearch(q, {}, 150);
+    const all = await pf.debouncedSearch(q, { filters: kindFilter() }, 150);
     if (all === null || run !== seq) return; // superseded by a newer keystroke
 
     // Ids of results that belong to the current product get the boost.
     let local = new Set<string>();
     if (product) {
-      const scoped = await pf.search(q, { filters: { product } });
+      const scoped = await pf.search(q, { filters: { ...kindFilter(), product } });
       if (run !== seq) return;
       local = new Set((scoped?.results ?? []).map((r) => r.id));
     }
@@ -258,7 +295,7 @@ const { product, productName } = Astro.props;
     color: var(--text);
     border: 1px solid var(--divider);
     border-radius: 6px;
-    box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.5);
     /* The dialog lives inside the header; don't inherit its type. */
     font-family: var(--font-text);
     font-size: 15px;
@@ -268,7 +305,7 @@ const { product, productName } = Astro.props;
     text-align: left;
   }
   .wsearch[open] { display: flex; }
-  .wsearch::backdrop { background: rgba(4, 8, 14, 0.7); }
+  .wsearch::backdrop { background: rgb(4 8 14 / 0.55); }
 
   .wsearch-bar {
     display: flex;
@@ -291,6 +328,31 @@ const { product, productName } = Astro.props;
     font-size: 17px;
   }
   .wsearch-input::-webkit-search-cancel-button { display: none; }
+
+  .wsearch-kinds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .wsearch-kinds[hidden] { display: none; }
+  .wsearch-kind {
+    padding: 3px 10px;
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--text-2);
+    background: transparent;
+    border: 1px solid var(--divider);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .wsearch-kind:hover { color: var(--text); border-color: var(--text-faint); }
+  .wsearch-kind[aria-pressed="true"] {
+    color: var(--accent);
+    background: var(--accent-tint);
+    border-color: var(--accent);
+  }
 
   .wsearch-results { list-style: none; margin: 0; padding: 6px; overflow-y: auto; }
   .wsearch-item { border-radius: 4px; padding: 10px 12px; }
