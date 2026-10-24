@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { stringify } from "yaml";
-import { runLocal, type LocalConfig, type RepoReport } from "../../publisher/index.ts";
+import { fetchBranch, runLocal, type LocalConfig, type RepoReport } from "../../publisher/index.ts";
 import { toolFileSchema } from "../../src/schema/index.ts";
 import { fakeReleases, git, OWNER, WIDE_SVG, Workspace } from "./fixture-repo.ts";
 import { ALPHA_CLI_RELEASE, ALPHA_TAGS, alphaFiles, BETA_TAGS, betaFiles, brokenFiles, gammaFiles } from "./fixtures.ts";
@@ -254,14 +254,52 @@ describe("local mode: fetch from origin", () => {
   const repos = (name: string): LocalConfig => ({ branch: "wyrd-foo-v2", repos: [{ name, owner: `${OWNER}/${name}` }] });
 
   /** A bare origin, and a second clone that pushes `files` to its wyrd-foo-v2 branch. */
-  function pushFromElsewhere(origin: string, files: Record<string, string | Uint8Array>) {
+  function pushFromElsewhere(origin: string, files: Record<string, string | Uint8Array>, tag?: string) {
     const other = join(ws.root, `push-${Math.random().toString(36).slice(2)}`);
     git(ws.root, "clone", "-q", origin, other);
     git(other, "checkout", "-q", "wyrd-foo-v2");
     for (const [path, content] of Object.entries(files)) writeFileSync(join(other, path), content);
     git(other, "commit", "-q", "-am", "pushed change");
     git(other, "push", "-q", "origin", "wyrd-foo-v2");
+    if (tag !== undefined) {
+      git(other, "tag", "-a", tag, "-m", "pushed tag");
+      git(other, "push", "-q", "origin", tag);
+    }
     return git(other, "rev-parse", "HEAD").trim();
+  }
+
+  /** A clone of a bare origin that holds `wyrd-foo-v2`. */
+  function cloneWithOrigin(name: string) {
+    const origin = join(ws.root, `${name}.git`);
+    git(ws.root, "init", "-q", "--bare", "-b", "main", origin);
+    const dir = ws.repo(name, renamed(`${name}-tool`), { origin });
+    git(dir, "push", "-q", "origin", "main", "wyrd-foo-v2");
+    return { origin, dir };
+  }
+
+  const docsOf = (name: string, tagline: string) => ({
+    "docs/user/docs.yml": renamed(`${name}-tool`)["docs/user/docs.yml"].toString().replace(`The ${name}-tool sample.`, tagline),
+  });
+
+  /** Run `body` with `ssh` on PATH replaced by a stub; it logs its arguments and environment, then runs `then`. */
+  async function withStubSsh(then: string, body: (stub: { log: string; dir: string }) => Promise<void>) {
+    const dir = mkdtempSync(join(ws.root, "stub-"));
+    const log = join(dir, "ssh.log");
+    writeFileSync(join(dir, "ssh"), `#!/bin/sh\n{ echo "ARGS $*"; echo "PROMPT=\${GIT_TERMINAL_PROMPT-unset}"; } >> '${log}'\n${then}\n`);
+    chmodSync(join(dir, "ssh"), 0o755);
+    const saved = { PATH: process.env.PATH, GIT_SSH_COMMAND: process.env.GIT_SSH_COMMAND, GIT_TERMINAL_PROMPT: process.env.GIT_TERMINAL_PROMPT };
+    // A hostile parent environment must not reach git: the fetch sets its own GIT_* values.
+    process.env.PATH = `${dir}:${saved.PATH}`;
+    process.env.GIT_SSH_COMMAND = "ssh -o BatchMode=no";
+    process.env.GIT_TERMINAL_PROMPT = "1";
+    try {
+      await body({ log, dir });
+    } finally {
+      for (const [name, value] of Object.entries(saved)) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+      }
+    }
   }
 
   it("fetches the branch, reads origin/wyrd-foo-v2, and changes only that ref", async () => {
@@ -314,7 +352,84 @@ describe("local mode: fetch from origin", () => {
     assert.equal(fetchWarnings.length, 1);
     assert.match(fetchWarnings[0], /^: could not fetch wyrd-foo-v2 from origin: .*wyrd-foo-v2/);
   });
+
+  it("fetches only the origin ref when the clone's refspec maps the branch to a local branch", async () => {
+    const { origin, dir } = cloneWithOrigin("mu");
+    git(dir, "config", "remote.origin.fetch", "+refs/heads/wyrd-foo-v2:refs/heads/wyrd-foo-v2");
+    const local = git(dir, "rev-parse", "refs/heads/wyrd-foo-v2").trim();
+    const pushed = pushFromElsewhere(origin, docsOf("mu", "The pushed sample."));
+    assert.notEqual(pushed, local);
+
+    const reports = await runLocal({ config: repos("mu"), toolsDir: ws.toolsDir, contentDir: ws.contentDir, fetch: true });
+    assert.equal(reportOf(reports, "mu").oid, pushed);
+    assert.equal(git(dir, "rev-parse", "refs/remotes/origin/wyrd-foo-v2").trim(), pushed);
+    assert.equal(git(dir, "rev-parse", "refs/heads/wyrd-foo-v2").trim(), local, "the local branch is not moved");
+  });
+
+  it("does not fetch tags, even one that points at a fetched commit", async () => {
+    const { origin, dir } = cloneWithOrigin("nu");
+    const tagsBefore = git(dir, "for-each-ref", "refs/tags");
+    const pushed = pushFromElsewhere(origin, docsOf("nu", "The pushed sample."), "v9.9.9");
+    assert.match(git(ws.root, "--git-dir", origin, "for-each-ref", "refs/tags"), /refs\/tags\/v9\.9\.9/, "the origin has the tag");
+
+    assert.deepEqual(await fetchBranch(dir, "wyrd-foo-v2"), { ok: true });
+    assert.equal(git(dir, "rev-parse", "refs/remotes/origin/wyrd-foo-v2").trim(), pushed);
+    assert.equal(git(dir, "for-each-ref", "refs/tags"), tagsBefore, "the clone's tags are unchanged");
+  });
+
+  it("runs ssh with BatchMode=yes, whatever GIT_SSH_COMMAND the parent has", async () => {
+    const { origin, dir } = cloneWithOrigin("xi");
+    git(dir, "remote", "set-url", "origin", "ssh://stub-host/xi");
+    const pushed = pushFromElsewhere(origin, docsOf("xi", "The pushed sample."));
+    await withStubSsh(`exec git upload-pack '${origin}'`, async ({ log }) => {
+      assert.deepEqual(await fetchBranch(dir, "wyrd-foo-v2"), { ok: true });
+      const calls = readFileSync(log, "utf8");
+      assert.match(calls, /^ARGS .*-o BatchMode=yes .*stub-host/m, "the stub ssh was reached with BatchMode=yes");
+      assert.doesNotMatch(calls, /BatchMode=no/);
+    });
+    assert.equal(git(dir, "rev-parse", "refs/remotes/origin/wyrd-foo-v2").trim(), pushed);
+  });
+
+  it("runs git with GIT_TERMINAL_PROMPT=0, whatever the parent has", async () => {
+    const { origin, dir } = cloneWithOrigin("omicron");
+    git(dir, "remote", "set-url", "origin", "ssh://stub-host/omicron");
+    await withStubSsh(`exec git upload-pack '${origin}'`, async ({ log }) => {
+      assert.deepEqual(await fetchBranch(dir, "wyrd-foo-v2"), { ok: true });
+      assert.deepEqual(readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("PROMPT=")), ["PROMPT=0"]);
+    });
+  });
+
+  it("stops git and every process it started when the bound passes, and says so", async () => {
+    const { dir } = cloneWithOrigin("pi");
+    git(dir, "remote", "set-url", "origin", "ssh://stub-host/pi");
+    let pids: number[] = [];
+    // The remote never answers: the stub records its own PID and its child's, then waits.
+    await withStubSsh(`echo $$ > "$0.pids"\nsleep 20 &\necho $! >> "$0.pids"\nwait`, async ({ dir: stubDir }) => {
+      const pidFile = join(stubDir, "ssh.pids");
+      try {
+        const reports = await runLocal({ config: repos("pi"), toolsDir: ws.toolsDir, contentDir: ws.contentDir, fetch: true, fetchTimeoutMs: 300 });
+        assert.ok(existsSync(pidFile), "the fetch reached the stub ssh");
+        pids = readFileSync(pidFile, "utf8").split("\n").filter(Boolean).map(Number);
+        assert.equal(pids.length, 2, "the stub recorded ssh and its child");
+        const warnings = messages(reportOf(reports, "pi"), "warning").filter((message) => message.includes("could not fetch"));
+        assert.equal(warnings.length, 1);
+        assert.match(warnings[0], /could not fetch wyrd-foo-v2 from origin: timed out after 0\.3 s$/);
+        for (const pid of pids) assert.ok(!isAlive(pid), `process ${pid} started by the fetch is gone`);
+      } finally {
+        for (const pid of pids) if (isAlive(pid)) process.kill(pid, "SIGKILL");
+      }
+    });
+  });
 });
+
+/** True while the process runs; a zombie is gone. Reads /proc, so it does not guess from a name. */
+function isAlive(pid: number): boolean {
+  try {
+    return !/^\d+ \(.*\) Z/.test(readFileSync(`/proc/${pid}/stat`, "utf8"));
+  } catch {
+    return false;
+  }
+}
 
 describe("local mode: a damaged clone", () => {
   const ws = new Workspace();
