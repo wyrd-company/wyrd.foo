@@ -1,5 +1,6 @@
+import { createMarkdownProcessor } from "@astrojs/markdown-remark";
 import { describe, expect, it } from "vitest";
-import { embeddedUnit, nestHeadings } from "../src/lib/embedded-headings";
+import { embeddedUnit, nestHeadings, rehypeEmbeddedHeadings } from "../src/lib/embedded-headings";
 
 type Node = { type: string; tagName?: string; properties?: Record<string, unknown>; children?: Node[] };
 const el = (tagName: string, properties: Record<string, unknown> = {}, children: Node[] = []): Node => ({ type: "element", tagName, properties, children });
@@ -61,5 +62,29 @@ describe("nestHeadings", () => {
     const tree = root(el("p", { id: "usage" }));
     nestHeadings(tree, "readme");
     expect(tree.children![0].properties).toEqual({ id: "usage" });
+  });
+});
+
+describe("rehypeEmbeddedHeadings in Astro's Markdown pipeline", () => {
+  const render = async (path: string, markdown: string) => {
+    const processor = await createMarkdownProcessor({ rehypePlugins: [[rehypeEmbeddedHeadings, { contentRoot: "/work/content" }]] });
+    return (await processor.render(markdown, { fileURL: new URL(`file://${path}`) })).code;
+  };
+  const markdown = "# Title\n\n## Usage\n\n[to usage](#usage)\n\n<h2>Raw heading</h2>\n";
+
+  it("shifts and prefixes after the built-in heading ids exist and the raw HTML is parsed", async () => {
+    const html = await render("/work/content/lantern/README.md", markdown);
+    expect(html).toContain('<h3 id="readme--title">Title</h3>');
+    expect(html).toContain('<h4 id="readme--usage">Usage</h4>');
+    expect(html).toContain('<a href="#readme--usage">to usage</a>');
+    expect(html, "a heading written as raw HTML moves with the others").toContain("<h4>Raw heading</h4>");
+  });
+
+  it("leaves a docs page's Markdown as it renders without the step", async () => {
+    const html = await render("/work/content/lantern/docs/guide.md", markdown);
+    expect(html).toContain('<h1 id="title">Title</h1>');
+    expect(html).toContain('<h2 id="usage">Usage</h2>');
+    expect(html).toContain('<a href="#usage">to usage</a>');
+    expect(html).toContain("<h2>Raw heading</h2>");
   });
 });
