@@ -1,0 +1,8 @@
+# actionlint 1.7.12 does not know the `$/` self-repository `uses:` form
+# (rhysd/actionlint#760). Ignore that one message in the one workflow that
+# uses it; test/publisher/workflow.test.ts checks that call's inputs against
+# the action instead. Remove this when actionlint supports `$/`.
+paths:
+  .github/workflows/publish-docs.yml:
+    ignore:
+      - '^specifying action "\$/\.github/actions/publish-docs" in invalid format'
