@@ -4,6 +4,7 @@ import { parse } from "yaml";
 import { z } from "zod";
 import { computeRepo } from "./compute.ts";
 import { applyRepo } from "./content.ts";
+import { fetchBranch } from "./fetch.ts";
 import type { ReleaseLookup } from "./releases.ts";
 import { formatFinding, type Finding } from "./report.ts";
 import {
@@ -18,9 +19,10 @@ import {
   type RepoTags,
 } from "./repo-files.ts";
 
-// Local mode: for each configured tool repo, read its wyrd-foo-v2 branch from
-// the local clone through git objects only, run the publisher core, and write
-// into a dev content folder. Unmet publishing requirements are warnings. A
+// Local mode: for each configured tool repo, fetch its wyrd-foo-v2 branch from
+// origin, read origin/wyrd-foo-v2 (else the local branch) from the local clone
+// through git objects, run the publisher core, and write into a dev content
+// folder. Unmet publishing requirements are warnings. A
 // repo that fails writes nothing; the run goes on with the next repo.
 
 const repoEntry = z.strictObject({
@@ -44,6 +46,8 @@ export interface LocalOptions {
   contentDir: string;
   /** GitHub Releases; without it, release data comes from local tags. */
   releases?: ReleaseLookup;
+  /** Fetch each repo's branch from origin before reading it. */
+  fetch?: boolean;
 }
 
 /** `passed` is validate's outcome for a repo that would publish. */
@@ -80,6 +84,12 @@ async function runRepo(options: LocalOptions, repo: LocalConfig["repos"][number]
     return report;
   }
   try {
+    if (options.fetch) {
+      const fetched = await fetchBranch(dir, options.config.branch);
+      if (!fetched.ok) {
+        report.findings.push({ severity: "warning", message: `could not fetch ${options.config.branch} from origin: ${fetched.message}` });
+      }
+    }
     const branch = await resolveBranch(dir, options.config.branch);
     if (branch === undefined) {
       report.outcome = "skipped";

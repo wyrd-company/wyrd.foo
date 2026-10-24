@@ -67,6 +67,7 @@ describe("validate", () => {
     assert.match(run.stdout, /warning \.intentional\/config\.yml: does not exist; no release data or changelog \(requirement: intentional\)/);
     assert.match(run.stdout, /== missing: skipped\n {2}warning no local clone/);
     assert.match(run.stdout, /3 repos: 2 published, 0 passed, 0 failed, 1 skipped/);
+    assert.doesNotMatch(run.stdout, /could not fetch/, "--offline does not fetch");
     assert.equal(ws.tool("alpha-cli").owner, `${OWNER}/alpha`);
   });
 

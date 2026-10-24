@@ -4,6 +4,7 @@
 export * from "./compute.ts";
 export * from "./content.ts";
 export * from "./feature.ts";
+export * from "./fetch.ts";
 export * from "./intentional.ts";
 export * from "./links.ts";
 export * from "./logo.ts";

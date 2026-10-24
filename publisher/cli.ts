@@ -9,11 +9,13 @@ import { gitHubReleases } from "./releases.ts";
 //                               [--tools-dir /workspaces/tools] [--offline]
 //   node publisher/cli.ts validate <repo path> [--ref <ref>] [--owner <owner/repo>] [--offline]
 //
-// `local` reads each configured repo's wyrd-foo-v2 branch into the dev content
+// `local` fetches each configured repo's wyrd-foo-v2 branch from origin and
+// reads origin/wyrd-foo-v2 (else the local branch) into the dev content
 // folder; it exits 0 unless the run cannot start, and prints each repo's
 // warnings and errors. `validate` checks one checkout (its working tree, or
 // --ref) and exits 1 when the repo would fail. GitHub Releases are read with
-// GITHUB_TOKEN or GH_TOKEN when set; --offline reads local tags only.
+// GITHUB_TOKEN or GH_TOKEN when set; --offline skips the fetch and reads
+// local tags only.
 
 const USAGE = "usage: cli.ts local [options] | cli.ts validate <repo path> [options]";
 
@@ -35,7 +37,13 @@ const [command, ...rest] = positionals;
 
 if (command === "local" && rest.length === 0) {
   const contentDir = resolve(values.content);
-  const reports = await runLocal({ config: readLocalConfig(values.config), toolsDir: values["tools-dir"], contentDir, releases });
+  const reports = await runLocal({
+    config: readLocalConfig(values.config),
+    toolsDir: values["tools-dir"],
+    contentDir,
+    releases,
+    fetch: !values.offline,
+  });
   console.log(formatReports(reports));
   console.log(`content folder: ${contentDir}`);
 } else if (command === "validate" && rest.length === 1) {
