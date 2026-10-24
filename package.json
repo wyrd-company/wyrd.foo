@@ -18,7 +18,7 @@
     "build:fixtures": "astro build --root test/fixtures/head-site && pnpm build:home-fixture",
     "build:home-fixture": "WYRD_CONTENT_DIR=test/fixtures/home-content astro build --outDir dist-fixtures/home",
     "test:dist": "pnpm build:fixtures && vitest run --project dist",
-    "test:browser": "playwright test -c test/browser/playwright.config.ts",
+    "test:browser": "pnpm build:home-fixture && playwright test -c test/browser/playwright.config.ts",
     "typecheck": "pnpm typecheck:schema && pnpm typecheck:site",
     "typecheck:schema": "tsc -p tsconfig.schema.json",
     "typecheck:site": "astro check",

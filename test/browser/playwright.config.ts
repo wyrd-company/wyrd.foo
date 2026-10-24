@@ -1,3 +1,3 @@
-import { harnessConfig, runPort } from "./config";
+import { harnessConfig, runPorts } from "./config";
 
-export default harnessConfig({ port: await runPort() });
+export default harnessConfig(await runPorts());
