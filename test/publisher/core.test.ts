@@ -146,6 +146,19 @@ describe("publisher core: a product's docs folder", () => {
   });
 });
 
+describe("publisher core: links that leave a product's folder", () => {
+  it("warns about a page link into another product's folder, which is not published with this product", async () => {
+    const files = { ...alphaFiles() };
+    files["docs/user/alpha-cli/guides/deep.md"] = files["docs/user/alpha-cli/guides/deep.md"].toString() + "\nSee [the app](../../alpha-app/getting-started.md).\n";
+    const result = await computeRepo(input(files));
+    assert.equal(result.failed, false);
+    const warnings = result.findings.filter((finding) => finding.file === "docs/user/alpha-cli/guides/deep.md").map((finding) => finding.message);
+    assert.deepEqual(warnings, [
+      "line 8: link ../../alpha-app/getting-started.md resolves to docs/user/alpha-app/getting-started.md, outside docs/user/alpha-cli/; that file is not published",
+    ]);
+  });
+});
+
 describe("publisher core: hand-set versions", () => {
   it("publishes a repo whose units cannot project into docs.yml, with the versions docs.yml sets by hand", async () => {
     const files = alphaFiles();
