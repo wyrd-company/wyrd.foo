@@ -4,7 +4,7 @@
  * filter, Copy, and the featured card on the browser's own clock.
  */
 import { expect, test, type Page } from "@playwright/test";
-import { openPage } from "./support";
+import { assertSiteShell, openPage } from "./support";
 
 test.use({ viewport: { width: 1440, height: 1200 } });
 
@@ -84,18 +84,28 @@ test.describe("catalog", () => {
     await openHome(page, baseURL);
     const copy = page.locator('[data-catalog-row="alpha-cli"] [data-copy]');
     await copy.click();
+    // The handler sets the label after the clipboard write finishes, so the
+    // label comes first and the read after it.
+    await expect(copy).toHaveText("Copied");
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
       "brew install example-org/tap/alpha-cli",
     );
-    await expect(copy).toHaveText("Copied");
     expect(page.url()).toBe(new URL("/", baseURL).href);
   });
 
   test("a click on a row elsewhere opens the product page", async ({ page, baseURL }) => {
     await openHome(page, baseURL);
-    const opened = page.waitForRequest(/\/tools\/beacon\/?$/);
+    const loaded = page.waitForResponse(
+      (response) => response.request().isNavigationRequest() && /\/tools\/beacon\/?$/.test(response.url()),
+    );
     await page.locator('[data-catalog-row="beacon"] .home-row-tagline').click({ force: true });
-    await opened;
+    const response = await loaded;
+    expect(response.status()).toBe(200);
+    await page.waitForURL(response.url());
+    // A 200 page is the product page only with the marker that page alone has.
+    await assertSiteShell(page, response.url());
+    await expect(page.locator('article.product[data-product="beacon"][data-page="product"]')).toHaveCount(1);
+    await expect(page.locator("h1.hero-name")).toHaveText("beacon");
   });
 });
 

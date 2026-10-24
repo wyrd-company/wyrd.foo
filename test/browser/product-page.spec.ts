@@ -89,7 +89,10 @@ test.describe("copy", () => {
       "sudo curl -fsSL https://repo.wyrd.foo/wyrd.repo \\\n  -o /etc/yum.repos.d/wyrd.repo\nsudo dnf install widget",
     );
 
-    await page.locator(".hero-install [data-copy]").click();
+    // The label is the signal that the clipboard write finished.
+    const hero = page.locator(".hero-install [data-copy]");
+    await hero.click();
+    await expect(hero).toHaveText("Copied");
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("brew install example-org/tap/widget");
   });
 });
