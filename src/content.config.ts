@@ -1,5 +1,6 @@
 import { defineCollection, z } from "astro:content";
 import { glob } from "astro/loaders";
+import { CONTENT_ROOT } from "./lib/content-root.ts";
 import { pageSchema, pageSlugOf, toolFileSchema } from "./schema/index.ts";
 
 // The `content/` tree simulates the "docs tap": each tool repo pushes a
@@ -46,12 +47,10 @@ const docs = defineCollection({
 // v2 collections, validated by the shared docs contract in src/schema/. The
 // publisher writes `<root>/<key>/tool.yaml` and `<root>/<key>/docs/<slug>.md`.
 // The root is WYRD_CONTENT_DIR (the dev content folder), default `.content-v2`.
-const contentRoot = process.env.WYRD_CONTENT_DIR ?? "./.content-v2";
-
 const products = defineCollection({
   loader: glob({
     pattern: "*/tool.yaml",
-    base: contentRoot,
+    base: CONTENT_ROOT,
     generateId: ({ entry }) => entry.split("/")[0],
   }),
   schema: toolFileSchema,
@@ -60,7 +59,7 @@ const products = defineCollection({
 const pages = defineCollection({
   loader: glob({
     pattern: "*/docs/*.md",
-    base: contentRoot,
+    base: CONTENT_ROOT,
     // <key>/docs/getting-started.md -> "<key>/getting-started"
     generateId: ({ entry }) => `${entry.split("/")[0]}/${pageSlugOf(entry)}`,
   }),

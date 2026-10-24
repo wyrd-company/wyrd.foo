@@ -46,7 +46,11 @@ describe("the PR build workflow", () => {
     const migrate = step(/^Migrate content\//).run ?? "";
     const target = /--to "([^"]+)"/.exec(migrate)?.[1];
     assert.equal(target, "$RUNNER_TEMP/content-v2");
-    assert.match(read("src/content.config.ts"), /process\.env\.WYRD_CONTENT_DIR\b/);
+    // The content config takes its root from lib/content-root.ts, which reads the variable.
+    assert.match(read("src/lib/content-root.ts"), /process\.env\.WYRD_CONTENT_DIR\b/);
+    const config = read("src/content.config.ts");
+    assert.match(config, /^import \{ CONTENT_ROOT \} from "\.\/lib\/content-root\.ts";$/m);
+    assert.equal(config.match(/base: CONTENT_ROOT,/g)?.length, 2, "products and pages read the content root");
     assert.equal(step(/^Build the site/).env?.WYRD_CONTENT_DIR, "${{ runner.temp }}/content-v2");
   });
 
