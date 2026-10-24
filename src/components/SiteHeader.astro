@@ -1,0 +1,111 @@
+---
+/*
+ * The site header: the "W" tile and wordmark, nav, search, theme toggle and
+ * GitHub, on the page background with a 1px blue line along the bottom.
+ */
+import GitHub from "./icons/GitHub.astro";
+import Monogram from "./Monogram.astro";
+import Search from "./Search.astro";
+import ThemeToggle from "./ThemeToggle.astro";
+import { NAV, type NavItem } from "../lib/site";
+
+interface Props {
+  /** The nav item for the current page, shown as current. */
+  current?: NavItem;
+  /** Key and name of the product whose results search ranks first. */
+  product?: string;
+  productName?: string;
+}
+const { current, product, productName } = Astro.props;
+
+---
+
+<header class="site-header">
+  <div class="site-header-inner site-width">
+    <a href="/" class="wordmark" aria-label="Wyrd Tools home">
+      <Monogram name="Wyrd" size="row" />
+      <span>wyrd/tools</span>
+    </a>
+    <nav class="site-nav" aria-label="Site">
+      {
+        NAV.map((item) => (
+          <a href={item.href} aria-current={item.id === current ? "page" : undefined}>
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+    <div class="site-header-tools">
+      <Search product={product} productName={productName} />
+      <ThemeToggle />
+      <a class="site-github" href="https://github.com/wyrd-company" aria-label="wyrd-company on GitHub">
+        <GitHub size={18} />
+      </a>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    flex-shrink: 0;
+    background: var(--page);
+    border-bottom: 1px solid var(--header-line);
+  }
+  .site-header-inner {
+    min-height: 64px;
+    padding-block: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 28px;
+  }
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+  .wordmark:hover {
+    text-decoration: none;
+  }
+  .site-nav {
+    display: flex;
+    gap: 24px;
+  }
+  .site-nav a {
+    color: var(--text-2);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .site-nav a:hover {
+    color: var(--text);
+    text-decoration: none;
+  }
+  .site-nav a[aria-current="page"] {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .site-header-tools {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .site-github {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    color: var(--text);
+  }
+  @media (max-width: 720px) {
+    .site-nav {
+      order: 3;
+      width: 100%;
+    }
+  }
+</style>
