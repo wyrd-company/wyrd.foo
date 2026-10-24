@@ -29,8 +29,8 @@ describe("the PR build workflow", () => {
     assert.deepEqual(workflow.permissions, { contents: "read" });
   });
 
-  it("runs the contract checks, the migration and the build, in that order", () => {
-    const order = ["Validate the docs contract", "Migrate content/", "Build the site"].map((name) =>
+  it("runs the contract checks, the migration, the build and the built-output checks, in that order", () => {
+    const order = ["Validate the docs contract", "Migrate content/", "Build the site", "Check the built output"].map((name) =>
       steps.findIndex((candidate) => candidate.name?.startsWith(name)),
     );
     assert.ok(order.every((index) => index >= 0), `all steps present: ${order}`);
@@ -39,6 +39,7 @@ describe("the PR build workflow", () => {
     assert.match(validate, /^pnpm typecheck$/m);
     assert.match(validate, /^pnpm test$/m);
     assert.match(step(/^Build the site/).run ?? "", /^pnpm build$/);
+    assert.match(step(/^Check the built output/).run ?? "", /^pnpm test:dist$/);
   });
 
   it("builds on the folder the migration wrote, through the variable the content config reads", () => {
