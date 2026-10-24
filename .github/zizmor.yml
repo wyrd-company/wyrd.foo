@@ -1,0 +1,7 @@
+rules:
+  # cd.yml checks the repository out before its deploy steps, which build the
+  # site from that checkout, so `./.github/actions/...` and the `$/` form name
+  # the same action files.
+  self-repository:
+    ignore:
+      - cd.yml
