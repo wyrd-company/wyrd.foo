@@ -9,6 +9,7 @@ import HomeFeatured from "../components/home/HomeFeatured.astro";
 import HomeReleases from "../components/home/HomeReleases.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
 import { pickFeatured } from "../lib/featured";
+import { SITE_DESCRIPTION } from "../lib/site";
 import { catalogRows, featuredCandidates, featuredCards, recentReleases, type HomeEntry } from "../lib/home";
 
 const [products, pages] = await Promise.all([getCollection("products"), getCollection("pages")]);
@@ -26,7 +27,7 @@ const pick = pickFeatured(candidates, Date.now());
 <SiteLayout
   nav="catalog"
   title="Wyrd Tools — small, sharp tools for the people and agents who ship"
-  description="Single-purpose tools for developers and the agents that work alongside them."
+  description={SITE_DESCRIPTION}
 >
   <section class="home-hero site-width">
     <h1>Small, sharp tools for the people <em>and agents</em> who ship.</h1>

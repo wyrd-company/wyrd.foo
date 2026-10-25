@@ -226,6 +226,22 @@ product's first page in reading order.
   install command, with Copy and a link to every install method on the
   product page.
 
+## `/llms.txt`
+
+The build writes `/llms.txt` for agents, in the [llmstxt.org](https://llmstxt.org)
+format, as plain text with no HTML. Every URL is absolute, from the site's
+origin.
+
+- An H1 with the site name (`Wyrd Tools`) and a blockquote with the site's
+  one-sentence description.
+- `## Tools`: one `- [<name>](/tools/<key>): <tagline>` line for every
+  product, feature entries too, in catalog order. A feature entry's line uses
+  its description.
+- `## <name> docs`: one section for each product that has docs pages, in
+  catalog order. Each line is `- [<page title>](/docs/<key>/<slug>.md)`, in
+  the docs reading order, and links the page's Markdown endpoint.
+- There is no `llms-full.txt`.
+
 ## Search
 
 Search is Pagefind (`src/components/Search.astro`).

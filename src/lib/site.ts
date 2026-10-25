@@ -1,4 +1,7 @@
-/* Site-wide navigation: the header nav items. */
+/* Site-wide constants and navigation: the site name and description, and the header nav items. */
+
+export const SITE_NAME = "Wyrd Tools";
+export const SITE_DESCRIPTION = "Single-purpose tools for developers and the agents that work alongside them.";
 
 export type NavItem = "catalog" | "docs" | "releases";
 
