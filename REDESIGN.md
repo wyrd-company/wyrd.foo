@@ -97,6 +97,24 @@ The shared head writes these tags for each page.
 - wyrd.foo generates neither. The home page and the catalog use the site's
   own favicon and image.
 
+## Sitemap and robots.txt
+
+The official Astro integration `@astrojs/sitemap` writes `/sitemap-index.xml`
+and `/sitemap-0.xml` at build time, following the
+[sitemaps.org protocol](https://www.sitemaps.org/protocol.html). URLs are
+absolute, from `site` in `astro.config.mjs` (`https://wyrd.foo`). Entries have
+no `lastmod`.
+
+- **Listed:** the HTML pages that are destinations: the home page, the docs
+  index, every product page and every docs page and docs changelog.
+- **Not listed:** a page that only redirects (`/docs/<key>/`, which goes to the
+  product's first docs page), the `.md` copies of docs pages, the JSON Schema
+  and assets. `src/lib/sitemap.ts` decides this from the route, so a new
+  product needs no change.
+- **`/robots.txt`** (`public/robots.txt`) allows all crawlers and names
+  `https://wyrd.foo/sitemap-index.xml`.
+- The shared head links the sitemap: `<link rel="sitemap" href="/sitemap-index.xml">`.
+
 ## Home page
 
 1. **Headline** ("Small, sharp tools for the people *and agents* who ship.";

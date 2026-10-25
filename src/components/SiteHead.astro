@@ -1,6 +1,6 @@
 ---
 /*
- * The shared <head> for every page: title, description, canonical, favicon,
+ * The shared <head> for every page: title, description, canonical, sitemap, favicon,
  * Open Graph and Twitter meta, the fonts and theme stylesheet, and the inline
  * script that sets the theme before the first paint.
  */
@@ -42,6 +42,7 @@ const socialImage = new URL(resolveSocialImage(product), site).href;
 <title>{title}</title>
 {description && <meta name="description" content={description} />}
 <link rel="canonical" href={canonical} />
+<link rel="sitemap" href="/sitemap-index.xml" />
 <link rel="icon" type={favicon.type} href={favicon.href} />
 {!product && <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />}
 {!product && <link rel="apple-touch-icon" href="/apple-touch-icon.png" />}
