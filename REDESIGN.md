@@ -162,6 +162,27 @@ In this order:
    video plays on load, but not when the visitor's `prefers-reduced-motion` is
    `reduce`: then it waits for the button. Without script the video does not play and keeps its
    native controls.
+
+   **Tour modal.** Each tour item (not the first, full-width one) opens full
+   size in a modal built on the native `<dialog>` element. Each thumbnail is a
+   link to the item's file; with script it is a button (Enter and Space open
+   it) named by the item's alt text, else its caption. A video thumbnail
+   also has a small expand button over its top-right corner; a click on the
+   video opens the modal as well. The modal shows the image or video at the
+   largest size that fits the viewport, in its own aspect ratio and never
+   larger than its natural size, with its caption, its place in the tour
+   ("3 of 8", counting only the tour items) and Previous and Next buttons.
+   The Left and Right arrow keys do the same. The tour stops at its ends: the
+   button for the missing direction is disabled and its arrow key does
+   nothing. Esc, the Close button and a click on the backdrop close the
+   modal. Focus moves into the modal on open and returns to the thumbnail on
+   close. The page behind does not scroll and the URL does not change. A video
+   plays in the modal as it does on the page (muted, looped, with the
+   Pause/Play button, and waiting for the button when `prefers-reduced-motion`
+   is `reduce`); it stops when the modal closes or moves to another item. The
+   panel uses the `--surface` token and the backdrop is a translucent
+   `--surface`, in both themes. Without script a thumbnail is a plain link, so
+   it opens the full-size file.
 3. **What it does**: up to six `highlights`.
 4. **Install**: full width. One tab group for each kind, in `kinds` order
    (for example "Install" for an app and "Dev container" for a feature). The

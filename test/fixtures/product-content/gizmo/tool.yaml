@@ -18,6 +18,11 @@ media:
   - src: assets/demo.webm
     caption: The sample board in use.
     alt: A recording of the sample board.
+  - src: assets/panel.png
+    caption: The sample panel.
+  - src: assets/notes.png
+    caption: The sample notes.
+    alt: A list of sample notes.
 kinds:
   - kind: app
     install:

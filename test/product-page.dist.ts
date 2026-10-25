@@ -220,6 +220,74 @@ describe("install block: CLI and app", () => {
   });
 });
 
+describe("media: tour modal", () => {
+  it("links each tour thumbnail to its full-size file, and the first item to nothing", () => {
+    const root = productPage("gizmo");
+    expect(root.querySelectorAll(".media-main [data-media-open]")).toEqual([]);
+    const openers = root.querySelectorAll(".media-tour-list [data-media-open]");
+    expect(openers.map((a) => a.tagName)).toEqual(["A", "A", "A"]);
+    expect(openers.map((a) => a.getAttribute("href"))).toEqual([
+      "/assets/gizmo/assets/demo.webm",
+      "/assets/gizmo/assets/panel.png",
+      "/assets/gizmo/assets/notes.png",
+    ]);
+    // The image's link is named by the image's alt (or caption); the video's by an own label.
+    expect(root.querySelector('.media-tour-list a[href$="panel.png"] img')?.getAttribute("alt")).toBe("The sample panel.");
+    expect(root.querySelector('.media-tour-list a[href$="notes.png"] img')?.getAttribute("alt")).toBe("A list of sample notes.");
+    expect(openers[0].getAttribute("aria-label")).toBe("Open full size: A recording of the sample board.");
+    expect(openers.every((a) => !a.hasAttribute("role"))).toBe(true);
+  });
+
+  it("describes each tour item for the dialog", () => {
+    const root = productPage("gizmo");
+    const items = root.querySelectorAll(".media-tour-list > li");
+    expect(items.map((li) => li.getAttribute("data-tour-kind"))).toEqual(["video", "image", "image"]);
+    expect(items.map((li) => li.getAttribute("data-tour-src"))).toEqual([
+      "/assets/gizmo/assets/demo.webm",
+      "/assets/gizmo/assets/panel.png",
+      "/assets/gizmo/assets/notes.png",
+    ]);
+    expect(items.map((li) => li.getAttribute("data-tour-caption"))).toEqual([
+      "The sample board in use.",
+      "The sample panel.",
+      "The sample notes.",
+    ]);
+    expect(items.map((li) => li.getAttribute("data-tour-label"))).toEqual([
+      "A recording of the sample board.",
+      "The sample panel.",
+      "A list of sample notes.",
+    ]);
+  });
+
+  it("has one closed dialog outside the tour list, with its controls", () => {
+    const root = productPage("gizmo");
+    const dialogs = root.querySelectorAll("dialog.media-modal");
+    expect(dialogs).toHaveLength(1);
+    const dialog = dialogs[0];
+    expect(dialog.hasAttribute("open")).toBe(false);
+    expect(dialog.getAttribute("aria-label")).toBe("Console tour");
+    expect(dialog.closest(".media-tour-list")).toBeNull();
+    expect(text(dialog.querySelector("button[data-modal-close]"))).toBe("Close");
+    expect(dialog.querySelector("button[data-modal-prev]")?.getAttribute("aria-label")).toBe("Previous");
+    expect(dialog.querySelector("button[data-modal-next]")?.getAttribute("aria-label")).toBe("Next");
+    expect(dialog.querySelector("[data-modal-position]")).not.toBeNull();
+    expect(dialog.querySelector("[data-modal-caption]")).not.toBeNull();
+    expect(dialog.querySelector("[data-modal-stage]")).not.toBeNull();
+    // The video of the dialog is made by the script, from a template, so nothing plays on load.
+    expect(dialog.querySelectorAll("video[autoplay]")).toEqual([]);
+  });
+
+  it("is on a product with a tour of images only, and on no product without a tour", () => {
+    expect(productPage("gadget").querySelectorAll("dialog.media-modal")).toHaveLength(1);
+    expect(productPage("gadget").querySelectorAll(".media-tour-list [data-media-open]")).toHaveLength(2);
+    for (const key of ["widget", "sprocket", "harbor", "lantern", "beacon"]) {
+      const root = productPage(key);
+      expect(root.querySelectorAll("dialog.media-modal"), key).toEqual([]);
+      expect(root.querySelectorAll("[data-media-open]"), key).toEqual([]);
+    }
+  });
+});
+
 describe("media: video", () => {
   it("shows a WebM in the tour as a muted, looping video with a pause button, and no autoplay", () => {
     const root = productPage("gizmo");

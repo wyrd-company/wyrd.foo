@@ -434,6 +434,340 @@ test.describe("video without script", () => {
   });
 });
 
+/*
+ * The tour's modal: a click on a tour thumbnail opens that item in a native
+ * <dialog>. Gizmo's tour has three items: a video, then two images.
+ */
+const OPENERS = ".media-tour [data-media-open]";
+const DIALOG = "dialog.media-modal";
+
+/** Open the tour item at `index` (0 is the first item of the tour) by a click. */
+async function openTourItem(page: Page, index: number) {
+  await page.locator(OPENERS).nth(index).click();
+  await expect(page.locator(DIALOG)).toBeVisible();
+}
+
+const modal = (page: Page) => {
+  const dialog = page.locator(DIALOG);
+  return {
+    dialog,
+    position: dialog.locator("[data-modal-position]"),
+    caption: dialog.locator("[data-modal-caption]"),
+    previous: dialog.locator("[data-modal-prev]"),
+    next: dialog.locator("[data-modal-next]"),
+    close: dialog.locator("[data-modal-close]"),
+    image: dialog.locator("[data-modal-stage] img"),
+    video: dialog.locator("[data-modal-stage] video"),
+    toggle: dialog.locator("[data-modal-stage] [data-media-toggle]"),
+  };
+};
+
+test.describe("tour modal", () => {
+  test("a click on a thumbnail opens the dialog on that item", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    const { dialog, position, caption, image } = modal(page);
+    await expect(dialog).toBeHidden();
+    await openTourItem(page, 2);
+    await expect(dialog).toHaveJSProperty("open", true);
+    await expect(position).toHaveText("3 of 3");
+    await expect(caption).toHaveText("The sample notes.");
+    await expect(image).toHaveAttribute("src", "/assets/gizmo/assets/notes.png");
+    await expect(image).toHaveAttribute("alt", "A list of sample notes.");
+  });
+
+  test("a click on the video thumbnail opens the dialog on the video", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    const { position, caption, video, image } = modal(page);
+    await openTourItem(page, 0);
+    await expect(position).toHaveText("1 of 3");
+    await expect(caption).toHaveText("The sample board in use.");
+    await expect(video).toHaveAttribute("src", "/assets/gizmo/assets/demo.webm");
+    await expect(image).toHaveCount(0);
+  });
+
+  test("the thumbnails of a gadget (images only) open it too", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gadget");
+    await expect(page.locator(OPENERS)).toHaveCount(2);
+    await openTourItem(page, 1);
+    const { position, caption, image } = modal(page);
+    await expect(position).toHaveText("2 of 2");
+    await expect(caption).toHaveText("Change the sample settings.");
+    await expect(image).toHaveAttribute("src", "/assets/gadget/assets/settings.png");
+  });
+
+  test("next and previous, by button and by arrow key, stop at the ends", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    const { position, caption, previous, next } = modal(page);
+    await openTourItem(page, 0);
+    await expect(position).toHaveText("1 of 3");
+    await expect(previous).toBeDisabled();
+    await expect(next).toBeEnabled();
+
+    await next.click();
+    await expect(position).toHaveText("2 of 3");
+    await expect(caption).toHaveText("The sample panel.");
+    await expect(previous).toBeEnabled();
+
+    await page.keyboard.press("ArrowRight");
+    await expect(position).toHaveText("3 of 3");
+    await expect(caption).toHaveText("The sample notes.");
+    await expect(next).toBeDisabled();
+    await expect(previous).toBeEnabled();
+
+    await page.keyboard.press("ArrowRight");
+    await expect(position, "the last item stops").toHaveText("3 of 3");
+
+    await page.keyboard.press("ArrowLeft");
+    await expect(position).toHaveText("2 of 3");
+    await previous.click();
+    await expect(position).toHaveText("1 of 3");
+    await page.keyboard.press("ArrowLeft");
+    await expect(position, "the first item stops").toHaveText("1 of 3");
+    await expect(modal(page).dialog).toBeVisible();
+  });
+
+  test("Esc closes it", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    await openTourItem(page, 1);
+    await page.keyboard.press("Escape");
+    await expect(modal(page).dialog).toBeHidden();
+    await expect(modal(page).dialog).toHaveJSProperty("open", false);
+  });
+
+  test("the close button closes it", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    await openTourItem(page, 1);
+    await expect(modal(page).close).toHaveAccessibleName("Close");
+    await modal(page).close.click();
+    await expect(modal(page).dialog).toBeHidden();
+  });
+
+  test("a click on the backdrop closes it, a click inside does not", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    await openTourItem(page, 1);
+    await modal(page).caption.click();
+    await modal(page).image.click();
+    await expect(modal(page).dialog).toBeVisible();
+    // The dialog is centred, so the corner of the viewport is the backdrop.
+    await page.mouse.click(4, 4);
+    await expect(modal(page).dialog).toBeHidden();
+  });
+
+  test("focus moves into the dialog on open and returns to the thumbnail on close", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    const { dialog } = modal(page);
+    for (const close of ["Escape", "button", "backdrop"] as const) {
+      const opener = page.locator(OPENERS).nth(1);
+      await opener.focus();
+      await page.keyboard.press("Enter");
+      await expect(dialog).toBeVisible();
+      expect(await dialog.evaluate((el) => el.contains(document.activeElement)), "focus is in the dialog").toBe(true);
+      if (close === "Escape") await page.keyboard.press("Escape");
+      else if (close === "button") await modal(page).close.click();
+      else await page.mouse.click(4, 4);
+      await expect(dialog).toBeHidden();
+      await expect(opener, `focus after ${close}`).toBeFocused();
+    }
+  });
+
+  test("focus stays in the dialog when an end of the tour disables the button that had it", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    const { dialog, next } = modal(page);
+    await openTourItem(page, 1);
+    await next.focus();
+    await page.keyboard.press("Enter");
+    await expect(next).toBeDisabled();
+    expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+    await page.keyboard.press("ArrowLeft");
+    await expect(modal(page).position).toHaveText("2 of 3");
+  });
+
+  test("the URL and the scroll position do not change", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    const url = page.url();
+    await page.locator(OPENERS).nth(1).scrollIntoViewIfNeeded();
+    await openTourItem(page, 1);
+    const scrollY = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press("ArrowRight");
+    await page.mouse.wheel(0, 600);
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("PageDown");
+    await expect(modal(page).dialog).toBeVisible();
+    expect(page.url()).toBe(url);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+    await page.keyboard.press("Escape");
+    await expect(modal(page).dialog).toBeHidden();
+    expect(page.url()).toBe(url);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+  });
+
+  test("a thumbnail is a button named by its alt or caption, and Enter and Space open it", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    const openers = page.locator(OPENERS);
+    await expect(openers.nth(1)).toHaveRole("button");
+    await expect(openers.nth(1)).toHaveAccessibleName("The sample panel.");
+    await expect(openers.nth(2)).toHaveAccessibleName("A list of sample notes.");
+    await expect(openers.nth(0)).toHaveRole("button");
+    await expect(openers.nth(0)).toHaveAccessibleName(/A recording of the sample board\./);
+    for (const key of ["Enter", "Space"]) {
+      await openers.nth(2).focus();
+      await page.keyboard.press(key);
+      await expect(modal(page).dialog, key).toBeVisible();
+      await expect(modal(page).position).toHaveText("3 of 3");
+      await page.keyboard.press("Escape");
+      await expect(modal(page).dialog).toBeHidden();
+    }
+  });
+
+  test("the first, full-width item has no modal", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    await expect(page.locator(".media-main [data-media-open]")).toHaveCount(0);
+    await page.locator(".media-main img").click();
+    await expect(modal(page).dialog).toBeHidden();
+  });
+
+  test("an image is as large as the viewport allows and no larger than its natural size", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    await openTourItem(page, 1);
+    const { image } = modal(page);
+    await expect.poll(() => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBe(1200);
+    const fit = async () => {
+      const box = (await image.boundingBox())!;
+      const viewport = page.viewportSize()!;
+      return { box, viewport };
+    };
+
+    // A short window: the height is the limit, so the image shrinks and keeps its 16:9 shape.
+    await page.setViewportSize({ width: 1440, height: 600 });
+    let { box, viewport } = await fit();
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+    expect(box.width / box.height).toBeCloseTo(1200 / 675, 1);
+    expect(box.height, "uses the height it has").toBeGreaterThan(viewport.height * 0.5);
+    expect(box.height).toBeLessThan(675);
+
+    // A phone: the width is the limit.
+    await page.setViewportSize({ width: 390, height: 800 });
+    ({ box, viewport } = await fit());
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+    expect(box.width / box.height).toBeCloseTo(1200 / 675, 1);
+    expect(box.width, "uses the width it has").toBeGreaterThan(viewport.width * 0.7);
+
+    // A large screen: the image stops at its natural size.
+    await page.setViewportSize({ width: 2560, height: 1600 });
+    ({ box } = await fit());
+    expect(box.width).toBeLessThanOrEqual(1200 + 0.5);
+    expect(box.width).toBeGreaterThan(1200 - 1);
+  });
+
+  test("the page has no sideways scroll with the dialog open on a phone", async ({ page, baseURL }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await openProduct(page, baseURL, "gizmo");
+    await openTourItem(page, 1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+
+  for (const theme of ["dark", "light"] as const) {
+    test(`follows the ${theme} theme: a panel on the surface token, a translucent backdrop`, async ({ page, baseURL }) => {
+      await openProduct(page, baseURL, "gizmo");
+      await page.evaluate((t) => document.documentElement.setAttribute("data-theme", t), theme);
+      await openTourItem(page, 1);
+      const { dialog } = modal(page);
+      const surface = await page.evaluate(() => {
+        const probe = document.createElement("div");
+        probe.style.backgroundColor = "var(--surface)";
+        document.body.append(probe);
+        const color = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        return color;
+      });
+      expect(await dialog.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(surface);
+      const backdrop = await dialog.evaluate((el) => getComputedStyle(el, "::backdrop").backgroundColor);
+      // Translucent: a colour with an alpha under 1.
+      const alpha = /\/\s*([\d.]+)\s*\)|rgba\([^)]*,\s*([\d.]+)\)/.exec(backdrop);
+      expect(alpha, `the backdrop colour ${backdrop} has an alpha`).not.toBeNull();
+      expect(Number(alpha![1] ?? alpha![2])).toBeLessThan(1);
+      expect(Number(alpha![1] ?? alpha![2])).toBeGreaterThan(0);
+    });
+  }
+});
+
+test.describe("tour modal: the video", () => {
+  for (const [preference, playsOnOpen] of [
+    ["no-preference", true],
+    ["reduce", false],
+  ] as const) {
+    test.describe(`with reducedMotion "${preference}"`, () => {
+      test.use({ reducedMotion: preference });
+
+      test(`${playsOnOpen ? "plays" : "does not play"} on open, muted and looped, with the pause button; it stops when the dialog closes`, async ({ page, baseURL }) => {
+        await openProduct(page, baseURL, "gizmo");
+        await openTourItem(page, 0);
+        const { video, toggle, close } = modal(page);
+        await expect(toggle).toBeVisible();
+        await expect(video).toHaveJSProperty("muted", true);
+        await expect(video).toHaveJSProperty("loop", true);
+        await expect(video).toHaveJSProperty("controls", false);
+        await expect(video).toHaveJSProperty("paused", !playsOnOpen);
+        await expect(toggle).toHaveAccessibleName(playsOnOpen ? /^Pause video:/ : /^Play video:/);
+        await toggle.click();
+        await expect(video).toHaveJSProperty("paused", playsOnOpen);
+        await toggle.click();
+        await expect(video).toHaveJSProperty("paused", !playsOnOpen);
+
+        const handle = await video.elementHandle();
+        if (!playsOnOpen) await toggle.click();
+        await expect(video).toHaveJSProperty("paused", false);
+        await close.click();
+        await expect(modal(page).dialog).toBeHidden();
+        await expect.poll(() => handle!.evaluate((el: HTMLVideoElement) => el.paused), "stopped on close").toBe(true);
+      });
+    });
+  }
+
+  test("stops when the dialog moves to another item", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    await openTourItem(page, 0);
+    const { video, next, image } = modal(page);
+    await expect(video).toHaveJSProperty("paused", false);
+    const handle = await video.elementHandle();
+    await next.click();
+    await expect(image).toHaveAttribute("src", "/assets/gizmo/assets/panel.png");
+    await expect(video).toHaveCount(0);
+    expect(await handle!.evaluate((el: HTMLVideoElement) => el.paused), "stopped on moving").toBe(true);
+  });
+
+  test("starts again when the dialog comes back to the video", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    await openTourItem(page, 1);
+    await page.keyboard.press("ArrowLeft");
+    await expect(modal(page).video).toHaveJSProperty("paused", false);
+  });
+});
+
+test.describe("tour modal without script", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("a thumbnail is a link to the full-size image", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    const opener = page.locator(OPENERS).nth(1);
+    await expect(opener).toHaveJSProperty("tagName", "A");
+    await expect(opener).toHaveAttribute("href", "/assets/gizmo/assets/panel.png");
+    await expect(opener).toHaveAccessibleName("The sample panel.");
+    await expect(page.locator(DIALOG)).toBeHidden();
+    await opener.click();
+    await expect(page).toHaveURL(/\/assets\/gizmo\/assets\/panel\.png$/);
+  });
+
+  test("the video's link goes to the video file", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    await expect(page.locator(OPENERS).nth(0)).toHaveAttribute("href", "/assets/gizmo/assets/demo.webm");
+  });
+});
+
 test.describe("page", () => {
   test("the latest version in the facts goes to the page's Releases section", async ({ page, baseURL }) => {
     await openProduct(page, baseURL, "widget");

@@ -44,7 +44,14 @@ describe("ProductMedia", () => {
     expect(img.getAttribute("src")).toBe("/assets/x/step.gif");
     expect(img.getAttribute("alt")).toBe("A step");
     expect(img.getAttribute("loading")).toBe("lazy");
-    expect(root.querySelectorAll("button[data-media-toggle]"), "a button for each video and none for an image").toHaveLength(2);
+    expect(
+      root.querySelectorAll(".media-main button[data-media-toggle], .media-tour button[data-media-toggle]"),
+      "a button for each video and none for an image",
+    ).toHaveLength(2);
+    // The dialog's video is a template for the script: it has no file and nothing in it plays.
+    const template = root.querySelector("dialog.media-modal template[data-modal-video]")!;
+    expect(template.querySelectorAll("video[src], video[autoplay]")).toEqual([]);
+    expect(template.querySelectorAll("button[data-media-toggle]")).toHaveLength(1);
   });
 
   it("has no tour for a single media item", async () => {

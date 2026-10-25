@@ -3,10 +3,11 @@
  * One MP4 or WebM file on the product page: muted, looped video with a
  * pause button (behaviour in lib/product-video.ts). The markup has no
  * `autoplay`: the script starts the video unless the visitor prefers reduced
- * motion. Without script the native controls stay.
+ * motion. Without script the native controls stay. A video with no `src` is a
+ * template: the media tour's dialog (ProductMedia.astro) sets it and starts it.
  */
 interface Props {
-  src: string;
+  src?: string;
   /** What the video shows. */
   label: string;
 }

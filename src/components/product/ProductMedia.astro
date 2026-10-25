@@ -4,6 +4,11 @@
  * others as a numbered tour (for an app, the screenshot tour of its console).
  * MP4 and WebM files play as muted, looping video with a pause button
  * (ProductVideo.astro); every other file is an image, GIFs included.
+ *
+ * A tour item opens full size in a native <dialog> (the script below): the
+ * image or video, its caption, its place in the tour, and previous and next.
+ * Each thumbnail is a link to the item's file, so without script it opens
+ * the file itself; the script turns the link into a button for the dialog.
  */
 import { isVideo } from "../../lib/product-media";
 import ProductVideo from "./ProductVideo.astro";
@@ -40,27 +45,197 @@ const [first, ...tour] = media;
     <section class="media-tour" aria-labelledby="media-tour-title">
       <h3 class="media-tour-title" id="media-tour-title">{tourTitle}</h3>
       <ol class="media-tour-list">
-        {tour.map((item, index) => (
-          <li>
-            <figure>
-              <div class="media-frame">
-                {isVideo(item.src) ? (
-                  <ProductVideo src={item.src} label={item.alt ?? item.caption} />
-                ) : (
-                  <img src={item.src} alt={item.alt ?? item.caption} loading="lazy" decoding="async" />
-                )}
-              </div>
-              <figcaption>
-                <span class="media-tour-step">{String(index + 2).padStart(2, "0")}</span>
-                {item.caption}
-              </figcaption>
-            </figure>
-          </li>
-        ))}
+        {tour.map((item, index) => {
+          const label = item.alt ?? item.caption;
+          const video = isVideo(item.src);
+          return (
+            <li
+              data-tour-item
+              data-tour-kind={video ? "video" : "image"}
+              data-tour-src={item.src}
+              data-tour-caption={item.caption}
+              data-tour-label={label}
+            >
+              <figure>
+                <div class="media-frame">
+                  {video ? (
+                    <>
+                      <ProductVideo src={item.src} label={label} />
+                      <a class="media-open media-expand" href={item.src} data-media-open aria-label={`Open full size: ${label}`}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />
+                        </svg>
+                      </a>
+                    </>
+                  ) : (
+                    <a class="media-open" href={item.src} data-media-open>
+                      <img src={item.src} alt={label} loading="lazy" decoding="async" />
+                    </a>
+                  )}
+                </div>
+                <figcaption>
+                  <span class="media-tour-step">{String(index + 2).padStart(2, "0")}</span>
+                  {item.caption}
+                </figcaption>
+              </figure>
+            </li>
+          );
+        })}
       </ol>
     </section>
   )
 }
+{
+  tour.length > 0 && (
+    <dialog class="media-modal" aria-label={tourTitle} data-media-modal>
+      <div class="media-modal-panel">
+        <div class="media-modal-bar">
+          <p class="media-modal-position" data-modal-position />
+          <button type="button" class="media-modal-button media-modal-close" data-modal-close autofocus>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M5 5l14 14M19 5L5 19" />
+            </svg>
+            Close
+          </button>
+        </div>
+        <div class="media-modal-stage" data-modal-stage />
+        <div class="media-modal-foot">
+          <p class="media-modal-caption" data-modal-caption aria-live="polite" />
+          <div class="media-modal-nav">
+            <button type="button" class="media-modal-button media-modal-step" data-modal-prev aria-label="Previous">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 5l-7 7 7 7" />
+              </svg>
+            </button>
+            <button type="button" class="media-modal-button media-modal-step" data-modal-next aria-label="Next">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <template data-modal-video>
+        <ProductVideo label="" />
+      </template>
+    </dialog>
+  )
+}
+
+<script>
+  import { tourPosition, tourStep } from "../../lib/media-tour";
+  import { REDUCED_MOTION_QUERY, startProductVideo } from "../../lib/product-video";
+
+  const dialog = document.querySelector<HTMLDialogElement>("[data-media-modal]");
+  if (dialog) {
+    const items = [...document.querySelectorAll<HTMLElement>("[data-tour-item]")];
+    const part = <T extends HTMLElement>(selector: string) => dialog.querySelector<T>(selector)!;
+    const stage = part("[data-modal-stage]");
+    const caption = part("[data-modal-caption]");
+    const position = part("[data-modal-position]");
+    const previous = part<HTMLButtonElement>("[data-modal-prev]");
+    const next = part<HTMLButtonElement>("[data-modal-next]");
+    const videoTemplate = part<HTMLTemplateElement>("template[data-modal-video]");
+    let current = 0;
+    let opener: HTMLElement | null = null;
+
+    /** Empty the stage; a video stops first. */
+    const clearStage = () => {
+      stage.querySelector("video")?.pause();
+      stage.replaceChildren();
+    };
+
+    const show = (index: number) => {
+      current = index;
+      const item = items[index];
+      const { tourKind, tourSrc, tourCaption, tourLabel } = item.dataset;
+      clearStage();
+      if (tourKind === "video") {
+        const wrapper = (videoTemplate.content.cloneNode(true) as DocumentFragment).firstElementChild as HTMLElement;
+        const video = wrapper.querySelector("video")!;
+        video.src = tourSrc!;
+        video.setAttribute("aria-label", tourLabel!);
+        stage.append(wrapper);
+        startProductVideo({
+          video,
+          button: wrapper.querySelector<HTMLButtonElement>("[data-media-toggle]")!,
+          name: tourLabel!,
+          reducedMotion: matchMedia(REDUCED_MOTION_QUERY).matches,
+        });
+      } else {
+        const image = document.createElement("img");
+        image.alt = tourLabel!;
+        image.decoding = "async";
+        image.src = tourSrc!;
+        stage.append(image);
+      }
+      caption.textContent = tourCaption!;
+      position.textContent = tourPosition(index, items.length);
+      const hadFocus = dialog.contains(document.activeElement) ? document.activeElement : null;
+      previous.disabled = tourStep(index, -1, items.length) === null;
+      next.disabled = tourStep(index, 1, items.length) === null;
+      // A disabled button cannot hold focus: the other way along the tour takes it.
+      if (hadFocus === previous && previous.disabled) next.focus();
+      else if (hadFocus === next && next.disabled) previous.focus();
+    };
+
+    const move = (delta: number) => {
+      const index = tourStep(current, delta, items.length);
+      if (index !== null) show(index);
+    };
+
+    const open = (index: number, from: HTMLElement) => {
+      opener = from;
+      show(index);
+      dialog.showModal();
+    };
+
+    // Esc, the close button and the backdrop all end in the dialog's `close` event.
+    dialog.addEventListener("close", () => {
+      clearStage();
+      opener?.focus();
+      opener = null;
+    });
+    part("[data-modal-close]").addEventListener("click", () => dialog.close());
+    previous.addEventListener("click", () => move(-1));
+    next.addEventListener("click", () => move(1));
+    dialog.addEventListener("click", (event) => {
+      // A click on the backdrop has the dialog itself as its target; so has a click on its border.
+      if (event.target !== dialog) return;
+      const box = dialog.getBoundingClientRect();
+      const outside =
+        event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
+      if (outside) dialog.close();
+    });
+    dialog.addEventListener("keydown", (event) => {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (event.key === "ArrowLeft") move(-1);
+      else if (event.key === "ArrowRight") move(1);
+      else return;
+      event.preventDefault();
+    });
+
+    // The thumbnails are links to the files; with script they are buttons that open the dialog.
+    items.forEach((item, index) => {
+      const link = item.querySelector<HTMLAnchorElement>("[data-media-open]")!;
+      link.setAttribute("role", "button");
+      link.setAttribute("aria-haspopup", "dialog");
+      link.addEventListener("click", (event) => {
+        // A click that asks for a new tab or window keeps the link.
+        if (event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        event.preventDefault();
+        open(index, link);
+      });
+      link.addEventListener("keydown", (event) => {
+        if (event.key !== " ") return;
+        event.preventDefault();
+        link.click();
+      });
+      // The video itself opens the dialog too, except its own pause button.
+      item.querySelector("video")?.addEventListener("click", () => open(index, link));
+    });
+  }
+</script>
 
 <style>
   .media-main {
@@ -70,6 +245,7 @@ const [first, ...tour] = media;
     margin: 0;
   }
   .media-frame {
+    position: relative;
     overflow: hidden;
     border: 1px solid var(--divider);
     border-radius: 10px;
@@ -84,6 +260,27 @@ const [first, ...tour] = media;
     margin-top: 10px;
     font-size: 13px;
     color: var(--text-faint);
+  }
+  .media-open {
+    display: block;
+    cursor: zoom-in;
+  }
+  .media-expand {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 999px;
+    color: var(--text);
+  }
+  .media-expand:hover {
+    background: var(--surface-2);
   }
   .media-tour {
     margin-top: 40px;
@@ -116,5 +313,106 @@ const [first, ...tour] = media;
     font-size: 12px;
     color: var(--accent);
     padding-top: 2px;
+  }
+
+  /*
+   * The tour's dialog. The page behind stays put while it is open. The stage
+   * holds script-made elements (an image, or ProductVideo's markup), so their
+   * rules are :global. An item is as large as the viewport allows, never past
+   * its natural size: --modal-chrome is the height of the bar and footer.
+   */
+  :global(html:has(.media-modal[open])) {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+  }
+  .media-modal {
+    --modal-chrome: 180px;
+    box-sizing: border-box;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    margin: auto;
+    padding: 0;
+    overflow: auto;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--divider);
+    border-radius: 10px;
+    box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.5);
+  }
+  .media-modal::backdrop {
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+  }
+  .media-modal-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 16px 16px;
+  }
+  .media-modal-bar,
+  .media-modal-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .media-modal-position {
+    margin: 0;
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .media-modal-caption {
+    margin: 0;
+    min-width: 0;
+    font-size: 14px;
+    color: var(--text-2);
+  }
+  .media-modal-nav {
+    display: flex;
+    flex: none;
+    gap: 8px;
+  }
+  .media-modal-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--divider);
+    border-radius: 999px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .media-modal-button:hover:not(:disabled) {
+    border-color: var(--accent);
+  }
+  .media-modal-button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .media-modal-step {
+    padding: 0;
+    width: 40px;
+  }
+  .media-modal-stage {
+    display: flex;
+    justify-content: center;
+  }
+  .media-modal-stage :global(img),
+  .media-modal-stage :global(video) {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: calc(100vw - 24px - 32px - 2px);
+    max-height: calc(100dvh - var(--modal-chrome));
+    border-radius: 6px;
+  }
+  .media-modal-stage :global(.media-video) {
+    display: inline-block;
   }
 </style>
