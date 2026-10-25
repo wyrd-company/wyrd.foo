@@ -1,7 +1,7 @@
 ---
 /*
  * The short facts list beside the hero: all kinds, status, latest version and
- * date, category and repository.
+ * date (a link to the page's Releases section), category and repository.
  */
 import type { Kind, Status } from "../../schema/index";
 import { KIND_LABELS } from "../../lib/kinds";
@@ -37,8 +37,10 @@ const { kinds, status, version, date, category, owner } = Astro.props;
   <div class="facts-row">
     <dt>Latest</dt>
     <dd data-fact="latest" class="facts-mono">
-      {version}
-      {date && <span class="facts-date"> · {formatReleaseDate(date)}</span>}
+      <a class="facts-latest" href="#releases">
+        {version}
+        {date && <span class="facts-date"> · {formatReleaseDate(date)}</span>}
+      </a>
     </dd>
   </div>
   <div class="facts-row">

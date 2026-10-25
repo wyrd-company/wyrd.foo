@@ -1,10 +1,12 @@
 ---
 /*
  * The docs version footer: "Docs 0.2.3 · for trowel 0.2.0". "Docs <version>"
- * links the docs changelog when the product publishes one.
+ * links the docs changelog when the product publishes one; "for <name>
+ * <version>" links the product's releases page.
  */
 import type { DocsProduct } from "../../lib/docs";
 import { changelogHref, versionLine } from "../../lib/docs-pages";
+import { productReleasesHref } from "../../lib/site";
 
 interface Props {
   product: DocsProduct;
@@ -16,7 +18,7 @@ const line = versionLine({ name: product.name, version: product.data.version, do
 <p class="docs-version" data-pagefind-ignore>
   {product.changelog ? <a href={changelogHref(product.key)}>{line.docs}</a> : <span>{line.docs}</span>}
   <span class="docs-version-sep" aria-hidden="true">·</span>
-  <span>{line.product}</span>
+  <a href={productReleasesHref(product.key)}>{line.product}</a>
 </p>
 
 <style>

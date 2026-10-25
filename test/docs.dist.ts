@@ -67,12 +67,15 @@ describe("docs built from the fixture content", () => {
     expect(page("docs/gizmo").querySelector('meta[http-equiv="refresh"]')?.getAttribute("content")).toBe("0; url=/docs/gizmo/getting-started");
   });
 
-  it("writes the version footer and links the docs changelog when there is one", () => {
+  it("writes the version footer, links the docs changelog when there is one, and the product version to its releases", () => {
     const gadget = page("docs/gadget/install").querySelector(".docs-version");
     expect(text(gadget?.text)).toBe("Docs 0.2.3 · for gadget 0.2.0");
-    expect(gadget?.querySelector("a")?.getAttribute("href")).toBe("/docs/gadget/changelog");
+    expect(gadget?.querySelectorAll("a").map((a) => [text(a.text), a.getAttribute("href")])).toEqual([
+      ["Docs 0.2.3", "/docs/gadget/changelog"],
+      ["for gadget 0.2.0", "/tools/gadget/releases"],
+    ]);
     expect(text(page("docs/gizmo/usage").querySelector(".docs-version")?.text)).toBe("Docs 0.1.0 · for gizmo 0.1.0");
-    expect(page("docs/gizmo/usage").querySelector(".docs-version a")).toBeNull();
+    expect(page("docs/gizmo/usage").querySelectorAll(".docs-version a").map((a) => a.getAttribute("href"))).toEqual(["/tools/gizmo/releases"]);
   });
 
   it("renders the docs changelog, and none for a product without one", () => {
@@ -110,10 +113,10 @@ describe("docs built from the fixture content", () => {
     expect(page("docs/gadget").querySelector("[data-pagefind-body]")).toBeNull();
   });
 
-  it("indexes the docs pages, the docs changelog and the product pages, not the redirects", () => {
+  it("indexes the docs pages, the docs changelog, the product pages and the releases pages, not the redirects", () => {
     const entry = JSON.parse(file("pagefind/pagefind-entry.json")) as { languages: Record<string, { page_count: number }> };
-    // 7 fixture pages, gadget's docs changelog and the 3 product pages (/tools/<key>).
-    expect(Object.values(entry.languages).map((l) => l.page_count)).toEqual([11]);
+    // 7 fixture pages, gadget's docs changelog, the 3 product pages (/tools/<key>), their 3 releases pages and /releases.
+    expect(Object.values(entry.languages).map((l) => l.page_count)).toEqual([15]);
   });
 
   it("gives a docs page of a product with no favicon or logo its monogram favicon and the site image", () => {

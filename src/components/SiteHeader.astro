@@ -12,8 +12,7 @@ import { nav, type NavItem } from "../lib/site";
 interface Props {
   /** The nav item for the current page, shown as current. */
   current?: NavItem;
-  /** Key and name of the page's product: search ranks its results first,
-   * and Releases goes to its product page. */
+  /** Key and name of the page's product: search ranks its results first. */
   product?: string;
   productName?: string;
 }
@@ -29,7 +28,7 @@ const { current, product, productName } = Astro.props;
     </a>
     <nav class="site-nav" aria-label="Site">
       {
-        nav(product).map((item) => (
+        nav().map((item) => (
           <a href={item.href} aria-current={item.id === current ? "page" : undefined}>
             {item.label}
           </a>

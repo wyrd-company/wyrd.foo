@@ -1,0 +1,30 @@
+---
+/*
+ * One release entry of a changelog, rendered (src/lib/latest-entries.ts): the
+ * body of its `## <version>` section, passed in the default slot. Its
+ * subsection headings ("Features", "Fixes") are labels, as in the full
+ * changelog.
+ */
+import ProductProse from "./ProductProse.astro";
+---
+
+<div class="release-entry">
+  <ProductProse>
+    <slot />
+  </ProductProse>
+</div>
+
+<style>
+  .release-entry :global(.product-prose h3) {
+    margin: 1.6em 0 0.4em;
+    font-family: var(--font-code);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .release-entry :global(.product-prose > h3:first-child) {
+    margin-top: 0;
+  }
+</style>

@@ -89,6 +89,17 @@ describe("home page catalog", () => {
 });
 
 describe("home page recent releases", () => {
+  it("links each entry to its product's releases page, then all releases", () => {
+    const box = root.querySelector("#releases")!;
+    expect(box.querySelectorAll("[data-release-key]").map((r) => r.getAttribute("href"))).toEqual([
+      "/tools/beacon/releases",
+      "/tools/alpha-cli/releases",
+      "/tools/cinder-mcp/releases",
+    ]);
+    expect(box.querySelector(".home-releases-all")?.getAttribute("href")).toBe("/releases");
+    expect(box.querySelector(".home-releases-all")?.text.trim()).toBe("All releases →");
+  });
+
   it("lists products newest first and leaves out feature entries", () => {
     const releases = root.querySelectorAll("#releases [data-release-key]").map((r) => r.getAttribute("data-release-key"));
     expect(releases).toEqual(["beacon", "alpha-cli", "cinder-mcp"]);

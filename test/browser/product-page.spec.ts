@@ -1,8 +1,9 @@
 /*
  * The product pages in a browser, built from the fixture content in
  * test/fixtures/product-content (`pnpm build:product-fixture`): platform tabs,
- * method pills and kind tabs, the arrow keys, Copy, the header's Releases
- * link, the theme's logo, and no sideways scroll on a phone.
+ * method pills and kind tabs, the arrow keys, Copy, the Releases links, the
+ * releases pages in each theme, the theme's logo, and no sideways scroll on a
+ * phone.
  */
 import { expect, test, type Page } from "@playwright/test";
 import { openPage, store } from "./support";
@@ -307,20 +308,33 @@ test.describe("video without script", () => {
 });
 
 test.describe("page", () => {
-  test("the header's Releases link goes to the page's Releases section", async ({ page, baseURL }) => {
+  test("the latest version in the facts goes to the page's Releases section", async ({ page, baseURL }) => {
     await openProduct(page, baseURL, "widget");
-    await page.locator(".site-nav a", { hasText: "Releases" }).click();
+    await page.locator('[data-fact="latest"] a').click();
     await page.waitForURL(/\/tools\/widget\/?#releases$/);
     await expect(page.locator("#releases")).toBeInViewport();
   });
 
-  test("the header's Releases link goes to the Releases section, not to a README heading of that name", async ({ page, baseURL }) => {
+  test("the latest version goes to the Releases section, not to a README heading of that name", async ({ page, baseURL }) => {
     await openProduct(page, baseURL, "lantern");
     await expect(page.locator("#readme .product-prose h4", { hasText: "Releases" })).toHaveCount(1);
-    await page.locator(".site-nav a", { hasText: "Releases" }).click();
+    await page.locator('[data-fact="latest"] a').click();
     await page.waitForURL(/\/tools\/lantern\/?#releases$/);
     await expect(page.locator(":target")).toHaveJSProperty("tagName", "SECTION");
     await expect(page.locator("section#releases")).toBeInViewport();
+  });
+
+  test("the header's Releases link goes to /releases, and All releases to the product's releases page", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "widget");
+    await page.locator(".site-nav a", { hasText: "Releases" }).click();
+    await page.waitForURL(/\/releases\/?$/);
+    await expect(page.locator('.site-nav a[aria-current="page"]')).toHaveText("Releases");
+    await page.locator('[data-release-entry="widget"] .releases-item-head').click();
+    await page.waitForURL(/\/tools\/widget\/releases\/?$/);
+    await expect(page.locator("[data-product-releases=widget] .release-log")).toBeVisible();
+    await openProduct(page, baseURL, "widget");
+    await page.locator("#releases a", { hasText: "All releases" }).click();
+    await page.waitForURL(/\/tools\/widget\/releases\/?$/);
   });
 
   test("a link in a README to one of its headings goes to that heading", async ({ page, baseURL }) => {
@@ -343,6 +357,15 @@ test.describe("page", () => {
     });
   }
 
+  test("no releases page scrolls sideways on a phone", async ({ page, baseURL }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const path of ["/releases/", ...PRODUCTS.map((key) => `/tools/${key}/releases/`)]) {
+      await openPage(page, baseURL, path);
+      const width = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
+      expect(width.scroll, path).toBe(width.client);
+    }
+  });
+
   test("no product page scrolls sideways on a phone", async ({ page, baseURL }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     for (const key of PRODUCTS) {
@@ -351,4 +374,62 @@ test.describe("page", () => {
       expect(width.scroll, key).toBe(width.client);
     }
   });
+});
+
+type Rgba = [number, number, number, number];
+const rgba = (css: string): Rgba => {
+  const [r, g, b, a = 1] = css.match(/[\d.]+/g)!.map(Number);
+  return [r, g, b, a];
+};
+
+/** The colour that `layers` show, top layer first, each over the next. */
+function composite(layers: string[]): Rgba {
+  return layers
+    .map(rgba)
+    .reverse()
+    .reduce<Rgba>((under, [r, g, b, a]) => [r * a + under[0] * (1 - a), g * a + under[1] * (1 - a), b * a + under[2] * (1 - a), 1], [255, 255, 255, 1]);
+}
+
+/** The contrast ratio of two opaque colours. */
+function contrast(fg: Rgba, bg: Rgba): number {
+  const luminance = ([r, g, b]: Rgba) => {
+    const [lr, lg, lb] = [r, g, b].map((v) => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * lr + 0.7152 * lg + 0.0722 * lb;
+  };
+  const [hi, lo] = [luminance(fg), luminance(bg)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+test.describe("releases pages in each theme", () => {
+  for (const theme of ["dark", "light"] as const) {
+    test(`/releases and a product's releases page read in the ${theme} theme`, async ({ page, baseURL }) => {
+      for (const [path, card, texts] of [
+        ["/releases/", '[data-release-entry="widget"]', [".release-entry-name", ".release-entry-meta", ".release-entry h3", ".release-entry li"]],
+        ["/tools/widget/releases/", "[data-product-releases=widget]", [".release-version", ".release-log h4", ".release-log h5", ".release-log li"]],
+      ] as const) {
+        await openPage(page, baseURL, path);
+        await store(page, theme);
+        await page.reload();
+        await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+        await expect(page.locator(`${card} .product-mark img[src$="/${theme === "dark" ? "logo-dark.svg" : "logo.svg"}"]`).first()).toBeVisible();
+        for (const selector of texts) {
+          // The text colour, and the backgrounds behind it up to the first opaque one, nearest first.
+          const colours = await page.locator(`${card} ${selector}`).first().evaluate((el) => {
+            const layers: string[] = [];
+            for (let node: Element | null = el; node; node = node.parentElement) {
+              const bg = getComputedStyle(node).backgroundColor;
+              if (bg !== "rgba(0, 0, 0, 0)") layers.push(bg);
+              if (/^rgb\(/.test(bg)) break;
+            }
+            return { fg: getComputedStyle(el).color, layers };
+          });
+          const ratio = contrast(composite([colours.fg, ...colours.layers]), composite(colours.layers));
+          expect(ratio, `${path} ${selector} ${colours.fg} on ${colours.layers.join(" over ")}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    });
+  }
 });

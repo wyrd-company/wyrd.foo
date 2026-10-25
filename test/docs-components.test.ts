@@ -80,7 +80,7 @@ describe("DocsHeader", () => {
   it("ranks the product in search and links its releases and repo", async () => {
     const root = await render(DocsHeader, { product: sectioned, products, section: "Guides" });
     expect(root.querySelector("dialog.wsearch")?.getAttribute("data-product")).toBe("gadget");
-    expect(root.querySelector(".docs-releases")?.getAttribute("href")).toBe("/tools/gadget#releases");
+    expect(root.querySelector(".docs-releases")?.getAttribute("href")).toBe("/releases");
     expect(root.querySelector(".docs-github")?.getAttribute("href")).toBe("https://github.com/example-org/things");
   });
 });
@@ -135,9 +135,11 @@ describe("DocsVersionFooter", () => {
     expect(root.querySelector(".docs-version a")?.getAttribute("href")).toBe("/docs/gadget/changelog");
   });
 
-  it("writes the docs version as plain text when there is no changelog", async () => {
+  it("writes the docs version as plain text when there is no changelog, and links the product version to its releases", async () => {
     const root = await render(DocsVersionFooter, { product: flat });
-    expect(root.querySelector(".docs-version a")).toBeNull();
+    expect(root.querySelectorAll(".docs-version a").map((a) => [a.text, a.getAttribute("href")])).toEqual([
+      ["for gizmo 0.2.0", "/tools/gizmo/releases"],
+    ]);
     expect(root.querySelector(".docs-version")?.text.replace(/\s+/g, " ").trim()).toBe("Docs 0.2.3 · for gizmo 0.2.0");
   });
 });

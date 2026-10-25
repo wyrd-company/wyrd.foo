@@ -1,7 +1,7 @@
 # Redesign: the wyrd.foo v2 site
 
 This document is the design of the wyrd.foo v2 site: theme, home page, product
-page, docs and search. The mockups are on the canvas
+page, releases, docs and search. The mockups are on the canvas
 <https://claude.ai/artifact/5PBQBYLMokPDzwV6nm8hsH> (page "Combined · Wyrd").
 The data contract and the publisher are in
 [`PUBLISHING-PROPOSAL.md`](PUBLISHING-PROPOSAL.md). The delivery plan is in
@@ -44,10 +44,9 @@ repo (for example each feature in the devcontainers repo). Its kinds are
   self-hosted.
 - **Header:** the page background with a 1px blue line along the bottom, in
   both modes. Left: a square "W" tile and the `wyrd/tools` wordmark in blue.
-  Then nav (Catalog, Docs, Releases), search, theme toggle, GitHub. On a
-  product page and its docs pages, Releases goes to the product page's
-  Releases section (`/tools/<key>#releases`); on every other page it goes to
-  the home page's Recent releases list (`/#releases`).
+  Then nav (Catalog, Docs, Releases), search, theme toggle, GitHub. Releases
+  goes to `/releases` on every page, and is the current item on `/releases`
+  and on `/tools/<key>/releases`.
 - **Code blocks** are dark in both modes.
 - Every text colour meets a 4.5:1 contrast ratio on its background.
 
@@ -72,8 +71,8 @@ holds the head, the header and the theme toggle for every page.
 ## Product marks
 
 Every product shows a square mark in catalog rows, the featured card, Recent
-releases entries, the product page hero and the product switcher in the docs
-header.
+releases entries, `/releases` entries, the product page hero, the product's
+releases page and the product switcher in the docs header.
 
 - **Logo.** A product's optional `logo` is a square SVG. An optional
   `logo-dark` is the mark for the dark theme, for a mark that does not read
@@ -85,9 +84,10 @@ header.
 
 ## Favicon and social image
 
-The product page and every docs page of a product use that product's
-favicon (`link rel="icon"`) and social image (`og:image`, `twitter:image`).
-The shared head writes these tags for each page.
+The product page, the product's releases page and every docs page of a
+product use that product's favicon (`link rel="icon"`) and social image
+(`og:image`, `twitter:image`). The shared head writes these tags for each
+page.
 
 - `favicon` is an SVG or PNG asset in the tool repo. When a product has no
   favicon, the page uses its logo; when it has no logo, the page uses its
@@ -127,8 +127,10 @@ no `lastmod`.
      into the HTML as the default, so the page has a featured product
      without JavaScript.
    - Recent releases (`#releases`): each entry is the mark and the name on
-     one line (long names wrap) with "kind · version · date" underneath.
-     Feature entries are not listed.
+     one line (long names wrap) with "kind · version · date" underneath, and
+     links to the product's releases page (`/tools/<key>/releases`). Feature
+     entries are not listed. An "All releases →" link to `/releases` ends the
+     list.
 3. **Catalog** with kind tabs (All, CLIs, MCP servers, Apps, Dev container
    features, Dev container images) and a filter box. A product shows under
    the tab of each of its kinds, and once under All. Each feature entry is
@@ -146,7 +148,8 @@ In this order:
 1. **Hero**: mark, name, tagline, description, the default install command
    of the primary kind with Copy, then "Read the docs", "Star on GitHub" and
    an "Other install methods ↓" link. A short facts list on the right: all
-   kinds, status, latest version and date, category, repository.
+   kinds, status, latest version and date, category, repository. The latest
+   version and date link to the page's Releases section (`#releases`).
 2. **Media**: the first media item on its own full-width row, with its
    caption; the other items follow as a numbered tour. An MP4 or WebM file
    shows as a muted, looping video with a Pause/Play button over its
@@ -159,8 +162,10 @@ In this order:
    (for example "Install" for an app and "Dev container" for a feature). The
    block for each kind is in "Install blocks by kind" below.
 5. **Documentation**: a map of the docs sections and their pages.
-6. **Releases** (`#releases`): the product's changelog, from its release
-   unit.
+6. **Releases** (`#releases`): the latest release (version, date and its
+   GitHub Release) and the latest entry of the product's changelog, from its
+   release unit, then an "All releases →" link to the product's releases page
+   when it has a changelog.
 
 Every product page has highlights and media, except the pages of feature
 entries. Docs pages are optional. A product with no docs pages
@@ -201,9 +206,31 @@ The README and the changelog keep their text. Their headings nest under the
 section's heading: the hero name is the page's only `<h1>`, the top level of
 each document becomes an `<h3>`, each deeper level moves down by the same
 amount, and nothing goes past `<h6>`. Each embedded heading id is prefixed
-with `readme--` or `changelog--`, and a link in the document to one of its
-headings follows, so a heading named "Releases" cannot take `#releases` from
-the section. Docs pages render as they do from their Markdown.
+with `readme--` (the README), `changelog--` (the full changelog) or
+`changelog--<key>--` (a changelog entry), and a link in the document to one
+of its headings follows, so a heading named "Releases" cannot take
+`#releases` from the section. Docs pages render as they do from their
+Markdown.
+
+## Releases
+
+A product's changelog is its release unit's `CHANGELOG.md`: a title, then one
+`## <version>` section per release, newest first, with `###` subsections
+(Breaking, Features, Fixes) and an optional "Earlier releases" line after the
+last section. Each `## <version>` section is a **changelog entry**; the first
+one is the **latest entry**. The site splits a changelog into entries at its
+level-two (`##`) headings, and renders each entry through the same Markdown
+pipeline and styles as the full changelog.
+
+- **`/releases`**: one entry per product that has a release and a changelog,
+  newest release first. Each entry is the product's mark, name and "kind ·
+  version · date", linked to the product's releases page, then its latest
+  entry. Products without a release or without a changelog are not listed,
+  so a feature entry shows once its unit has a changelog.
+- **`/tools/<key>/releases`**: one page for every product. The breadcrumb
+  (Catalog / category / product / Releases), the product's mark and name, and
+  the product's favicon and social image, as on its product page; then the
+  latest release and the product's full changelog, or "No releases yet."
 
 ## Docs (`/docs/<key>/<slug>`)
 
@@ -211,8 +238,8 @@ the section. Docs pages render as they do from their Markdown.
 product's first page in reading order.
 
 - **Sticky header** in two rows: wordmark, product switcher (with each
-  product's mark), search scoped to the product, a "Releases" link to the
-  product page's Releases section (`/tools/<key>#releases`), GitHub; then
+  product's mark), search scoped to the product, a "Releases" link to
+  `/releases`, GitHub; then
   section tabs (for example Get started, Authoring, Using templates).
   Products without sections get no tab row. A section tab opens the
   section's first page.
@@ -230,7 +257,8 @@ product's first page in reading order.
   on the repo's default branch, under the product's `docs-path`).
 - **Version footer**: "Docs 0.2.3 · for trowel 0.2.0", from the product's
   `docs-version` and `version`. "Docs 0.2.3" links the docs unit changelog
-  at `/docs/<key>/changelog` when the product publishes one. The page slug
+  at `/docs/<key>/changelog` when the product publishes one; "for trowel
+  0.2.0" links the product's releases page (`/tools/<key>/releases`). The page slug
   `changelog` is reserved for it, in any letter case. The slug `index` is
   reserved too, in any letter case, because `/docs/<key>` is the product's
   docs landing redirect and a page at `/docs/<key>/index` would serve that
@@ -265,7 +293,8 @@ origin.
 Search is Pagefind (`src/components/Search.astro`).
 
 - The dialog uses the theme tokens.
-- Docs pages and product pages are indexed with a `product` filter. Results
+- Docs pages, product pages and product releases pages are indexed with a
+  `product` filter; `/releases` is indexed with none. Results
   from the product whose page you are on rank first; results from other
   products still show.
 - A `kind` filter holds every kind of the page's product, and the dialog

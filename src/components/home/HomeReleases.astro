@@ -1,10 +1,12 @@
 ---
 /*
  * Recent releases (#releases): each entry is the product's mark and name,
- * with "kind · version · date" underneath. Feature entries are not listed.
+ * with "kind · version · date" underneath, linked to the product's releases
+ * page; then a link to every release. Feature entries are not listed.
  */
 import ProductMark from "../ProductMark.astro";
-import { formatDate, KIND_LABEL, productUrl, type RecentRelease } from "../../lib/home";
+import { formatDate, KIND_LABEL, type RecentRelease } from "../../lib/home";
+import { productReleasesHref, RELEASES_HREF } from "../../lib/site";
 
 interface Props {
   releases: RecentRelease[];
@@ -21,7 +23,7 @@ const { releases } = Astro.props;
       <ol class="home-releases-list">
         {releases.map((release) => (
           <li>
-            <a class="home-release" href={`${productUrl(release.key)}#releases`} data-release-key={release.key}>
+            <a class="home-release" href={productReleasesHref(release.key)} data-release-key={release.key}>
               <ProductMark name={release.name} logo={release.logo} logoDark={release.logoDark} size="row" />
               <span class="home-release-name">{release.name}</span>
               <span class="home-release-meta">
@@ -34,6 +36,7 @@ const { releases } = Astro.props;
       </ol>
     )
   }
+  <a class="home-releases-all" href={RELEASES_HREF}>All releases <span aria-hidden="true">→</span></a>
 </aside>
 
 <style>
@@ -90,6 +93,13 @@ const { releases } = Astro.props;
   .home-release-meta {
     font-size: 12.5px;
     color: var(--text-faint);
+  }
+  .home-releases-all {
+    margin-top: auto;
+    padding: 12px 0 6px;
+    border-top: 1px solid var(--divider);
+    font-size: 13.5px;
+    font-weight: 500;
   }
   .home-releases-empty {
     margin: 8px 0;

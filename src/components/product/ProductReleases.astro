@@ -1,27 +1,35 @@
 ---
 /*
- * The Releases section: the latest release (version, date and its GitHub
- * Release), then the release unit's changelog, passed in the default slot.
+ * A product's releases: the latest release (version, date and its GitHub
+ * Release), then the changelog passed in the default slot. On the product
+ * page the slot holds the latest changelog entry, followed by a link to all
+ * releases; on the product's releases page it holds the full changelog.
  */
 import ProductProse from "./ProductProse.astro";
+import ReleaseEntry from "./ReleaseEntry.astro";
 import { formatReleaseDate } from "../../lib/product-facts";
 
 interface Props {
   release?: { version: string; date: Date; url?: string };
-  /** True when the default slot holds a changelog. */
-  changelog: boolean;
+  /** What the default slot holds: the latest changelog entry, the full changelog, or nothing. */
+  changelog?: "latest" | "full";
+  /** The version text of the latest entry, shown when there is no release data. */
+  entryVersion?: string;
+  /** The "All releases" link after the latest entry. */
+  allHref?: string;
 }
-const { release, changelog } = Astro.props;
+const { release, changelog, entryVersion, allHref } = Astro.props;
+const latest = release ?? (changelog === "latest" && entryVersion ? { version: entryVersion } : undefined);
 ---
 
 {
-  release && (
+  latest && (
     <div class="release-latest" data-release-latest>
       <span class="release-label">Latest</span>
-      <span class="release-version">{release.version}</span>
-      <time datetime={formatReleaseDate(release.date)}>{formatReleaseDate(release.date)}</time>
-      {release.url && (
-        <a class="release-link" href={release.url}>
+      <span class="release-version">{latest.version}</span>
+      {"date" in latest && <time datetime={formatReleaseDate(latest.date)}>{formatReleaseDate(latest.date)}</time>}
+      {"url" in latest && latest.url && (
+        <a class="release-link" href={latest.url}>
           Release notes on GitHub <span aria-hidden="true">↗</span>
         </a>
       )}
@@ -29,14 +37,25 @@ const { release, changelog } = Astro.props;
   )
 }
 {
-  changelog ? (
+  changelog === "full" ? (
     <div class="release-log">
       <ProductProse>
         <slot />
       </ProductProse>
     </div>
+  ) : changelog === "latest" ? (
+    <>
+      <ReleaseEntry>
+        <slot />
+      </ReleaseEntry>
+      {allHref && (
+        <a class="release-all" href={allHref}>
+          All releases <span aria-hidden="true">→</span>
+        </a>
+      )}
+    </>
   ) : (
-    !release && <p class="release-none">No releases yet.</p>
+    !latest && <p class="release-none">No releases yet.</p>
   )
 }
 
@@ -71,6 +90,12 @@ const { release, changelog } = Astro.props;
   }
   .release-link {
     margin-left: auto;
+    font-weight: 500;
+  }
+  .release-all {
+    display: inline-block;
+    margin-top: 24px;
+    font-size: 14px;
     font-weight: 500;
   }
   .release-none {

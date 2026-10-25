@@ -1,19 +1,21 @@
-/* Site-wide constants and navigation: the site name and description, and the header nav items. */
+/* Site-wide constants and navigation: the site name and description, the header nav items and the releases pages. */
 
 export const SITE_NAME = "Wyrd Tools";
 export const SITE_DESCRIPTION = "Single-purpose tools for developers and the agents that work alongside them.";
 
 export type NavItem = "catalog" | "docs" | "releases";
 
-/**
- * The header nav. On a product page and its docs pages (`product` is the
- * product key), Releases goes to the product page's Releases section; on
- * every other page, to the home page's Recent releases list.
- */
-export function nav(product?: string): { id: NavItem; label: string; href: string }[] {
+/** Every product's latest release (REDESIGN.md, "Releases"). */
+export const RELEASES_HREF = "/releases";
+
+/** One product's releases page: its full changelog. */
+export const productReleasesHref = (key: string) => `/tools/${key}/releases`;
+
+/** The header nav. Releases goes to /releases on every page. */
+export function nav(): { id: NavItem; label: string; href: string }[] {
   return [
     { id: "catalog", label: "Catalog", href: "/#catalog" },
     { id: "docs", label: "Docs", href: "/docs/" },
-    { id: "releases", label: "Releases", href: product ? `/tools/${product}#releases` : "/#releases" },
+    { id: "releases", label: "Releases", href: RELEASES_HREF },
   ];
 }

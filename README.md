@@ -43,7 +43,9 @@ src/
 ├── components/              # shared, home, product and docs components
 └── pages/
     ├── index.astro          # front-page catalog
+    ├── releases.astro       # every product's latest release
     ├── tools/[key].astro    # product pages
+    ├── tools/[key]/releases.astro  # each product's full changelog
     └── docs/[key]/          # docs pages
 publisher/                   # the publisher core: local mode and validation
 ```
@@ -94,8 +96,8 @@ task validate:repo -- ../gitpr --ref wyrd-foo-v2  # one ref of a checkout
 
 Behaviour that only a real browser shows (the theme before the first paint, the
 toggle, the system preference, the home page's tabs, filter, Copy and featured
-card, the product page's sections for each kind, and the docs pages' sticky
-header and "On this page") is checked with
+card, the product page's sections for each kind, the releases pages in each
+theme, and the docs pages' sticky header and "On this page") is checked with
 [Playwright Test](https://playwright.dev/docs/test-intro) in `test/browser/`.
 The suite serves the built site (`dist/`) with `astro preview` on a free port,
 and stops the server when the run ends, however it ends. The home, docs and

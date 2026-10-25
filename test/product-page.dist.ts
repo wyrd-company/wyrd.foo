@@ -48,14 +48,12 @@ describe("product pages from the fixture content", () => {
     for (const key of PRODUCTS) productPage(key);
   });
 
-  it("gives each page its hero, facts and the Releases section the header links to", () => {
+  it("gives each page its hero, facts and the Releases section", () => {
     for (const key of PRODUCTS) {
       const root = productPage(key);
       expect(root.querySelector("h1.hero-name")).not.toBeNull();
       expect(root.querySelector("dl.facts"), key).not.toBeNull();
       expect(root.querySelector("section#releases"), key).not.toBeNull();
-      const releases = root.querySelectorAll(".site-nav a").find((a) => text(a) === "Releases");
-      expect(releases?.getAttribute("href"), key).toBe(`/tools/${key}#releases`);
     }
   });
 
@@ -84,8 +82,8 @@ describe("product pages from the fixture content", () => {
     const entry = JSON.parse(readFileSync(join(DIST, "pagefind", "pagefind-entry.json"), "utf8")) as {
       languages: Record<string, { page_count: number }>;
     };
-    // 7 product pages and the 8 fixture docs pages (widget 4, gizmo 2, sprocket 1, harbor 1).
-    expect(Object.values(entry.languages).map((l) => l.page_count)).toEqual([PRODUCTS.length + 8]);
+    // 7 product pages, their 7 releases pages, /releases and the 8 fixture docs pages (widget 4, gizmo 2, sprocket 1, harbor 1).
+    expect(Object.values(entry.languages).map((l) => l.page_count)).toEqual([2 * PRODUCTS.length + 1 + 8]);
   });
 
   it("serves every image, video and icon the pages use", () => {
@@ -292,11 +290,23 @@ describe("documentation", () => {
 });
 
 describe("releases", () => {
-  it("shows the latest release with its GitHub Release, then the code unit changelog", () => {
+  it("shows the latest release with its GitHub Release, then only the latest changelog entry", () => {
     const releases = productPage("widget").querySelector("#releases")!;
     expect(text(releases.querySelector("[data-release-latest] .release-version"))).toBe("1.4.0");
     expect(releases.querySelector(".release-link")?.getAttribute("href")).toBe("https://github.com/example-org/widget/releases/tag/1.4.0");
-    expect(texts(releases, ".release-log h4")).toEqual(["1.4.0 - 2026-09-30", "1.3.1 - 2026-08-12"]);
+    expect(releases.querySelector(".release-log")).toBeNull();
+    expect(texts(releases, ".release-entry :is(h3, h4, h5, h6)")).toEqual(["Features"]);
+    expect(text(releases.querySelector(".release-entry"))).toContain("Write the plan as one JSON document with --json.");
+    expect(text(releases)).not.toContain("Keep the input order");
+  });
+
+  it("leaves the intro, the older entries and the Earlier releases line to the releases page", () => {
+    const releases = text(productPage("gadget").querySelector("#releases"));
+    expect(releases).toContain("Show the queue depth in the console.");
+    expect(releases).toContain("Keep the console open when a queue empties.");
+    for (const older of ["Each released version", "Start the console with one command.", "Earlier releases"]) {
+      expect(releases).not.toContain(older);
+    }
   });
 
   it("shows the version with no date, and no releases, for a product with no release data", () => {
@@ -309,7 +319,7 @@ describe("releases", () => {
   it("shows only the latest release when the product has no changelog", () => {
     const releases = productPage("gizmo").querySelector("#releases")!;
     expect(text(releases.querySelector(".release-version"))).toBe("2.1.0");
-    expect(releases.querySelector(".release-log")).toBeNull();
+    expect(releases.querySelector(".release-log, .release-entry")).toBeNull();
   });
 });
 
@@ -347,11 +357,11 @@ describe("feature entry page", () => {
     expect(texts(productPage("beacon"), "#readme .product-prose h3, #readme .product-prose h4")).toEqual(["Beacon", "Usage"]);
   });
 
-  it("shows the release from the tag, with no GitHub Release link, and the unit changelog", () => {
+  it("shows the release from the tag, with no GitHub Release link, and the unit changelog's latest entry", () => {
     const releases = root().querySelector("#releases")!;
     expect(text(releases.querySelector(".release-version"))).toBe("1.2.0");
     expect(releases.querySelector(".release-link")).toBeNull();
-    expect(texts(releases, ".release-log h4")).toEqual(["1.2.0 - 2026-10-05"]);
+    expect(texts(releases, ".release-entry h3")).toEqual(["Features"]);
   });
 });
 
@@ -381,14 +391,8 @@ describe("embedded headings", () => {
   it("moves each deeper level down by the same amount, and none past h6", () => {
     const readme = embedded(productPage("lantern"), "readme");
     expect(readme.map((h) => `${h.tagName} ${text(h)}`)).toEqual(["H3 Lantern", "H4 Example usage", "H4 Options", "H4 Releases", "H4 Notes"]);
-    const changelog = embedded(productPage("widget"), "releases");
-    expect(changelog.map((h) => `${h.tagName} ${text(h)}`)).toEqual([
-      "H3 Changelog",
-      "H4 1.4.0 - 2026-09-30",
-      "H5 Features",
-      "H4 1.3.1 - 2026-08-12",
-      "H5 Fixes",
-    ]);
+    const changelog = embedded(productPage("gadget"), "releases");
+    expect(changelog.map((h) => `${h.tagName} ${text(h)}`)).toEqual(["H3 Features", "H3 Fixes"]);
     for (const key of PRODUCTS) {
       for (const section of ["readme", "releases"]) {
         for (const heading of embedded(productPage(key), section)) expect(level(heading), `${key} ${section}`).toBeLessThanOrEqual(6);
@@ -414,7 +418,7 @@ describe("embedded headings", () => {
         .map((el) => el.id);
       for (const heading of root.querySelectorAll(".product-prose :is(h1, h2, h3, h4, h5, h6)[id]")) {
         expect(own, `${key}: #${heading.id}`).not.toContain(heading.id);
-        expect(heading.id, key).toMatch(/^(readme|changelog)--./);
+        expect(heading.id, key).toMatch(new RegExp(`^(readme|changelog--${key})--.`));
       }
     }
   });

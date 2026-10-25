@@ -12,6 +12,7 @@ import Search from "../Search.astro";
 import ThemeToggle from "../ThemeToggle.astro";
 import type { DocsProduct } from "../../lib/docs";
 import { docsHome, pageHref } from "../../lib/docs-pages";
+import { RELEASES_HREF } from "../../lib/site";
 
 interface Props {
   product: DocsProduct;
@@ -62,7 +63,7 @@ const switcherId = "docs-switcher";
     </div>
     <div class="docs-header-tools">
       <Search product={product.key} productName={product.name} />
-      <a class="docs-releases" href={`/tools/${product.key}#releases`}>Releases</a>
+      <a class="docs-releases" href={RELEASES_HREF}>Releases</a>
       <ThemeToggle />
       <a class="docs-github" href={`https://github.com/${product.data.owner}`} aria-label={`${product.name} on GitHub`}>
         <GitHub size={18} />

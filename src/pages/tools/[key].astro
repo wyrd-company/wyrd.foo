@@ -1,7 +1,8 @@
 ---
 /*
  * The product page, /tools/<key> (REDESIGN.md, "Product page"): hero and
- * facts, media, highlights, install, documentation and releases. A feature
+ * facts, media, highlights, install, documentation and the latest release.
+ * The product's full changelog is on /tools/<key>/releases. A feature
  * entry gets the abbreviated page: hero, the devcontainer.json snippet, its
  * README as it is, and releases.
  */
@@ -20,6 +21,8 @@ import SiteLayout from "../../layouts/SiteLayout.astro";
 import { docsMap } from "../../lib/docs-map";
 import { heroInstall } from "../../lib/install-blocks";
 import { productAssetUrl } from "../../lib/product-assets";
+import { productHead } from "../../lib/product-head";
+import { productReleasesHref } from "../../lib/site";
 
 export async function getStaticPaths() {
   const products = await getCollection("products");
@@ -31,19 +34,13 @@ const key = entry.id;
 const tool = entry.data;
 const asset = (path: string | undefined) => (path === undefined ? undefined : productAssetUrl(key, path));
 
-const head = {
-  key,
-  name: tool.name,
-  logo: asset(tool.logo),
-  favicon: asset("favicon" in tool ? tool.favicon : undefined),
-  socialImage: asset("social-image" in tool ? tool["social-image"] : undefined),
-};
+const head = productHead(key, tool);
 const kinds = tool.kinds.map((block) => block.kind);
 const latest = tool.release ?? { version: tool.version, date: undefined };
 
 // The lookups filter the collection: a product with no changelog or README is expected.
-const [changelog] = await getCollection("codeChangelogs", (file) => file.id === key);
-const Changelog = changelog ? (await render(changelog)).Content : undefined;
+const [latestEntry] = await getCollection("latestReleaseEntries", (file) => file.id === key);
+const LatestEntry = latestEntry ? (await render(latestEntry)).Content : undefined;
 
 // A feature entry: its README is the page body; it has no docs pages.
 const feature = "source" in tool ? tool : undefined;
@@ -123,8 +120,13 @@ const media = product ? product.media.map((item) => ({ ...item, src: productAsse
       )
     }
     <ProductSection id="releases" title="Releases">
-      <ProductReleases release={tool.release} changelog={Changelog !== undefined}>
-        {Changelog && <Changelog />}
+      <ProductReleases
+        release={tool.release}
+        changelog={LatestEntry ? "latest" : undefined}
+        entryVersion={latestEntry?.data.version}
+        allHref={productReleasesHref(key)}
+      >
+        {LatestEntry && <LatestEntry />}
       </ProductReleases>
     </ProductSection>
   </article>

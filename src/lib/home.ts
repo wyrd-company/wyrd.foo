@@ -180,10 +180,15 @@ export const RECENT_RELEASES = 5;
 
 /** The newest releases, newest first. Feature entries are not listed. */
 export function recentReleases(entries: readonly HomeEntry[], limit = RECENT_RELEASES): RecentRelease[] {
+  return releasesNewestFirst(entries, (entry) => !isFeature(entry.data)).slice(0, limit);
+}
+
+/** The release of each entry that `include` keeps and that has one, newest first; ties by key. */
+export function releasesNewestFirst(entries: readonly HomeEntry[], include: (entry: HomeEntry) => boolean): RecentRelease[] {
   return entries
     .flatMap((entry) => {
       const { data, key } = entry;
-      if (isFeature(data) || !data.release) return [];
+      if (!include(entry) || !data.release) return [];
       return [
         {
           key,
@@ -195,8 +200,7 @@ export function recentReleases(entries: readonly HomeEntry[], limit = RECENT_REL
         },
       ];
     })
-    .sort((a, b) => b.date.getTime() - a.date.getTime() || compareText(a.key, b.key))
-    .slice(0, limit);
+    .sort((a, b) => b.date.getTime() - a.date.getTime() || compareText(a.key, b.key));
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

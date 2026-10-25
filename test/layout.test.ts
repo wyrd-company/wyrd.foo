@@ -23,16 +23,12 @@ describe("SiteLayout", () => {
     expect(root.querySelectorAll('.site-nav a[aria-current="page"]')).toHaveLength(0);
   });
 
-  it("links Releases to the home page's Recent releases on a page with no product", async () => {
-    const root = await render(SiteLayout, { title: "Example" });
-    const releases = root.querySelectorAll(".site-nav a").find((a) => a.text.trim() === "Releases");
-    expect(releases?.getAttribute("href")).toBe("/#releases");
-  });
-
-  it("links Releases to the product page's Releases section on a page of a product", async () => {
-    const root = await render(SiteLayout, { title: "Example", product: { key: "example", name: "Example" } });
-    const releases = root.querySelectorAll(".site-nav a").find((a) => a.text.trim() === "Releases");
-    expect(releases?.getAttribute("href")).toBe("/tools/example#releases");
+  it("links Releases to /releases on a page with no product and on a page of a product", async () => {
+    for (const props of [{ title: "Example" }, { title: "Example", product: { key: "example", name: "Example" } }]) {
+      const root = await render(SiteLayout, props);
+      const releases = root.querySelectorAll(".site-nav a").find((a) => a.text.trim() === "Releases");
+      expect(releases?.getAttribute("href")).toBe("/releases");
+    }
   });
 
   it("ranks the page's product first in search", async () => {
