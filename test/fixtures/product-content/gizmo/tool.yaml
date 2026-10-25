@@ -26,6 +26,7 @@ kinds:
         command: brew install example-org/tap/gizmo
       - method: apt
         os: [linux]
+        default: true
         label: Debian, Ubuntu
         command: sudo apt install gizmo
   - kind: devcontainer-feature

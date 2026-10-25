@@ -2,7 +2,9 @@
 /*
  * The install block a page asks for with `install: true`: the primary kind's
  * default install command with Copy, and a link to every install method on
- * the product page.
+ * the product page. For apt and rpm the site's repository setup sits above
+ * the install line in a closed <details> (the product page's code block does
+ * the same), and Copy takes the setup and the install line.
  */
 import type { DocsProduct } from "../../lib/docs";
 import { primaryInstall } from "../../lib/docs-pages";
@@ -11,7 +13,8 @@ interface Props {
   product: DocsProduct;
 }
 const { product } = Astro.props;
-const { label, command } = primaryInstall(product.data.kinds[0]);
+const { label, command, setup } = primaryInstall(product.data.kinds[0]);
+const copyText = setup ? `${setup.code}\n${command}` : command;
 ---
 
 <section class="docs-install" aria-label={`Install ${product.name}`} data-pagefind-ignore>
@@ -19,9 +22,17 @@ const { label, command } = primaryInstall(product.data.kinds[0]);
     <span class="docs-install-label">{label}</span>
     <a href={`/tools/${product.key}#install`}>All install methods →</a>
   </div>
-  <div class="docs-install-code">
+  <div class:list={["docs-install-code", { "has-setup": setup }]}>
+    {
+      setup && (
+        <details class="docs-install-setup" data-code-setup>
+          <summary>{setup.hint}</summary>
+          <pre>{setup.code}</pre>
+        </details>
+      )
+    }
     <pre><code>{command}</code></pre>
-    <button type="button" data-copy-text={command} aria-label={`Copy the ${label} command`}>Copy</button>
+    <button type="button" data-copy-text={copyText} aria-label={`Copy the ${label} command`}>Copy</button>
   </div>
 </section>
 
@@ -62,10 +73,53 @@ const { label, command } = primaryInstall(product.data.kinds[0]);
   .docs-install-code {
     position: relative;
   }
+  .docs-install-code {
+    background: var(--code-bg);
+  }
   .docs-install-code pre {
     margin: 0;
     border-radius: 0;
     padding-right: 84px;
+  }
+  .docs-install-setup summary {
+    display: block;
+    padding: 12px 84px 0 18px;
+    color: #8e8e97;
+    font: 400 12.5px/22px var(--font-text);
+    cursor: pointer;
+    list-style: none;
+  }
+  .docs-install-setup summary::-webkit-details-marker {
+    display: none;
+  }
+  .docs-install-setup summary::before {
+    content: "▸";
+    content: "▸" / "";
+    display: inline-block;
+    width: 1.1em;
+    transition: transform 120ms;
+  }
+  .docs-install-setup[open] summary::before {
+    transform: rotate(90deg);
+  }
+  .docs-install-setup summary:hover {
+    color: #ededef;
+  }
+  .docs-install-setup summary:focus-visible {
+    outline: 2px solid #6aa5ff;
+    outline-offset: -2px;
+  }
+  .docs-install-setup pre {
+    padding-top: 2px;
+    padding-bottom: 0;
+  }
+  .has-setup > pre:last-of-type {
+    padding-top: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .docs-install-setup summary::before {
+      transition: none;
+    }
   }
   .docs-install-code button {
     position: absolute;

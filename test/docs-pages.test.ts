@@ -17,6 +17,7 @@ import {
 import { CONTENT_ROOT } from "../src/lib/content-root";
 import { docsProducts } from "../src/lib/docs-products";
 import { activeHeading } from "../src/lib/docs-toc";
+import { repoSetup } from "../src/lib/install-blocks";
 import type { ToolFile } from "../src/schema/index.ts";
 
 // The pages of groupPages and docsProducts come from the content root they read by default.
@@ -253,6 +254,11 @@ describe("page text", () => {
     ] as const;
     expect(primaryInstall({ kind: "cli", install: [...install] } as never)).toEqual({ label: "From Git", command: "cargo install x" });
     expect(primaryInstall({ kind: "cli", install: [install[0]] } as never)).toEqual({ label: "npm", command: "npm i -g x" });
+    expect(primaryInstall({ kind: "cli", install: [{ method: "apt", os: ["linux"], command: "sudo apt install x" }] } as never)).toEqual({
+      label: "apt",
+      command: "sudo apt install x",
+      setup: repoSetup({ method: "apt" }),
+    });
     expect(primaryInstall({ kind: "devcontainer-image", ref: "ghcr.io/o/i:1" } as never)).toEqual({ label: "Reference", command: "ghcr.io/o/i:1" });
   });
 });

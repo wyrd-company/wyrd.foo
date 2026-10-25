@@ -50,14 +50,17 @@ export function startTabs(root: ParentNode = document) {
   }
 }
 
-/** Make every `[data-copy]` button copy the text of the `pre` in its code block. */
+/**
+ * Make every `[data-copy]` button copy the text of the `pre` blocks in its
+ * code block, in order: the repository setup (open or closed) and the install line.
+ */
 export function startCopyButtons(root: ParentNode = document) {
   for (const button of root.querySelectorAll<HTMLButtonElement>("[data-copy]")) {
     button.addEventListener("click", async () => {
-      const code = button.closest("[data-code-block]")?.querySelector("pre");
-      if (!code) return;
+      const code = [...(button.closest("[data-code-block]")?.querySelectorAll("pre") ?? [])];
+      if (code.length === 0) return;
       try {
-        await navigator.clipboard.writeText(code.textContent ?? "");
+        await navigator.clipboard.writeText(code.map((pre) => pre.textContent ?? "").join("\n"));
         button.textContent = "Copied";
       } catch {
         button.textContent = "Copy failed";

@@ -60,7 +60,7 @@ const methodId = (platform: string, index: number) => `${id}-${platform}-${index
             hidden={!method.selected}
           >
             {method.qualifier && <p class="install-qualifier">{method.qualifier}</p>}
-            <CodeBlock code={method.command} prompt={method.prompt} label={`${method.pill} install command`} />
+            <CodeBlock code={method.command} setup={method.setup} prompt={method.prompt} label={`${method.pill} install command`} />
           </div>
         ))}
       </div>

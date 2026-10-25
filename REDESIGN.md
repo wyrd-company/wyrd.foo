@@ -179,8 +179,16 @@ Documentation section.
   from `install[].os`, method pills for each platform, and one code block
   (single or multi-line) with one Copy button for each method. For
   `method: apt` and `method: rpm` the site writes the repo.wyrd.foo setup
-  lines above the product's install line. An app's media tour is the
-  screenshot tour of its console.
+  lines above the product's install line (`command` is only the install
+  line). The setup is collapsed: a block shows its install line, preceded by
+  a one-line hint, "Set up the repo.wyrd.foo APT repository (once)" (RPM for
+  `method: rpm`), as secondary text with a disclosure marker. The hint is a
+  native `<details>` summary, so it opens and closes with the mouse, Enter
+  and Space, and opens without script. Opened, the setup lines show above
+  the install line in the same block. Copy takes the whole block, setup and
+  install line, whether the setup is open or closed; the setup is safe to
+  run again. The hero, the install tabs and the docs install block all show
+  it this way. An app's media tour is the screenshot tour of its console.
 - **MCP server**: one tab for each `install` entry, in install order, in place
   of install methods. An MCP client entry (Claude Code, Claude Desktop,
   Cursor, VS Code, JSON) gets its client's name. A plugin marketplace entry
@@ -280,7 +288,8 @@ product's first page in reading order.
   heading.
 - A page with `install: true` starts with the primary kind's default
   install command, with Copy and a link to every install method on the
-  product page.
+  product page. For apt and rpm the setup is collapsed as in "Install blocks
+  by kind", and Copy takes the whole block.
 
 ## `/llms.txt`
 

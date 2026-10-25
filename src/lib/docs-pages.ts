@@ -7,6 +7,7 @@ import { resolve } from "node:path";
 import { CONTENT_ROOT } from "./content-root.ts";
 import { CHANGELOG_SLUG, reservedSlugPurpose, type KindBlock } from "../schema/index.ts";
 import { readingOrder, type DocsMapPage, type DocsMapSection } from "./docs-map";
+import { repoSetup, type RepoSetup } from "./install-blocks";
 
 export class ReservedSlugError extends Error {
   constructor(file: string, slug: string, purpose: string) {
@@ -84,11 +85,15 @@ export function pageMarkdown(title: string, body: string): string {
   return `# ${title}\n\n${body.replace(/^\s+/, "")}`;
 }
 
-/** The command an install block at the top of a page shows: the primary kind's default install, or its reference. */
-export function primaryInstall(kind: KindBlock): { label: string; command: string } {
+/**
+ * The command an install block at the top of a page shows: the primary kind's
+ * default install line, with the site's repository setup for apt and rpm, or
+ * its reference.
+ */
+export function primaryInstall(kind: KindBlock): { label: string; command: string; setup?: RepoSetup } {
   if ("install" in kind) {
     const entry = kind.install.find((e) => e.default) ?? kind.install[0];
-    return { label: entry.label ?? entry.method, command: entry.command };
+    return { label: entry.label ?? entry.method, command: entry.command, setup: repoSetup(entry) };
   }
   return { label: "Reference", command: kind.ref };
 }

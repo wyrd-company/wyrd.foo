@@ -60,7 +60,7 @@ const {
         install && (
           <div class="hero-install">
             <p class="hero-install-label">{install.label}</p>
-            <CodeBlock code={install.command} prompt={install.prompt} label={install.label} />
+            <CodeBlock code={install.command} setup={install.setup} prompt={install.prompt} label={install.label} />
           </div>
         )
       }

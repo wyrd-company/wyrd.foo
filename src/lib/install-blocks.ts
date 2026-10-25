@@ -79,12 +79,26 @@ export const RPM_SETUP = [
   "  -o /etc/yum.repos.d/wyrd.repo",
 ] as const;
 
+/** The site's repository setup of an install entry, and the one-line hint that opens it. */
+export interface RepoSetup {
+  hint: string;
+  code: string;
+}
+
+/** The repository setup the site writes above the install line: for apt and rpm only. */
+export function repoSetup(entry: { method: string }): RepoSetup | undefined {
+  if (entry.method === "apt") {
+    return { hint: "Set up the repo.wyrd.foo APT repository (once)", code: [...APT_SETUP, "sudo apt update"].join("\n") };
+  }
+  if (entry.method === "rpm") return { hint: "Set up the repo.wyrd.foo RPM repository (once)", code: RPM_SETUP.join("\n") };
+  return undefined;
+}
+
 /** The full command of an install entry: for apt and rpm, the site's setup, then the install line. */
 export function installCommand(entry: InstallEntry): string {
   const command = entry.command.trimEnd();
-  if (entry.method === "apt") return [...APT_SETUP, "sudo apt update", command].join("\n");
-  if (entry.method === "rpm") return [...RPM_SETUP, command].join("\n");
-  return command;
+  const setup = repoSetup(entry);
+  return setup ? `${setup.code}\n${command}` : command;
 }
 
 /** The entry marked `default`, else the first. */
@@ -103,7 +117,9 @@ export interface MethodOption {
   pill: string;
   /** The entry's label, shown beside the pills; none for `other`, whose pill is the label. */
   qualifier?: string;
+  /** The install line; the setup, when there is one, comes above it. */
   command: string;
+  setup?: RepoSetup;
   prompt: boolean;
   selected: boolean;
 }
@@ -135,12 +151,12 @@ export function platformTabs(entries: readonly InstallEntry[]): PlatformTab[] {
     const methods = here.map((entry, index) => {
       const name = entry.method === "other" ? (entry.label ?? METHOD_LABELS.other) : METHOD_LABELS[entry.method];
       const repeated = entry.method !== "other" && counts.get(entry.method)! > 1 && entry.label !== undefined;
-      const command = installCommand(entry);
       return {
         pill: repeated ? `${name} · ${entry.label}` : name,
         qualifier: entry.method === "other" ? undefined : entry.label,
-        command,
-        prompt: shellPrompt(true, command),
+        command: entry.command.trimEnd(),
+        setup: repoSetup(entry),
+        prompt: shellPrompt(true, installCommand(entry)),
         selected: selected ? entry === chosen : index === 0,
       };
     });
@@ -186,7 +202,9 @@ export function devcontainerImageSnippet(ref: string): string {
 
 export interface HeroInstall {
   label: string;
+  /** The install line; the setup, when there is one, comes above it. */
   command: string;
+  setup?: RepoSetup;
   prompt: boolean;
 }
 
@@ -211,8 +229,12 @@ export function heroInstall(block: KindBlock): HeroInstall {
     case "cli":
     case "app": {
       const entry = defaultInstall(block.install);
-      const command = installCommand(entry);
-      return { label: installLabel(entry), command, prompt: shellPrompt(true, command) };
+      return {
+        label: installLabel(entry),
+        command: entry.command.trimEnd(),
+        setup: repoSetup(entry),
+        prompt: shellPrompt(true, installCommand(entry)),
+      };
     }
     case "mcp-server": {
       const entry = defaultInstall(block.install);

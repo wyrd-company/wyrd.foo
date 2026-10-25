@@ -37,6 +37,13 @@ function panelCode(root: HTMLElement, tabId: string): string {
   return panel!.querySelector("pre")!.textContent;
 }
 
+/** The panel a tab controls: its disclosure (if any), its pre blocks in order, and the whole block as Copy takes it. */
+function panelBlock(root: HTMLElement, tabId: string) {
+  const panel = root.getElementById(root.getElementById(tabId)!.getAttribute("aria-controls")!)!;
+  const pres = panel.querySelectorAll("pre").map((pre) => pre.textContent);
+  return { details: panel.querySelector("details[data-code-setup]"), hint: panel.querySelector("summary")?.textContent.trim(), pres, full: pres.join("\n") };
+}
+
 function tabIdByLabel(block: HTMLElement, label: string): string {
   const tab = block.querySelectorAll('[role="tab"]').find((t) => text(t) === label || text(t).endsWith(` ${label}`));
   expect(tab, `no tab ${label}`).toBeDefined();
@@ -114,8 +121,11 @@ describe("hero and facts", () => {
   it("lists all kinds of a product with more than one kind, and shows the first kind's command", () => {
     const root = productPage("gizmo");
     expect(fact(root, "kinds")).toBe("App · Dev container feature");
-    expect(text(root.querySelector(".hero-install-label"))).toBe("Install with Homebrew (macOS, Linux)");
-    expect(root.querySelector(".hero-install pre")?.textContent).toBe("brew install example-org/tap/gizmo");
+    expect(text(root.querySelector(".hero-install-label"))).toBe("Install with APT (Linux)");
+    const hero = root.querySelector(".hero-install")!;
+    expect(hero.querySelectorAll("pre").map((pre) => pre.textContent)).toEqual([[...APT_SETUP, "sudo apt update"].join("\n"), "sudo apt install gizmo"]);
+    expect(hero.querySelector("details[data-code-setup]")?.hasAttribute("open")).toBe(false);
+    expect(text(hero.querySelector("summary"))).toBe("Set up the repo.wyrd.foo APT repository (once)");
   });
 
   it("shows the logo, and the dark logo for the dark theme", () => {
@@ -170,11 +180,29 @@ describe("install block: CLI and app", () => {
     expect(tabs(block(), "Windows install method")).toEqual(["Cargo", "WinGet"]);
   });
 
-  it("writes the repo.wyrd.foo setup above the apt and rpm install lines", () => {
+  it("writes the repo.wyrd.foo setup above the apt and rpm install lines, collapsed", () => {
     const root = productPage("widget");
     const linux = root.getElementById("install-cli-linux")!;
-    expect(panelCode(root, tabIdByLabel(linux, "APT"))).toBe([...APT_SETUP, "sudo apt update", "sudo apt install widget"].join("\n"));
-    expect(panelCode(root, tabIdByLabel(linux, "RPM"))).toBe([...RPM_SETUP, "sudo dnf install widget"].join("\n"));
+    const apt = panelBlock(root, tabIdByLabel(linux, "APT"));
+    expect(apt.full).toBe([...APT_SETUP, "sudo apt update", "sudo apt install widget"].join("\n"));
+    expect(apt.hint).toBe("Set up the repo.wyrd.foo APT repository (once)");
+    expect(apt.details?.hasAttribute("open")).toBe(false);
+    expect(apt.details?.querySelectorAll("pre").map((pre) => pre.textContent)).toEqual([[...APT_SETUP, "sudo apt update"].join("\n")]);
+    const rpm = panelBlock(root, tabIdByLabel(linux, "RPM"));
+    expect(rpm.full).toBe([...RPM_SETUP, "sudo dnf install widget"].join("\n"));
+    expect(rpm.hint).toBe("Set up the repo.wyrd.foo RPM repository (once)");
+    expect(rpm.details?.hasAttribute("open")).toBe(false);
+  });
+
+  it("leaves the other methods as one command with no disclosure", () => {
+    const root = productPage("widget");
+    const linux = root.getElementById("install-cli-linux")!;
+    for (const [label, command] of [["Homebrew", "brew install example-org/tap/widget"], ["Cargo", "cargo install widget"]]) {
+      const block = panelBlock(root, tabIdByLabel(linux, label));
+      expect(block.details, label).toBeNull();
+      expect(block.pres, label).toEqual([command]);
+    }
+    expect(root.querySelector(".hero-install details")).toBeNull();
   });
 
   it("opens on the default entry's platform and method", () => {

@@ -163,8 +163,8 @@ test.describe("install tabs", () => {
     await page.locator("#install-cli-linux").getByRole("tab", { name: "APT" }).click();
     const apt = visible(page, "#install-cli-linux .install-method");
     await expect(apt).toHaveCount(1);
-    await expect(apt.locator("pre")).toContainText("https://repo.wyrd.foo/apt stable main");
-    await expect(apt.locator("pre")).toContainText("sudo apt install widget");
+    await expect(apt.locator("pre").first()).toContainText("https://repo.wyrd.foo/apt stable main");
+    await expect(apt.locator("pre").last()).toHaveText("sudo apt install widget");
   });
 
   test("the arrow keys move between tabs, and Home and End go to the ends", async ({ page, baseURL }) => {
@@ -221,6 +221,133 @@ test.describe("copy", () => {
     await hero.click();
     await expect(hero).toHaveText("Copied");
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("brew install example-org/tap/widget");
+  });
+});
+
+/*
+ * The repo.wyrd.foo setup of an apt or rpm block is collapsed behind a one-line
+ * hint, and Copy takes the whole block either way. widget's APT and RPM
+ * methods are on its Linux tab; gizmo's default method is APT, so its hero and
+ * its Linux tab show the block without script.
+ */
+const APT_HINT = "Set up the repo.wyrd.foo APT repository (once)";
+const APT_SETUP_FIRST_LINE = "sudo install -d -m 0755 /etc/apt/keyrings";
+const APT_BLOCK = [
+  "sudo install -d -m 0755 /etc/apt/keyrings",
+  "curl -fsSL https://repo.wyrd.foo/pubkey.gpg |",
+  "  sudo tee /etc/apt/keyrings/wyrd-company.gpg >/dev/null",
+  'echo "deb [signed-by=/etc/apt/keyrings/wyrd-company.gpg] \\',
+  'https://repo.wyrd.foo/apt stable main" |',
+  "  sudo tee /etc/apt/sources.list.d/wyrd-company.list >/dev/null",
+  "sudo apt update",
+];
+
+async function openAptBlock(page: Page, baseURL: string | undefined) {
+  await openProduct(page, baseURL, "widget");
+  await page.locator("#install-cli-linux-tab").click();
+  await page.locator("#install-cli-linux").getByRole("tab", { name: /APT/ }).click();
+  const block = visible(page, "#install-cli-linux .install-method");
+  return { block, details: block.locator("details[data-code-setup]"), summary: block.locator("summary"), setup: block.locator("details pre"), line: block.locator("pre").last() };
+}
+
+test.describe("repository setup", () => {
+  test("is collapsed by default: the hint and the install line show, the setup lines do not", async ({ page, baseURL }) => {
+    const { details, summary, setup, line } = await openAptBlock(page, baseURL);
+    await expect(summary).toHaveText(APT_HINT);
+    await expect(setup).toBeHidden();
+    await expect(line).toHaveText("sudo apt install widget");
+    await expect(line).toBeVisible();
+    await expect(details).not.toHaveAttribute("open", /.*/);
+  });
+
+  test("expands and collapses with the mouse, the setup lines above the install line", async ({ page, baseURL }) => {
+    const { summary, setup, line } = await openAptBlock(page, baseURL);
+    await summary.click();
+    await expect(setup).toBeVisible();
+    await expect(setup).toContainText(APT_SETUP_FIRST_LINE);
+    await expect(setup).toContainText("sudo apt update");
+    const [setupBox, lineBox] = [await setup.boundingBox(), await line.boundingBox()];
+    expect(setupBox!.y + setupBox!.height).toBeLessThanOrEqual(lineBox!.y + 1);
+    await summary.click();
+    await expect(setup).toBeHidden();
+    await expect(line).toBeVisible();
+  });
+
+  test("expands and collapses with the keyboard", async ({ page, baseURL }) => {
+    const { summary, setup } = await openAptBlock(page, baseURL);
+    await summary.focus();
+    await page.keyboard.press("Enter");
+    await expect(setup).toBeVisible();
+    await page.keyboard.press("Enter");
+    await expect(setup).toBeHidden();
+    await page.keyboard.press("Space");
+    await expect(setup).toBeVisible();
+    await page.keyboard.press("Space");
+    await expect(setup).toBeHidden();
+  });
+
+  test("the RPM block has the same collapsed setup, named for RPM", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "widget");
+    await page.locator("#install-cli-linux-tab").click();
+    await page.locator("#install-cli-linux").getByRole("tab", { name: /RPM/ }).click();
+    const block = visible(page, "#install-cli-linux .install-method");
+    await expect(block.locator("summary")).toHaveText("Set up the repo.wyrd.foo RPM repository (once)");
+    await expect(block.locator("details pre")).toBeHidden();
+    await expect(block.locator("pre").last()).toHaveText("sudo dnf install widget");
+  });
+
+  test("Copy writes the full block, setup and install, while collapsed and while expanded", async ({ context, page, baseURL }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    const { block, summary, setup } = await openAptBlock(page, baseURL);
+    const copy = block.locator("[data-copy]");
+    const full = [...APT_BLOCK, "sudo apt install widget"].join("\n");
+    await expect(setup).toBeHidden();
+    await copy.click();
+    await expect(copy).toHaveText("Copied");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(full);
+
+    await expect(copy).toHaveText("Copy");
+    await summary.click();
+    await expect(setup).toBeVisible();
+    await page.evaluate(() => navigator.clipboard.writeText(""));
+    await copy.click();
+    await expect(copy).toHaveText("Copied");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(full);
+  });
+
+  test("the hero of a product whose default is APT collapses it too", async ({ context, page, baseURL }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openProduct(page, baseURL, "gizmo");
+    const hero = page.locator(".hero-install");
+    await expect(hero.locator("summary")).toHaveText(APT_HINT);
+    await expect(hero.locator("details pre")).toBeHidden();
+    await hero.locator("[data-copy]").click();
+    await expect(hero.locator("[data-copy]")).toHaveText("Copied");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe([...APT_BLOCK, "sudo apt install gizmo"].join("\n"));
+  });
+
+  test("a method that is not apt or rpm has no disclosure", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "widget");
+    await expect(page.locator(".hero-install details")).toHaveCount(0);
+    await page.locator("#install-cli-linux-tab").click();
+    await page.locator("#install-cli-linux").getByRole("tab", { name: /Cargo/ }).click();
+    await expect(visible(page, "#install-cli-linux .install-method").locator("details")).toHaveCount(0);
+  });
+});
+
+test.describe("repository setup without script", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("still expands, by mouse and by keyboard", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    const hero = page.locator(".hero-install");
+    await expect(hero.locator("details pre")).toBeHidden();
+    await hero.locator("summary").click();
+    await expect(hero.locator("details pre")).toBeVisible();
+    await expect(hero.locator("details pre")).toContainText(APT_SETUP_FIRST_LINE);
+    await hero.locator("summary").focus();
+    await page.keyboard.press("Enter");
+    await expect(hero.locator("details pre")).toBeHidden();
   });
 });
 

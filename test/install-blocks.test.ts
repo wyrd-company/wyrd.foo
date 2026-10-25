@@ -9,6 +9,7 @@ import {
   installCommand,
   mcpClientTabs,
   platformTabs,
+  repoSetup,
 } from "../src/lib/install-blocks";
 import type { KindBlock } from "../src/schema/index";
 
@@ -22,6 +23,28 @@ const cargo: Entry = { method: "cargo", os: ["macos", "linux", "windows"], comma
 const cargoGit: Entry = { method: "cargo", os: ["linux"], label: "From Git", command: "cargo install --git x example" };
 const docker: Entry = { method: "docker", command: "docker run --rm example" };
 const other: Entry = { method: "other", os: ["windows"], label: "Portable zip", command: "unzip example.zip" };
+
+describe("repoSetup", () => {
+  it("is the site's setup for apt and rpm, with the hint that names the repository", () => {
+    expect(repoSetup(apt)).toEqual({
+      hint: "Set up the repo.wyrd.foo APT repository (once)",
+      code: [...APT_SETUP, "sudo apt update"].join("\n"),
+    });
+    expect(repoSetup(rpm)).toEqual({
+      hint: "Set up the repo.wyrd.foo RPM repository (once)",
+      code: RPM_SETUP.join("\n"),
+    });
+  });
+
+  it("is none for every other method", () => {
+    for (const entry of [brew, cargo, docker, other]) expect(repoSetup(entry), entry.method).toBeUndefined();
+  });
+
+  it("with the install line is the full command", () => {
+    expect(`${repoSetup(apt)!.code}\n${apt.command}`).toBe(installCommand(apt));
+    expect(`${repoSetup(rpm)!.code}\n${rpm.command}`).toBe(installCommand(rpm));
+  });
+});
 
 describe("installCommand", () => {
   it("writes the repo.wyrd.foo setup above an apt install line", () => {
@@ -101,9 +124,20 @@ describe("platformTabs", () => {
     expect(linux.methods.map((m) => m.prompt)).toEqual([true, false]);
   });
 
-  it("carries the full command, with the site's setup for apt", () => {
-    const linux = platformTabs([apt])[0];
-    expect(linux.methods[0].command).toBe(installCommand(apt));
+  it("carries the install line, with the site's setup apart for apt and rpm only", () => {
+    const linux = platformTabs([brew, apt, rpm])[1];
+    const [brewOption, aptOption, rpmOption] = linux.methods;
+    expect(aptOption.command).toBe("sudo apt install example");
+    expect(aptOption.setup).toEqual(repoSetup(apt));
+    expect(rpmOption.command).toBe("sudo dnf install example");
+    expect(rpmOption.setup).toEqual(repoSetup(rpm));
+    expect(brewOption.command).toBe("brew install example");
+    expect(brewOption.setup).toBeUndefined();
+  });
+
+  it("shows no prompt before an apt or rpm install line, as before", () => {
+    const linux = platformTabs([apt, rpm])[0];
+    expect(linux.methods.map((m) => m.prompt)).toEqual([false, false]);
   });
 });
 
@@ -155,6 +189,16 @@ describe("devcontainer.json snippets", () => {
 });
 
 describe("heroInstall", () => {
+  it("is the install line of an apt or rpm default, with the setup apart", () => {
+    expect(heroInstall({ kind: "cli", install: [{ ...apt, default: true }] })).toEqual({
+      label: "Install with APT (Linux)",
+      command: "sudo apt install example",
+      setup: repoSetup(apt),
+      prompt: false,
+    });
+    expect(heroInstall({ kind: "cli", install: [{ ...rpm, default: true }] }).setup).toEqual(repoSetup(rpm));
+  });
+
   it("is the default command of a cli or app kind, with how and where it installs", () => {
     expect(heroInstall({ kind: "cli", install: [brew, cargo] })).toEqual({
       label: "Install with Homebrew (macOS, Linux)",
