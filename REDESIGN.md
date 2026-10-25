@@ -32,7 +32,8 @@ A **feature entry** is the short `docs.yml` entry for one dev container
 feature that keeps its own `README.md` and `devcontainer-feature.json` in the
 repo (for example each feature in the devcontainers repo). Its kinds are
 `[devcontainer-feature]`. A full product, such as trowel, can also have a
-`devcontainer-feature` kind; it is not a feature entry.
+`devcontainer-feature` kind; it is not a feature entry. A feature entry's
+`logo` is relative to its `source` folder, so the logo lives with the feature.
 
 ## Theme
 

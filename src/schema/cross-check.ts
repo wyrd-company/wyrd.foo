@@ -19,6 +19,11 @@ export interface DocsTree {
   pages: readonly { path: string; data: PageFrontMatter }[];
   /** The files under docs/user/, keyed by their path relative to docs/user/. */
   files: ReadonlyMap<string, Uint8Array>;
+  /**
+   * The files that feature entries' `logo` fields name, keyed by repo path
+   * (`<source>/<logo>`). A path that is not in the map does not exist.
+   */
+  sources: ReadonlyMap<string, Uint8Array>;
 }
 
 type Entry = ProductEntry | FeatureEntry;
@@ -109,7 +114,7 @@ function checkNav({ docsFile, docs, pages }: DocsTree): ContractIssue[] {
   return issues;
 }
 
-function checkAssets({ docsFile, docs, files }: DocsTree): ContractIssue[] {
+function checkAssets({ docsFile, docs, files, sources }: DocsTree): ContractIssue[] {
   const issues: ContractIssue[] = [];
   docs.assets.forEach((path, index) => {
     if (!files.has(path)) {
@@ -118,6 +123,10 @@ function checkAssets({ docsFile, docs, files }: DocsTree): ContractIssue[] {
   });
   const listed = new Set(docs.assets);
   for (const [key, entry] of productMap(docs)) {
+    if (isFeatureEntry(entry)) {
+      issues.push(...checkFeatureLogo(docsFile, key, entry, sources));
+      continue;
+    }
     // Asset fields are relative to the product's docs folder; `assets` lists paths relative to docs/user/.
     const folder = productDocsFolder(key, files.keys());
     for (const ref of assetRefs(key, entry)) {
@@ -137,11 +146,23 @@ function checkAssets({ docsFile, docs, files }: DocsTree): ContractIssue[] {
   return issues;
 }
 
-function assetRefs(key: string, entry: Entry): AssetRef[] {
+// A feature entry's logo is relative to its source folder and is not listed in assets.
+function checkFeatureLogo(docsFile: string, key: string, entry: FeatureEntry, sources: ReadonlyMap<string, Uint8Array>): ContractIssue[] {
+  if (entry.logo === undefined) return [];
+  const field = fieldPath(["products", key, "logo"]);
+  const path = `${entry.source}/${entry.logo}`;
+  const bytes = sources.get(path);
+  const issues: ContractIssue[] = [];
+  if (bytes === undefined) issues.push({ file: docsFile, field, message: `${path} does not exist; logo is relative to source ${entry.source}` });
+  const problem = imageProblem({ field: ["products", key, "logo"], path, types: ["svg"] }, bytes);
+  if (problem !== undefined) issues.push({ file: docsFile, field, message: problem });
+  return issues;
+}
+
+function assetRefs(key: string, entry: ProductEntry): AssetRef[] {
   const at = (...field: (string | number)[]) => ["products", key, ...field];
   const refs: AssetRef[] = [];
   if (entry.logo !== undefined) refs.push({ field: at("logo"), path: entry.logo, types: ["svg"] });
-  if (isFeatureEntry(entry)) return refs;
   if (entry["logo-dark"] !== undefined) refs.push({ field: at("logo-dark"), path: entry["logo-dark"], types: ["svg"] });
   if (entry.favicon !== undefined) refs.push({ field: at("favicon"), path: entry.favicon, types: ["svg", "png"] });
   if (entry["social-image"] !== undefined) {

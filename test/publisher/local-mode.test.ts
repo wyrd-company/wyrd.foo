@@ -5,7 +5,7 @@ import { after, before, describe, it } from "node:test";
 import { stringify } from "yaml";
 import { FETCH_KILL_GRACE_MS, fetchBranch, runLocal, type LocalConfig, type RepoReport } from "../../publisher/index.ts";
 import { toolFileSchema } from "../../src/schema/index.ts";
-import { fakeReleases, git, OWNER, WIDE_SVG, Workspace } from "./fixture-repo.ts";
+import { fakeReleases, git, OWNER, SQUARE_SVG, WIDE_SVG, Workspace } from "./fixture-repo.ts";
 import { ALPHA_CLI_RELEASE, ALPHA_TAGS, alphaFiles, BETA_TAGS, betaFiles, brokenFiles, gammaFiles } from "./fixtures.ts";
 
 // Local mode over fixture clones: each case asserts the content folder it
@@ -108,8 +108,10 @@ describe("local mode", () => {
   });
 
   it("writes a feature entry from its devcontainer-feature.json, README and annotated tag", () => {
-    assert.deepEqual(ws.files("sample-feature"), ["CHANGELOG.md", "README.md", "devcontainer-feature.json", "docs/assets/feature.svg", "tool.yaml"]);
+    assert.deepEqual(ws.files("sample-feature"), ["CHANGELOG.md", "README.md", "devcontainer-feature.json", "docs/feature.svg", "tool.yaml"]);
     const tool = ws.tool("sample-feature");
+    assert.equal(tool.logo, "feature.svg", "the logo is read from the source folder and delivered at docs/<logo>");
+    assert.equal(ws.text("sample-feature", "docs/feature.svg"), SQUARE_SVG);
     assert.deepEqual(tool.kinds, [{ kind: "devcontainer-feature", ref: "ghcr.io/sample-org/beta/sample-feature:1" }]);
     assert.equal(tool.name, "Sample feature");
     assert.equal(tool.description, "Installs a sample.");

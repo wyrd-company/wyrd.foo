@@ -152,12 +152,43 @@ describe("cross-check: assets listed", () => {
     });
   }
 
-  it("a feature entry logo that assets does not list fails", () => {
-    const tree = treeFrom("devcontainer-feature", (raw) => (raw.assets = []));
-    assertOneIssue(crossCheck(tree), {
+  it("a feature entry logo under source passes without an assets entry", () => {
+    const tree = treeFrom("devcontainer-feature");
+    assert.deepEqual(tree.docs.assets, []);
+    assert.deepEqual(crossCheck(tree), []);
+  });
+
+  it("a feature entry logo that source does not hold fails, naming the field and the repo path", () => {
+    const tree = treeFrom("devcontainer-feature");
+    assertOneIssue(crossCheck({ ...tree, sources: new Map() }), {
       file: "devcontainer-feature/docs.yml",
       field: "products.other-feature.logo",
-      message: /assets\/logo\.svg is not listed in assets/,
+      message: /src\/features\/other\/logo\.svg does not exist/,
+    });
+  });
+
+  it("a feature entry logo that is not SVG fails, naming the field and the repo path", () => {
+    const named = treeFrom("devcontainer-feature", (raw) => (raw.products["other-feature"].logo = "logo.png"));
+    assertOneIssue(crossCheck({ ...named, sources: new Map([["src/features/other/logo.png", asset("favicon.png")]]) }), {
+      file: "devcontainer-feature/docs.yml",
+      field: "products.other-feature.logo",
+      message: /src\/features\/other\/logo\.png must be SVG; its file extension is \.png/,
+    });
+    const tree = treeFrom("devcontainer-feature");
+    assertOneIssue(crossCheck({ ...tree, sources: new Map([["src/features/other/logo.svg", asset("favicon.png")]]) }), {
+      file: "devcontainer-feature/docs.yml",
+      field: "products.other-feature.logo",
+      message: /src\/features\/other\/logo\.svg must be SVG; its content is not SVG/,
+    });
+  });
+
+  it("a feature entry logo does not resolve against the docs folder", () => {
+    const tree = treeFrom("devcontainer-feature", (raw) => (raw.assets = ["assets/logo.svg"]));
+    const files = new Map(tree.files).set("logo.svg", asset("logo.svg"));
+    assertOneIssue(crossCheck({ ...tree, files, sources: new Map() }), {
+      file: "devcontainer-feature/docs.yml",
+      field: "products.other-feature.logo",
+      message: /src\/features\/other\/logo\.svg does not exist/,
     });
   });
 

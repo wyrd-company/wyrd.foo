@@ -22,7 +22,7 @@ import {
   type RepoInput,
   type RepoTags,
 } from "../../publisher/index.ts";
-import { fakeReleases, OWNER, WIDE_SVG, type Files } from "./fixture-repo.ts";
+import { fakeReleases, OWNER, SQUARE_SVG, WIDE_SVG, type Files } from "./fixture-repo.ts";
 import { ALPHA_CLI_RELEASE, alphaFiles, betaFiles } from "./fixtures.ts";
 
 // The core over in-memory files: the checks and failure behaviour that do not
@@ -95,6 +95,41 @@ describe("publisher core: checks", () => {
     assert.equal(result.failed, true);
     assert.deepEqual(result.products, [], "no product of a failed repo is returned");
     assert.deepEqual(errors(result.findings), ["products.alpha-cli.logo: assets/logo.svg is not square: its viewBox is 64x32"]);
+  });
+
+  it("a feature entry logo is read from its source folder, delivered under docs/, and named in tool.yaml", async () => {
+    const result = await computeRepo(input(betaFiles(), { ownerRepo: `${OWNER}/beta` }));
+    assert.equal(result.failed, false, errors(result.findings).join("; "));
+    const feature = result.products.find((product) => product.key === "sample-feature")!;
+    assert.equal(feature.tool.logo, "feature.svg");
+    assert.equal(new TextDecoder().decode(feature.files.get("docs/feature.svg")), SQUARE_SVG);
+  });
+
+  it("a feature entry logo missing from its source folder fails the repo, naming the path", async () => {
+    const files = betaFiles();
+    delete files["src/features/sample-feature/feature.svg"];
+    const result = await computeRepo(input(files, { ownerRepo: `${OWNER}/beta` }));
+    assert.equal(result.failed, true);
+    assert.deepEqual(errors(result.findings), [
+      "docs/user/docs.yml: products.sample-feature.logo: src/features/sample-feature/feature.svg does not exist; logo is relative to source src/features/sample-feature",
+    ]);
+  });
+
+  it("a feature entry logo that is not square fails the repo", async () => {
+    const files = { ...betaFiles(), "src/features/sample-feature/feature.svg": WIDE_SVG };
+    const result = await computeRepo(input(files, { ownerRepo: `${OWNER}/beta` }));
+    assert.equal(result.failed, true);
+    assert.deepEqual(errors(result.findings), ["products.sample-feature.logo: feature.svg is not square: its viewBox is 64x32"]);
+  });
+
+  it("a product entry logo is still read from its docs folder and must be listed in assets", async () => {
+    const files = alphaFiles();
+    const docs = parse(files["docs/user/docs.yml"].toString());
+    docs.assets = docs.assets.filter((path: string) => path !== "alpha-cli/assets/logo.svg");
+    files["docs/user/docs.yml"] = stringify(docs);
+    const result = await computeRepo(input(files));
+    assert.equal(result.failed, true);
+    assert.deepEqual(errors(result.findings), ["docs/user/docs.yml: products.alpha-cli.logo: assets/logo.svg is docs/user/alpha-cli/assets/logo.svg, which is not listed in assets as alpha-cli/assets/logo.svg"]);
   });
 
   it("a feature entry whose source folder has no devcontainer-feature.json fails the repo", async () => {

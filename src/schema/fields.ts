@@ -37,6 +37,12 @@ export const assetPath = z
   .regex(RELATIVE_PATH, "must be a relative path inside docs/user/, with no . or .. segment")
   .describe("File path relative to docs/user/.");
 
+/** A file path relative to a feature entry's `source` folder. */
+export const sourceFilePath = z
+  .string()
+  .regex(RELATIVE_PATH, "must be a relative path inside the feature's source folder, with no . or .. segment")
+  .describe("File path relative to the feature's source folder.");
+
 /** A folder path relative to the repository root. */
 export const repoPath = z
   .string()

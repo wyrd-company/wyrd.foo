@@ -302,7 +302,7 @@ products:
     kinds: [{ kind: devcontainer-feature }]
     source: src/features/caddy      # devcontainer-feature.json + README.md
     category: Dev Containers        # optional; the default
-    logo: assets/caddy.svg          # optional
+    logo: logo.svg                  # optional; relative to source
   heddle:
     kinds: [{ kind: devcontainer-feature }]
     source: src/features/heddle
@@ -312,8 +312,10 @@ products:
 - The entry holds only the key, `kinds` (one `devcontainer-feature` block),
   `source`, and an optional `category`, `logo` and `release-unit`. Each
   feature is listed by its own entry; `docs.yml` has no glob.
-- `source` is the path of the feature's folder in the repo. It has no other
-  meaning in `docs.yml`.
+- `source` is the path of the feature's folder in the repo. The feature's
+  `logo` is relative to it (`src/features/caddy/logo.svg` for the entry
+  above), so the logo ships with the feature. A feature's `logo` is not
+  listed in `assets`.
 - The feature's release unit is `release-unit`, or the key.
 - The publisher derives the feature's OCI reference as
   `ghcr.io/<owner>/<repo>/<feature id>:<major>`, from the repo, the `id` and
@@ -544,13 +546,15 @@ the result is the same for every trigger. The trigger only chooses the ref.
    - no page has a reserved slug (`changelog` or `index`), in any letter case;
    - every `nav` page exists for that product;
    - no page names a feature entry;
-   - every `media.src`, `logo`, `logo-dark`, `favicon` and `social-image`,
-     resolved against the product's docs folder, is listed in `assets`, and
-     every listed asset exists inside `docs/user/`;
+   - every `media.src`, `logo`, `logo-dark`, `favicon` and `social-image` of
+     a full product, resolved against the product's docs folder, is listed in
+     `assets`, and every listed asset exists inside `docs/user/`;
+   - a feature entry's `logo`, resolved against its `source`, exists in the
+     repo;
    - every page of a product is inside the product's docs folder;
-   - `logo` and `logo-dark` are SVG; `favicon` is SVG or PNG;
-     `social-image` is PNG or JPEG at 1200×630. The file extension and the
-     file content must both match;
+   - `logo` and `logo-dark` (a feature entry's `logo` too) are SVG; `favicon`
+     is SVG or PNG; `social-image` is PNG or JPEG at 1200×630. The file
+     extension and the file content must both match;
    - `logo` and `logo-dark` are square: the SVG `viewBox` (else its `width`
      and `height`) has equal sides;
    - for each feature entry, `devcontainer-feature.json` and `README.md`
@@ -661,7 +665,8 @@ content/<key>/
 
 A feature entry's folder holds `tool.yaml`, its `README.md` (the page body),
 its `devcontainer-feature.json`, the code unit `CHANGELOG.md`, and its logo
-under `docs/`.
+under `docs/`, at the path `logo` names: the publisher reads the logo from
+`source` and writes it there.
 
 `tool.yaml` holds the validated product entry, with `release-unit` filled
 in, plus the fields that only the publisher writes:

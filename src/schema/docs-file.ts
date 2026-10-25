@@ -8,6 +8,7 @@ import {
   releaseUnitId,
   repoPath,
   semver,
+  sourceFilePath,
 } from "./fields.ts";
 import {
   CATEGORIES,
@@ -202,7 +203,7 @@ export const featureEntryShape = {
   ]),
   source: repoPath.describe("Folder that holds devcontainer-feature.json and README.md."),
   category: z.enum(CATEGORIES).default(FEATURE_ENTRY_CATEGORY),
-  logo: assetPath.optional().describe("Square SVG mark, listed in assets."),
+  logo: sourceFilePath.optional().describe("Square SVG mark, relative to source. Not listed in assets."),
   "release-unit": releaseUnitId.optional().describe("The feature's release unit. Default: the key."),
 };
 

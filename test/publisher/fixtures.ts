@@ -85,12 +85,12 @@ export function betaFiles(): Files {
   return {
     "docs/user/docs.yml": yaml({
       schemaVersion: 1,
-      assets: ["assets/demo.svg", "assets/feature.svg"],
+      assets: ["assets/demo.svg"],
       products: {
         "sample-feature": {
           kinds: [{ kind: "devcontainer-feature" }],
           source: "src/features/sample-feature",
-          logo: "assets/feature.svg",
+          logo: "feature.svg",
         },
         "sample-image": product("sample-image", [{ kind: "devcontainer-image", ref: "ghcr.io/sample-org/beta/sample-image" }], {
           version: "2.0.0",
@@ -99,7 +99,7 @@ export function betaFiles(): Files {
       },
     }),
     "docs/user/assets/demo.svg": SQUARE_SVG,
-    "docs/user/assets/feature.svg": SQUARE_SVG,
+    "src/features/sample-feature/feature.svg": SQUARE_SVG,
     "docs/user/overview.md": page("sample-image", "Overview"),
     "docs/user/CHANGELOG.md": changelog(["1.0.0", "Write the image overview."]),
     "src/features/sample-feature/devcontainer-feature.json": JSON.stringify({

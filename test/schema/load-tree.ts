@@ -29,7 +29,8 @@ export function readRawDocs(name: string): Raw {
 /**
  * Load a fixture as a docs/user/ tree, the way the publisher sees one. The
  * shared fixtures/assets/ folder is the tree's assets/ folder, and the
- * assets/ folder of each product that has its own folder.
+ * assets/ folder of each product that has its own folder. The shared
+ * fixtures/sources/ folder holds the feature logos.
  */
 export function loadTree(name: string, raw: unknown = readRawDocs(name)): LoadedTree {
   const root = join(FIXTURES, name);
@@ -51,7 +52,10 @@ export function loadTree(name: string, raw: unknown = readRawDocs(name)): Loaded
   for (const path of walk(join(FIXTURES, "assets"))) {
     for (const folder of folders) files.set(`${folder}assets/${path}`, readFileSync(join(FIXTURES, "assets", path)));
   }
-  return { issues, tree: docs.ok ? { docsFile, docs: docs.data, pages, files } : undefined };
+  // The shared fixtures/sources/ folder holds the repo files that feature entries name, by repo path.
+  const sources = new Map<string, Uint8Array>();
+  for (const path of walk(join(FIXTURES, "sources"))) sources.set(path, readFileSync(join(FIXTURES, "sources", path)));
+  return { issues, tree: docs.ok ? { docsFile, docs: docs.data, pages, files, sources } : undefined };
 }
 
 export function frontMatter(source: string): unknown {

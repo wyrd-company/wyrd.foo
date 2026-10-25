@@ -125,6 +125,8 @@ interface Tree {
   files: Map<string, Uint8Array>;
   /** Pages, by path relative to docs/user/. */
   pages: Map<string, PageFrontMatter>;
+  /** The files that feature entries' `logo` fields name, by repo path. */
+  sources: Map<string, Uint8Array>;
 }
 
 async function readTree(ctx: Context): Promise<Tree | undefined> {
@@ -166,10 +168,19 @@ async function readTree(ctx: Context): Promise<Tree | undefined> {
     }
   }
 
+  // A feature's logo is a file in its source folder, not in docs/user/.
+  const sources = new Map<string, Uint8Array>();
+  for (const entry of Object.values(docs.data.products) as Entry[]) {
+    if (!isFeatureEntry(entry) || entry.logo === undefined) continue;
+    const path = `${entry.source}/${entry.logo}`;
+    const content = await ctx.files.read(path);
+    if (content !== undefined) sources.set(path, content);
+  }
+
   const pageList = [...pages].map(([path, data]) => ({ path: DOCS_ROOT + path, data }));
-  reportIssues(findings, crossCheck({ docsFile: DOCS_FILE, docs: docs.data, pages: pageList, files }));
-  checkLogosSquare(findings, docs.data, files);
-  return { docs: docs.data, files, pages };
+  reportIssues(findings, crossCheck({ docsFile: DOCS_FILE, docs: docs.data, pages: pageList, files, sources }));
+  checkLogosSquare(findings, docs.data, files, sources);
+  return { docs: docs.data, files, pages, sources };
 }
 
 function parsePage(ctx: Context, file: string, source: string): PageFrontMatter | undefined {
@@ -186,13 +197,18 @@ function parsePage(ctx: Context, file: string, source: string): PageFrontMatter 
   return undefined;
 }
 
-function checkLogosSquare(findings: Findings, docs: DocsFile, files: Map<string, Uint8Array>) {
+function checkLogosSquare(findings: Findings, docs: DocsFile, files: Map<string, Uint8Array>, sources: Map<string, Uint8Array>) {
   for (const [key, entry] of Object.entries(docs.products) as [string, Entry][]) {
     const folder = productDocsFolder(key, files.keys());
     const logos: [string, string | undefined][] = [["logo", entry.logo]];
     if (!isFeatureEntry(entry)) logos.push(["logo-dark", entry["logo-dark"]]);
     for (const [field, path] of logos) {
-      const bytes = path === undefined || !path.toLowerCase().endsWith(".svg") ? undefined : files.get(folder + path);
+      const bytes =
+        path === undefined || !path.toLowerCase().endsWith(".svg")
+          ? undefined
+          : isFeatureEntry(entry)
+            ? sources.get(`${entry.source}/${path}`)
+            : files.get(folder + path);
       const problem = bytes === undefined ? undefined : squareProblem(bytes);
       if (problem !== undefined) findings.error({ key, file: DOCS_FILE, message: `products.${key}.${field}: ${path} ${problem}` });
     }
@@ -385,7 +401,7 @@ async function featureOutput(ctx: Context, tree: Tree, key: string, entry: Featu
   const changelog = unit === undefined ? undefined : await codeChangelog(ctx, key, unit);
   if (changelog !== undefined) files.set(CODE_CHANGELOG, changelog);
   const release = unit === undefined ? undefined : await tagRelease(ctx, key, unit, feature.version, changelog);
-  const logo = entry.logo === undefined ? undefined : tree.files.get(productDocsFolder(key, tree.files.keys()) + entry.logo);
+  const logo = entry.logo === undefined ? undefined : tree.sources.get(`${entry.source}/${entry.logo}`);
   if (logo !== undefined) files.set(`docs/${entry.logo}`, logo);
 
   const tool = {
