@@ -5,12 +5,12 @@
  */
 import { resolve } from "node:path";
 import { CONTENT_ROOT } from "./content-root.ts";
-import { CHANGELOG_SLUG, isReservedSlug, type KindBlock } from "../schema/index.ts";
+import { CHANGELOG_SLUG, reservedSlugPurpose, type KindBlock } from "../schema/index.ts";
 import { readingOrder, type DocsMapPage, type DocsMapSection } from "./docs-map";
 
 export class ReservedSlugError extends Error {
-  constructor(key: string, file: string) {
-    super(`${file}: page slug "${CHANGELOG_SLUG}" is reserved for the docs changelog of product ${key}; rename the file`);
+  constructor(file: string, slug: string, purpose: string) {
+    super(`${file}: page slug "${slug.toLowerCase()}" is reserved for ${purpose}; rename the file`);
     this.name = "ReservedSlugError";
   }
 }
@@ -114,7 +114,7 @@ export interface GroupedPage<E extends PageSource> {
 /**
  * Pages by product key: the page's `product:`, and its file-name slug. `root`
  * is the content root the pages were read from.
- * Fails on the reserved `changelog` slug and on two pages of one product with
+ * Fails on a reserved slug (`changelog`, `index`) and on two pages of one product with
  * one slug.
  */
 export function groupPages<E extends PageSource>(entries: readonly E[], root: string = CONTENT_ROOT): Map<string, GroupedPage<E>[]> {
@@ -124,7 +124,8 @@ export function groupPages<E extends PageSource>(entries: readonly E[], root: st
     const folder = entry.id.split("/")[0];
     const file = entry.filePath ?? entry.id;
     const slug = entry.id.slice(folder.length + 1);
-    if (isReservedSlug(slug)) throw new ReservedSlugError(key, file);
+    const reserved = reservedSlugPurpose(slug, key);
+    if (reserved !== undefined) throw new ReservedSlugError(file, slug, reserved);
     const list = byProduct.get(key) ?? [];
     const twin = list.find((page) => page.slug === slug);
     if (twin) throw new DuplicateSlugError(key, slug, [twin.entry.filePath ?? twin.entry.id, file]);

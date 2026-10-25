@@ -364,9 +364,11 @@ Markdown body.
 - The slug is the file name without `.md`. It is unique within a product, so
   two products in one repo can each have `getting-started.md`.
 - A page's URL is `/docs/<key>/<slug>`.
-- The slug `changelog` is reserved, in any letter case: `/docs/<key>/changelog`
-  shows the docs unit changelog. The publisher rejects a page with that slug
-  at any depth, naming the file, and the site build fails on one.
+- The slugs `changelog` and `index` are reserved, in any letter case.
+  `/docs/<key>/changelog` shows the docs unit changelog, and `/docs/<key>` is
+  the product's docs landing redirect, which a page at `/docs/<key>/index`
+  would serve again. The publisher rejects a page with either slug at any
+  depth, naming the file, and the site build fails on one.
 
 ## Release units
 
@@ -539,7 +541,7 @@ the result is the same for every trigger. The trigger only chooses the ref.
    the checks the schema cannot express:
    - every page's `product:` is a key in `products`;
    - every slug is unique within its product;
-   - no page has the reserved slug `changelog`, in any letter case;
+   - no page has a reserved slug (`changelog` or `index`), in any letter case;
    - every `nav` page exists for that product;
    - no page names a feature entry;
    - every `media.src`, `logo`, `logo-dark`, `favicon` and `social-image`,

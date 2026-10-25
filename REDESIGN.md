@@ -213,7 +213,10 @@ product's first page in reading order.
 - **Version footer**: "Docs 0.2.3 · for trowel 0.2.0", from the product's
   `docs-version` and `version`. "Docs 0.2.3" links the docs unit changelog
   at `/docs/<key>/changelog` when the product publishes one. The page slug
-  `changelog` is reserved for it, in any letter case.
+  `changelog` is reserved for it, in any letter case. The slug `index` is
+  reserved too, in any letter case, because `/docs/<key>` is the product's
+  docs landing redirect and a page at `/docs/<key>/index` would serve that
+  redirect again.
 - Sections, groups and page order come from the product's `nav` in
   `docs.yml`. Pages that `nav` does not list go into a trailing "More" group
   in the last section, by `order`, then title. A product with no `nav` has

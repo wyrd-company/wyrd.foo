@@ -20,15 +20,29 @@ export function pageSlugOf(path: string): string {
   return name.replace(/\.md$/i, "");
 }
 
-/** The page slug the docs changelog route takes (`/docs/<key>/changelog`). No page may use it. */
+/** The page slug the docs changelog route takes (`/docs/<key>/changelog`). */
 export const CHANGELOG_SLUG = "changelog";
 
+/** The page slug that would collide with a product's docs landing redirect (`/docs/<key>/index.html`). */
+export const INDEX_SLUG = "index";
+
 /**
- * True when a page slug is the reserved `changelog`, in any letter case. The
- * site build and the publisher cross-check both use it, so they agree.
+ * The page slugs no page may use, with the reason each is reserved. The reason
+ * completes "page slug is reserved for ..." in the errors the site build and the
+ * publisher cross-check report.
  */
-export function isReservedSlug(slug: string): boolean {
-  return slug.toLowerCase() === CHANGELOG_SLUG;
+export const RESERVED_SLUGS: Readonly<Record<string, (key: string) => string>> = {
+  [CHANGELOG_SLUG]: (key) => `the docs changelog of product ${key} (/docs/${key}/${CHANGELOG_SLUG})`,
+  [INDEX_SLUG]: (key) => `the docs landing redirect of product ${key} (/docs/${key})`,
+};
+
+/**
+ * What a reserved page slug is reserved for, in any letter case, or undefined
+ * when the slug is free. The site build and the publisher cross-check both use
+ * it, so they agree.
+ */
+export function reservedSlugPurpose(slug: string, key: string): string | undefined {
+  return Object.hasOwn(RESERVED_SLUGS, slug.toLowerCase()) ? RESERVED_SLUGS[slug.toLowerCase()](key) : undefined;
 }
 
 /** The file name of a docs unit changelog. intentional writes it at the unit path. */

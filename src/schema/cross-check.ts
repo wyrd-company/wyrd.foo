@@ -2,7 +2,7 @@ import { isFeatureEntry, type DocsFile, type FeatureEntry, type ProductEntry } f
 import { productDocsFolder } from "./docs-folder.ts";
 import { readImageHeader, type ImageType } from "./image-header.ts";
 import { fieldPath, type ContractIssue } from "./issues.ts";
-import { CHANGELOG_SLUG, isReservedSlug, pageSlugOf, type PageFrontMatter } from "./page.ts";
+import { pageSlugOf, reservedSlugPurpose, type PageFrontMatter } from "./page.ts";
 
 // The checks of a repo's docs/user/ tree that the schema cannot express,
 // because they read more than one file.
@@ -72,12 +72,9 @@ function checkPages({ docs, pages }: DocsTree): ContractIssue[] {
       continue;
     }
     const slug = pageSlugOf(page.path);
-    if (isReservedSlug(slug)) {
-      issues.push({
-        file: page.path,
-        field: "slug",
-        message: `${slug} is reserved for the docs changelog of product ${key} (/docs/${key}/${CHANGELOG_SLUG}); rename the file`,
-      });
+    const reserved = reservedSlugPurpose(slug, key);
+    if (reserved !== undefined) {
+      issues.push({ file: page.path, field: "slug", message: `${slug} is reserved for ${reserved}; rename the file` });
       continue;
     }
     const owner = slugOwners.get(`${key}/${slug}`);

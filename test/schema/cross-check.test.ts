@@ -80,6 +80,22 @@ describe("cross-check: pages", () => {
     });
   }
 
+  for (const path of ["cli/index.md", "cli/guides/index.md", "cli/guides/Index.md"]) {
+    it(`a page at ${path} fails: the slug index is reserved in any letter case`, () => {
+      const tree = treeFrom("cli");
+      const original = tree.pages.find((p) => p.path === "cli/getting-started.md")!;
+      (tree.pages as DocsTree["pages"][number][]).push({ path, data: { ...original.data } });
+      assertOneIssue(crossCheck(tree), { file: path, field: "slug", message: /^[Ii]ndex is reserved for the docs landing redirect of product widget \(\/docs\/widget\); rename the file/ });
+    });
+  }
+
+  it("a page whose slug only starts with index passes", () => {
+    const tree = treeFrom("cli");
+    const original = tree.pages.find((p) => p.path === "cli/getting-started.md")!;
+    (tree.pages as DocsTree["pages"][number][]).push({ path: "cli/index-notes.md", data: { ...original.data } });
+    assert.deepEqual(crossCheck(tree), []);
+  });
+
   it("a page whose slug only starts with changelog passes", () => {
     const tree = treeFrom("cli");
     const original = tree.pages.find((p) => p.path === "cli/getting-started.md")!;

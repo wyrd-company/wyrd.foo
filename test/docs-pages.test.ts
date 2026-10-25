@@ -122,6 +122,22 @@ describe("groupPages", () => {
     expect(() => groupPages([source("gadget", "guides/CHANGELOG.md")])).toThrow(/gadget\/docs\/guides\/CHANGELOG\.md: page slug "changelog" is reserved/);
   });
 
+  it("fails on the reserved index slug, naming the file and why", () => {
+    expect(() => groupPages([source("gadget", "guides/index.md")])).toThrow(ReservedSlugError);
+    expect(() => groupPages([source("gadget", "guides/index.md")])).toThrow(
+      /gadget\/docs\/guides\/index\.md: page slug "index" is reserved for the docs landing redirect of product gadget \(\/docs\/gadget\); rename the file/,
+    );
+  });
+
+  it("fails on the reserved index slug in any letter case", () => {
+    expect(() => groupPages([source("gadget", "Index.md")])).toThrow(ReservedSlugError);
+    expect(() => groupPages([source("gadget", "guides/INDEX.md")])).toThrow(/gadget\/docs\/guides\/INDEX\.md: page slug "index" is reserved/);
+  });
+
+  it("accepts a slug that only starts with index", () => {
+    expect(groupPages([source("gadget", "index-notes.md")]).get("gadget")![0]).toMatchObject({ slug: "index-notes" });
+  });
+
   it("accepts a slug that only starts with changelog", () => {
     expect(groupPages([source("gadget", "changelog-notes.md")]).get("gadget")![0]).toMatchObject({ slug: "changelog-notes" });
   });
