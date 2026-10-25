@@ -60,7 +60,7 @@ pnpm preview
 ## v2 dev server
 
 `task dev:v2` builds the v2 content from each tool repo's `wyrd-foo-v2`
-branch and serves the site on it:
+branch, builds the site on it and serves the build, so search works:
 
 1. The publisher (`publisher/`) runs in local mode over the repos in
    `publisher/local-repos.yml`. For the clone at `/workspaces/tools/<name>`,
@@ -73,14 +73,17 @@ branch and serves the site on it:
    publishing requirement (no `.intentional/`, no GitHub Release, no
    `wyrd-foo-v2` branch) is a warning. A repo with a schema or check error
    writes nothing and the run goes on.
-3. `astro dev` starts with `WYRD_CONTENT_DIR` set to that folder.
+3. `pnpm build` builds the site and its Pagefind search index into `dist/`
+   with `WYRD_CONTENT_DIR` set to that folder, and `astro preview` serves
+   `dist/`. Run `task dev:v2` again to see a content change. For live reload
+   while working on the site itself, use `task dev` (no search index).
 
-Arguments after `--` go to the publisher; `ASTRO_ARGS` goes to `astro dev`.
+Arguments after `--` go to the publisher; `ASTRO_ARGS` goes to `astro preview`.
 
 ```sh
 task dev:v2               # reads GitHub Releases (GITHUB_TOKEN or GH_TOKEN if set)
 task dev:v2 -- --offline  # no fetch; release data from local tags only
-task dev:v2 ASTRO_ARGS="--port 4417"                # options for astro dev
+task dev:v2 ASTRO_ARGS="--port 4417"                # options for astro preview
 task dev:v2 ASTRO_ARGS="--port 4417 --host" -- --offline  # both
 task publish:local        # the publisher step only
 task validate:repo -- ../gitpr                    # one checkout's working tree

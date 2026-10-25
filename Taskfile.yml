@@ -7,12 +7,13 @@ tasks:
       - astro dev
 
   dev:v2:
-    desc: "Publish each tool repo's wyrd-foo-v2 branch into the dev content folder, then start the v2 dev server on it (publisher options after --; astro dev options in ASTRO_ARGS)"
+    desc: "Publish each tool repo's wyrd-foo-v2 branch into the dev content folder, then build the site and its Pagefind search index on it and serve the build with astro preview (publisher options after --; astro preview options in ASTRO_ARGS)"
     env:
       WYRD_CONTENT_DIR: '{{.WYRD_CONTENT_DIR | default ".content-v2"}}'
     cmds:
       - task: publish:local
-      - pnpm astro dev {{.ASTRO_ARGS}}
+      - pnpm build
+      - pnpm astro preview {{.ASTRO_ARGS}}
 
   publish:local:
     desc: Run the publisher in local mode over publisher/local-repos.yml into the dev content folder (pass --offline after --)

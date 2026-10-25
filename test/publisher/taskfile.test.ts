@@ -6,11 +6,12 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import { parse } from "yaml";
 
-// `task dev:v2` publishes, then starts `astro dev` with the options in
-// ASTRO_ARGS. The run test needs Task on PATH; hosted CI has none, so there
+// `task dev:v2` publishes, builds the site and its Pagefind index, then serves
+// the build with `astro preview` and the options in ASTRO_ARGS. The run test needs Task on PATH; hosted CI has none, so there
 // only the shape test runs.
 
 const ROOT = new URL("../../", import.meta.url).pathname;
+const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as { scripts: Record<string, string> };
 const taskfile = parse(readFileSync(join(ROOT, "Taskfile.yml"), "utf8")) as {
   tasks: Record<string, { cmds: (string | { task: string })[]; vars?: Record<string, unknown> }>;
 };
@@ -44,19 +45,23 @@ function runDevV2(vars: string[]): { pnpm: string[]; node: string[] } {
 }
 
 describe("Taskfile.yml dev:v2", () => {
-  it("publishes, then runs astro dev with ASTRO_ARGS as its last command", () => {
+  it("publishes, builds, then runs astro preview with ASTRO_ARGS as its last command", () => {
     const task = taskfile.tasks["dev:v2"];
-    assert.deepEqual(task.cmds, [{ task: "publish:local" }, "pnpm astro dev {{.ASTRO_ARGS}}"]);
+    assert.deepEqual(task.cmds, [{ task: "publish:local" }, "pnpm build", "pnpm astro preview {{.ASTRO_ARGS}}"]);
     assert.equal(task.vars?.ASTRO_ARGS, undefined, "no task var overrides ASTRO_ARGS");
   });
 
-  it("passes ASTRO_ARGS to astro dev, word by word", { skip: hasTask ? false : "task is not on PATH" }, () => {
-    const { pnpm, node } = runDevV2(["ASTRO_ARGS=--port 4999 --host"]);
-    assert.deepEqual(node, ["[publisher/cli.ts][local]"]);
-    assert.deepEqual(pnpm, ["[astro][dev][--port][4999][--host]"]);
+  it("builds the site and its Pagefind index into the folder astro preview serves", () => {
+    assert.match(pkg.scripts.build, /^astro build && pagefind --site dist$/);
   });
 
-  it("runs astro dev with no options when ASTRO_ARGS is not given", { skip: hasTask ? false : "task is not on PATH" }, () => {
-    assert.deepEqual(runDevV2([]).pnpm, ["[astro][dev]"]);
+  it("passes ASTRO_ARGS to astro preview, word by word", { skip: hasTask ? false : "task is not on PATH" }, () => {
+    const { pnpm, node } = runDevV2(["ASTRO_ARGS=--port 4999 --host"]);
+    assert.deepEqual(node, ["[publisher/cli.ts][local]"]);
+    assert.deepEqual(pnpm, ["[build]", "[astro][preview][--port][4999][--host]"]);
+  });
+
+  it("runs astro preview with no options when ASTRO_ARGS is not given", { skip: hasTask ? false : "task is not on PATH" }, () => {
+    assert.deepEqual(runDevV2([]).pnpm, ["[build]", "[astro][preview]"]);
   });
 });
