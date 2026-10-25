@@ -485,6 +485,23 @@ test.describe("tour modal", () => {
     await expect(image).toHaveCount(0);
   });
 
+  test("a click on the video itself opens the dialog, and focus returns to the video's link on close", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    // Away from the Pause button (bottom-left) and the expand button (top-right).
+    await page.locator(".media-tour video").click({ position: { x: 40, y: 40 } });
+    await expect(modal(page).dialog).toBeVisible();
+    await expect(modal(page).position).toHaveText("1 of 3");
+    await page.keyboard.press("Escape");
+    await expect(modal(page).dialog).toBeHidden();
+    await expect(page.locator(OPENERS).nth(0)).toBeFocused();
+  });
+
+  test("the Pause button of a video thumbnail does not open the dialog", async ({ page, baseURL }) => {
+    await openProduct(page, baseURL, "gizmo");
+    await page.locator(TOGGLE).click();
+    await expect(modal(page).dialog).toBeHidden();
+  });
+
   test("the thumbnails of a gadget (images only) open it too", async ({ page, baseURL }) => {
     await openProduct(page, baseURL, "gadget");
     await expect(page.locator(OPENERS)).toHaveCount(2);
@@ -588,8 +605,12 @@ test.describe("tour modal", () => {
     await page.locator(OPENERS).nth(1).scrollIntoViewIfNeeded();
     await openTourItem(page, 1);
     const scrollY = await page.evaluate(() => window.scrollY);
+    // The page is long enough to scroll, so a wheel over the backdrop would move it.
+    expect(await page.evaluate(() => document.documentElement.scrollHeight - innerHeight - scrollY)).toBeGreaterThan(300);
     await page.keyboard.press("ArrowRight");
+    await page.mouse.move(4, 4);
     await page.mouse.wheel(0, 600);
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).overflow), "the page behind is locked").toBe("hidden");
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("PageDown");
     await expect(modal(page).dialog).toBeVisible();
