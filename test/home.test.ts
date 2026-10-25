@@ -18,6 +18,7 @@ import {
   recentReleases,
   type HomeEntry,
 } from "../src/lib/home";
+import { APT_SETUP, heroInstall, RPM_SETUP } from "../src/lib/install-blocks";
 import { toolFileSchema } from "../src/schema/index.ts";
 
 const CONTENT = "test/fixtures/home-content";
@@ -37,7 +38,7 @@ describe("catalog rows", () => {
   const rows = catalogRows(fixtures());
 
   it("puts products with an order first, lower first, then the rest by name ignoring case", () => {
-    expect(rows.map((r) => r.key)).toEqual(["alpha-cli", "cinder-mcp", "beacon", "delta-image", ...FEATURES]);
+    expect(rows.map((r) => r.key)).toEqual(["alpha-cli", "cinder-mcp", "aptly-cli", "rpmly-cli", "beacon", "delta-image", ...FEATURES]);
   });
 
   it("has one row per feature entry", () => {
@@ -54,6 +55,23 @@ describe("catalog rows", () => {
   it("uses the default install entry, else the first", () => {
     expect(rows.find((r) => r.key === "alpha-cli")!.getIt).toBe("brew install example-org/tap/alpha-cli");
     expect(rows.find((r) => r.key === "cinder-mcp")!.getIt).toBe("claude mcp add cinder -- npx -y cinder-mcp");
+  });
+
+  it("copies the full install block for apt and rpm rows, the same as the product page, and the get-it line for the rest", () => {
+    const fixture = fixtures();
+    const block = (key: string) => fixture.find((e) => e.key === key)!.data.kinds[0];
+    for (const key of ["aptly-cli", "rpmly-cli"]) {
+      const row = rows.find((r) => r.key === key)!;
+      const hero = heroInstall(block(key));
+      expect(hero.setup, key).toBeDefined();
+      expect(row.copyText).toBe(`${hero.setup!.code}\n${hero.command}`);
+      expect(row.copyText.endsWith(`\n${row.getIt}`), key).toBe(true);
+    }
+    expect(rows.find((r) => r.key === "aptly-cli")!.copyText).toBe([...APT_SETUP, "sudo apt update", "sudo apt install aptly-cli"].join("\n"));
+    expect(rows.find((r) => r.key === "rpmly-cli")!.copyText).toBe([...RPM_SETUP, "sudo dnf install rpmly-cli"].join("\n"));
+    for (const row of rows.filter((r) => !["aptly-cli", "rpmly-cli"].includes(r.key))) {
+      expect(row.copyText, row.key).toBe(row.getIt);
+    }
   });
 
   it("gives dev container kinds their devcontainer.json line", () => {
@@ -86,8 +104,8 @@ describe("kind tabs", () => {
 
   it("lists All, then each kind present, in kind order, with counts", () => {
     expect(tabs.map((t) => [t.id, t.label, t.count])).toEqual([
-      ["all", "All", 7],
-      ["cli", "CLIs", 1],
+      ["all", "All", 9],
+      ["cli", "CLIs", 3],
       ["mcp-server", "MCP servers", 1],
       ["app", "Apps", 1],
       ["devcontainer-feature", "Dev container features", 4],
@@ -142,7 +160,7 @@ describe("featured", () => {
 
   it("never offers a feature entry", () => {
     expect(featuredCandidates(fixtures()).map((c) => c.key)).not.toEqual(expect.arrayContaining(["feature-one"]));
-    expect([...featuredCards(fixtures()).keys()].sort()).toEqual(["alpha-cli", "beacon", "cinder-mcp", "delta-image"]);
+    expect([...featuredCards(fixtures()).keys()].sort()).toEqual(["alpha-cli", "aptly-cli", "beacon", "cinder-mcp", "delta-image", "rpmly-cli"]);
   });
 
   it("picks the fixture's active feature", () => {

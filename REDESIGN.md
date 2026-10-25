@@ -138,6 +138,10 @@ no `lastmod`.
    its own row, in All too. One row per product: mark, name and
    primary kind badge, tagline and category, the primary kind's "get it"
    command with Copy, and one Docs button when the product has docs pages.
+   The "get it" column shows the one install line. For apt and rpm, Copy
+   takes the same text as Copy in the product page's install block, the
+   repository setup and then the install line, and its label says so. Copy
+   on any other method takes the shown command.
    Clicking anywhere else on the row opens the product page. Rows hold no
    media. Products with an `order` come first, lower first; the others
    follow, by `name`.

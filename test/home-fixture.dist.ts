@@ -39,8 +39,8 @@ const built = (url: string) => join(DIST, decodeURI(new URL(url, "https://wyrd.f
 
 describe("home page catalog", () => {
   it("has one row per product and per feature entry, in catalog order", () => {
-    expect(rowKeys()).toEqual(["alpha-cli", "cinder-mcp", "beacon", "delta-image", ...FEATURES]);
-    expect(tabCount("all")).toBe(7);
+    expect(rowKeys()).toEqual(["alpha-cli", "cinder-mcp", "aptly-cli", "rpmly-cli", "beacon", "delta-image", ...FEATURES]);
+    expect(tabCount("all")).toBe(9);
   });
 
   it("puts a multi-kind product under each of its kinds' tabs", () => {
@@ -64,6 +64,19 @@ describe("home page catalog", () => {
     expect(beacon.querySelectorAll(".kind-chip").map((c) => c.getAttribute("data-kind"))).toEqual(["app"]);
     expect(beacon.querySelector("[data-copy]")?.getAttribute("data-copy")).toBe("docker run ghcr.io/example-org/beacon:0.3");
     expect(beacon.querySelector(".home-row-getit code")?.text).toBe("docker run ghcr.io/example-org/beacon:0.3");
+  });
+
+  it("copies the repository setup and the install line for apt and rpm rows, and shows the install line", () => {
+    for (const [key, line] of [["aptly-cli", "sudo apt install aptly-cli"], ["rpmly-cli", "sudo dnf install rpmly-cli"]]) {
+      const r = row(key);
+      const copy = r.querySelector("[data-copy]")!;
+      expect(r.querySelector(".home-row-getit code")?.text, key).toBe(line);
+      const payload = copy.getAttribute("data-copy")!;
+      expect(payload.split("\n").length, key).toBeGreaterThan(2);
+      expect(payload.endsWith(`\n${line}`), key).toBe(true);
+      expect(copy.getAttribute("aria-label"), key).toBe(`Copy the repository setup and install command for ${key}`);
+    }
+    expect(row("alpha-cli").querySelector("[data-copy]")?.getAttribute("aria-label")).toBe("Copy the command for alpha-cli");
   });
 
   it("shows the logo where there is one, and the monogram where there is none", () => {
@@ -131,12 +144,12 @@ describe("home page featured card", () => {
   it("offers the browser every product but no feature entry", () => {
     const data = root.querySelector("[data-featured-candidates]")!;
     const keys = (JSON.parse(data.text) as { key: string }[]).map((c) => c.key).sort();
-    expect(keys).toEqual(["alpha-cli", "beacon", "cinder-mcp", "delta-image"]);
+    expect(keys).toEqual(["alpha-cli", "aptly-cli", "beacon", "cinder-mcp", "delta-image", "rpmly-cli"]);
     const templates = root
       .querySelectorAll("template[data-featured-template]")
       .map((t) => t.getAttribute("data-featured-template"))
       .sort();
-    expect(templates).toEqual(["alpha-cli", "beacon", "delta-image"]);
+    expect(templates).toEqual(["alpha-cli", "aptly-cli", "beacon", "delta-image", "rpmly-cli"]);
   });
 
   it("links Get started to the product's docs, or its install section", () => {

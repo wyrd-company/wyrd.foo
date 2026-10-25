@@ -39,6 +39,8 @@ test.describe("catalog", () => {
     expect(await rows(page)).toEqual([
       "alpha-cli",
       "cinder-mcp",
+      "aptly-cli",
+      "rpmly-cli",
       "beacon",
       "delta-image",
       "feature-one",
@@ -72,7 +74,7 @@ test.describe("catalog", () => {
     await expect(page.locator("[data-catalog-empty]")).toBeVisible();
 
     await page.locator("[data-catalog-filter]").fill("");
-    expect(await rows(page)).toHaveLength(7);
+    expect(await rows(page)).toHaveLength(9);
   });
 
   test("Copy writes the install command and stays on the page", async ({
@@ -91,6 +93,23 @@ test.describe("catalog", () => {
       "brew install example-org/tap/alpha-cli",
     );
     expect(page.url()).toBe(new URL("/", baseURL).href);
+  });
+
+  test("Copy on an apt row writes the repository setup and the install line", async ({
+    context,
+    page,
+    baseURL,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openHome(page, baseURL);
+    const row = page.locator('[data-catalog-row="aptly-cli"]');
+    await expect(row.locator(".home-row-getit code")).toHaveText("sudo apt install aptly-cli");
+    await row.locator("[data-copy]").click();
+    await expect(row.locator("[data-copy]")).toHaveText("Copied");
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copied).toContain("https://repo.wyrd.foo/apt stable main");
+    expect(copied).toContain("sudo apt update\nsudo apt install aptly-cli");
+    expect(copied.endsWith("sudo apt install aptly-cli")).toBe(true);
   });
 
   test("a click on a row elsewhere opens the product page", async ({ page, baseURL }) => {
@@ -124,7 +143,7 @@ test.describe("featured card", () => {
       const page = await context.newPage();
       await openHome(page, baseURL);
       expect(await featuredKeys(page)).toEqual(["cinder-mcp"]);
-      expect(await rows(page)).toHaveLength(7);
+      expect(await rows(page)).toHaveLength(9);
     } finally {
       await context.close();
     }

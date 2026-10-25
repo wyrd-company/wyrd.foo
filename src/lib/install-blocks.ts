@@ -223,6 +223,11 @@ function mcpInstallLabel(entry: McpInstallEntry): string {
   return `Add with ${mcpLabel(entry)}`;
 }
 
+/** What Copy takes from an install block: the setup above the install line (when there is one), then the line. */
+export function copyText(install: Pick<HeroInstall, "setup" | "command">): string {
+  return install.setup ? `${install.setup.code}\n${install.command}` : install.command;
+}
+
 /** The command the hero shows for a kind: its default install, or its devcontainer.json snippet. */
 export function heroInstall(block: KindBlock): HeroInstall {
   switch (block.kind) {

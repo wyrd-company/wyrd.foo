@@ -10,6 +10,7 @@
 import { isFeatureEntry } from "../schema/docs-file.ts";
 import type { ToolFeature, ToolFile, ToolProduct } from "../schema/tool-file.ts";
 import { KINDS, type Kind, type Status } from "../schema/vocabulary.ts";
+import { copyText, heroInstall } from "./install-blocks.ts";
 import { inTab } from "./catalog-filter.ts";
 import type { FeaturedCandidate } from "./featured.ts";
 import { productAssetUrl } from "./product-assets.ts";
@@ -93,6 +94,8 @@ export interface CatalogRow {
   kinds: Kind[];
   primaryKind: Kind;
   getIt: string;
+  /** What the row's Copy takes: the get-it line, with the repository setup above it for apt and rpm. */
+  copyText: string;
   hasDocs: boolean;
   isFeature: boolean;
   logo?: string;
@@ -126,6 +129,8 @@ export function catalogRows(entries: readonly HomeEntry[]): CatalogRow[] {
     const { key, data, hasDocs } = entry;
     const feature = isFeature(data);
     const primary = data.kinds[0];
+    const getIt = getItCommand(primary);
+    const { setup } = heroInstall(primary);
     return {
       key,
       name: data.name,
@@ -134,7 +139,8 @@ export function catalogRows(entries: readonly HomeEntry[]): CatalogRow[] {
       status: feature ? undefined : data.status,
       kinds: data.kinds.map((block) => block.kind),
       primaryKind: primary.kind,
-      getIt: getItCommand(primary),
+      getIt,
+      copyText: setup ? copyText({ setup, command: getIt }) : getIt,
       hasDocs,
       isFeature: feature,
       ...markOf(entry),

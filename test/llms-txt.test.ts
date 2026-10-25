@@ -14,6 +14,7 @@ const row = (key: string, name: string, tagline: string): CatalogRow => ({
   kinds: ["cli"],
   primaryKind: "cli",
   getIt: "",
+  copyText: "",
   hasDocs: false,
   isFeature: false,
 });

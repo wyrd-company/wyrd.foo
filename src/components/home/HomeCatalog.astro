@@ -70,7 +70,12 @@ const tabs = kindTabs(rows);
           </div>
           <div class="home-row-getit">
             <code title={row.getIt}>{row.getIt}</code>
-            <button type="button" class="home-copy" data-copy={row.getIt} aria-label={`Copy the command for ${row.name}`}>
+            <button
+              type="button"
+              class="home-copy"
+              data-copy={row.copyText}
+              aria-label={`Copy the ${row.copyText === row.getIt ? "" : "repository setup and install "}command for ${row.name}`}
+            >
               Copy
             </button>
           </div>
