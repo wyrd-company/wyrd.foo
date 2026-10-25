@@ -228,6 +228,15 @@ pipeline and styles as the full changelog.
   version · date", linked to the product's releases page, then its latest
   entry. Products without a release or without a changelog are not listed,
   so a feature entry shows once its unit has a changelog.
+  An entry taller than 20rem (about 12 lines of its text) is clamped to that
+  height with a fade at the bottom, and a "Show more" button below it expands
+  the entry in place. The button then reads "Show less" and collapses it. It
+  is a real `<button>` with `aria-expanded` and `aria-controls` that names
+  the entry's body, it keeps the focus, and the change has no animation. A
+  script clamps only the entries that overflow, so a short entry has no
+  button and no fade, and without script every entry shows in full. The
+  clamp is visual: search indexes the whole entry. The product page's
+  Releases section and `/tools/<key>/releases` do not clamp.
 - **`/tools/<key>/releases`**: one page for every product. The breadcrumb
   (Catalog / category / product / Releases), the product's mark and name, and
   the product's favicon and social image, as on its product page; then the

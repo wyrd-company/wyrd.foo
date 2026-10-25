@@ -84,6 +84,26 @@ describe("/releases", () => {
   it("is indexed for search", () => {
     expect(root().querySelectorAll("[data-pagefind-body]")).toHaveLength(1);
   });
+
+  it("has the full text of a long entry in the HTML, clamped or not", () => {
+    // The clamp is visual and added by script: the built entry holds all of its text.
+    const lantern = text(entry("lantern").querySelector(".product-prose"));
+    expect(lantern).toContain("Add the version option.");
+    expect(lantern).toContain("Add the last-lantern-option option.");
+    expect(entry("lantern").querySelector("[data-release-body]")).not.toBeNull();
+    expect(entry("lantern").querySelector("[data-pagefind-ignore]")).toBeNull();
+  });
+
+  it("ships the Show more button hidden: only script shows it", () => {
+    for (const key of ["gadget", "lantern", "widget"]) {
+      const button = entry(key).querySelector("button[data-release-toggle]");
+      expect(button?.hasAttribute("hidden"), key).toBe(true);
+      expect(button?.getAttribute("aria-expanded"), key).toBe("false");
+      const id = button?.getAttribute("aria-controls");
+      expect(id, key).toBeTruthy();
+      expect(entry(key).querySelector(`[data-release-body]`)?.id, key).toBe(id);
+    }
+  });
 });
 
 describe("/tools/<key>/releases", () => {
@@ -130,6 +150,13 @@ describe("/tools/<key>/releases", () => {
 
   it("marks Releases current in the header", () => {
     expect(headerReleases(page("widget"))?.getAttribute("aria-current")).toBe("page");
+  });
+
+  it("has no Show more button or clamp", () => {
+    for (const key of PRODUCTS) expect(page(key).querySelector("[data-release-toggle], [data-release-body]"), key).toBeNull();
+    for (const key of ["widget", "gadget", "lantern"]) {
+      expect(built(`tools/${key}`).querySelector("[data-release-toggle], [data-release-body]"), key).toBeNull();
+    }
   });
 
   it("is indexed for search with its product", () => {

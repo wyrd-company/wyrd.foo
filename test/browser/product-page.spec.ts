@@ -2,8 +2,8 @@
  * The product pages in a browser, built from the fixture content in
  * test/fixtures/product-content (`pnpm build:product-fixture`): platform tabs,
  * method pills and kind tabs, the arrow keys, Copy, the Releases links, the
- * releases pages in each theme, the theme's logo, and no sideways scroll on a
- * phone.
+ * releases pages in each theme, the clamp on /releases, the theme's logo, and
+ * no sideways scroll on a phone.
  */
 import { expect, test, type Page } from "@playwright/test";
 import { openPage, store } from "./support";
@@ -432,4 +432,89 @@ test.describe("releases pages in each theme", () => {
       }
     });
   }
+});
+
+/*
+ * /releases clamps an entry that is taller than the clamp height and expands
+ * it in place. lantern's latest entry is long; widget's is short.
+ */
+const LONG = '[data-release-entry="lantern"]';
+const SHORT = '[data-release-entry="widget"]';
+const LAST_LINE = "Add the last-lantern-option option.";
+
+test.describe("/releases clamp", () => {
+  const toggle = (page: Page, entry: string) => page.locator(`${entry} [data-release-toggle]`);
+  const body = (page: Page, entry: string) => page.locator(`${entry} [data-release-body]`);
+  const height = (page: Page, entry: string) => body(page, entry).evaluate((el) => el.getBoundingClientRect().height);
+
+  test("clamps a long entry, with a Show more button", async ({ page, baseURL }) => {
+    await openPage(page, baseURL, "/releases/");
+    await expect(toggle(page, LONG)).toBeVisible();
+    await expect(toggle(page, LONG)).toHaveText("Show more");
+    await expect(toggle(page, LONG)).toHaveAttribute("aria-expanded", "false");
+    await expect(toggle(page, LONG)).toHaveAttribute("aria-controls", (await body(page, LONG).getAttribute("id"))!);
+    expect(await height(page, LONG)).toBeLessThan(
+      await body(page, LONG).evaluate((el) => el.scrollHeight),
+    );
+    await expect(page.locator(LONG).getByText(LAST_LINE)).not.toBeInViewport({ ratio: 0.01 });
+  });
+
+  test("expands in place on a click, and collapses on the next", async ({ page, baseURL }) => {
+    await openPage(page, baseURL, "/releases/");
+    const url = page.url();
+    const button = toggle(page, LONG);
+    const clamped = await height(page, LONG);
+    await button.click();
+    await expect(button).toHaveAttribute("aria-expanded", "true");
+    await expect(button).toHaveText("Show less");
+    await expect(button).toBeFocused();
+    await expect(page.locator(LONG).getByText(LAST_LINE)).toBeVisible();
+    expect(await height(page, LONG)).toBeGreaterThan(clamped);
+    expect(page.url()).toBe(url);
+    await button.click();
+    await expect(button).toHaveAttribute("aria-expanded", "false");
+    await expect(button).toHaveText("Show more");
+    await expect(button).toBeFocused();
+    await expect(page.locator(LONG).getByText(LAST_LINE)).not.toBeInViewport({ ratio: 0.01 });
+    expect(await height(page, LONG)).toBe(clamped);
+    expect(page.url()).toBe(url);
+  });
+
+  test("works with the keyboard", async ({ page, baseURL }) => {
+    await openPage(page, baseURL, "/releases/");
+    const button = toggle(page, LONG);
+    await button.focus();
+    await page.keyboard.press("Enter");
+    await expect(button).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("Space");
+    await expect(button).toHaveAttribute("aria-expanded", "false");
+    await expect(button).toBeFocused();
+  });
+
+  test("gives a short entry no button and no clamp", async ({ page, baseURL }) => {
+    await openPage(page, baseURL, "/releases/");
+    await expect(page.locator(`${SHORT} [data-release-body]`)).toBeVisible();
+    await expect(toggle(page, SHORT)).toBeHidden();
+    await expect(page.locator(`${SHORT} .release-entry.is-clamped`)).toHaveCount(0);
+  });
+
+  test("keeps the other pages' entries whole", async ({ page, baseURL }) => {
+    await openPage(page, baseURL, "/tools/lantern/releases/");
+    await expect(page.getByText(LAST_LINE).first()).toBeVisible();
+    await openPage(page, baseURL, "/tools/lantern/");
+    await expect(page.locator("#releases").getByText(LAST_LINE).first()).toBeVisible();
+  });
+});
+
+test.describe("/releases clamp without script", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("shows a long entry in full, with no button", async ({ page, baseURL }) => {
+    await openPage(page, baseURL, "/releases/");
+    await expect(page.locator(LONG).getByText(LAST_LINE)).toBeVisible();
+    await expect(page.locator(`${LONG} [data-release-toggle]`)).toBeHidden();
+    const body = page.locator(`${LONG} [data-release-body]`);
+    // Nothing is cut off: the body is as tall as its content.
+    expect(await body.evaluate((el) => el.scrollHeight - el.clientHeight)).toBe(0);
+  });
 });

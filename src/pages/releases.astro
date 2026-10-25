@@ -3,7 +3,7 @@
  * /releases (REDESIGN.md, "Releases"): one entry per product that has a
  * release and a changelog, newest release first. Each entry is the product's
  * mark, name, kind, version and date, linked to the product's releases page,
- * then its latest changelog entry.
+ * then its latest changelog entry, clamped when it is long (ReleaseEntry).
  */
 import { getCollection, render } from "astro:content";
 import ProductMark from "../components/ProductMark.astro";
@@ -49,7 +49,7 @@ const listings = await Promise.all(
                     All releases →
                   </span>
                 </a>
-                <ReleaseEntry>
+                <ReleaseEntry id={`release-body-${key}`}>
                   <Content />
                 </ReleaseEntry>
               </article>
