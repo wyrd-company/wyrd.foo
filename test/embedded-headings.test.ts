@@ -1,6 +1,6 @@
-import { createMarkdownProcessor } from "@astrojs/markdown-remark";
+import { createMarkdownProcessor, parseFrontmatter } from "@astrojs/markdown-remark";
 import { describe, expect, it } from "vitest";
-import { embeddedUnit, nestHeadings, rehypeEmbeddedHeadings } from "../src/lib/embedded-headings";
+import { embeddedUnit, nestHeadings, rehypeEmbeddedHeadings, withEmbeddedUnit } from "../src/lib/embedded-headings";
 
 type Node = { type: string; tagName?: string; properties?: Record<string, unknown>; children?: Node[] };
 const el = (tagName: string, properties: Record<string, unknown> = {}, children: Node[] = []): Node => ({ type: "element", tagName, properties, children });
@@ -82,9 +82,11 @@ describe("nestHeadings", () => {
 });
 
 describe("rehypeEmbeddedHeadings in Astro's Markdown pipeline", () => {
+  // As the content layer renders a document: front matter first, then the body.
   const render = async (path: string, markdown: string) => {
     const processor = await createMarkdownProcessor({ rehypePlugins: [[rehypeEmbeddedHeadings, { contentRoot: "/work/content" }]] });
-    return (await processor.render(markdown, { fileURL: new URL(`file://${path}`) })).code;
+    const { frontmatter, content } = parseFrontmatter(markdown);
+    return (await processor.render(content, { frontmatter, fileURL: new URL(`file://${path}`) })).code;
   };
   const markdown = "# Title\n\n## Usage\n\n[to usage](#usage)\n\n<h2>Raw heading</h2>\n";
 
@@ -102,5 +104,16 @@ describe("rehypeEmbeddedHeadings in Astro's Markdown pipeline", () => {
     expect(html).toContain('<h2 id="usage">Usage</h2>');
     expect(html).toContain('<a href="#usage">to usage</a>');
     expect(html).toContain("<h2>Raw heading</h2>");
+  });
+
+  it("prefixes the ids of a release entry with the unit its front matter names", async () => {
+    const html = await render("/work/content/widget/CHANGELOG.md", withEmbeddedUnit("### Fixes\n\n[to fixes](#fixes)\n", "changelog--widget"));
+    expect(html).toContain('<h3 id="changelog--widget--fixes">Fixes</h3>');
+    expect(html).toContain('<a href="#changelog--widget--fixes">to fixes</a>');
+  });
+
+  it("ignores that front matter on a docs page", async () => {
+    const html = await render("/work/content/widget/docs/guide.md", withEmbeddedUnit("## Usage\n", "changelog--widget"));
+    expect(html).toContain('<h2 id="usage">Usage</h2>');
   });
 });

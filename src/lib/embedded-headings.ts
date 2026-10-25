@@ -2,7 +2,10 @@
  * Embedded Markdown on the product page: a feature's README and the code unit
  * changelog render inside the page's own sections, so their headings nest
  * under the section's <h2> and their ids cannot take a section's id. A rehype
- * step does it for those two files only; docs pages render as before.
+ * step does it for those two files only; docs pages render as before. A
+ * release entry of the changelog (src/lib/latest-entries.ts) renders as its
+ * changelog, with a unit of its own in its front matter, so entries of two
+ * products on one page keep apart.
  */
 import { relative, resolve, sep } from "node:path";
 
@@ -14,6 +17,14 @@ const UNITS: Record<string, string> = { "README.md": "readme", "CHANGELOG.md": "
 
 /** The separator between the prefix and the heading's own id. No section id of the page holds it. */
 export const PREFIX_SEPARATOR = "--";
+
+/** The front matter key that names the unit of an embedded document in place of its file name's. */
+const UNIT_KEY = "embedded-unit";
+
+/** Markdown with front matter that names its unit. */
+export function withEmbeddedUnit(markdown: string, unit: string): string {
+  return `---\n${UNIT_KEY}: ${JSON.stringify(unit)}\n---\n\n${markdown}`;
+}
 
 export function embeddedUnit(path: string | undefined, contentRoot: string): string | undefined {
   if (!path) return undefined;
@@ -76,8 +87,13 @@ export function nestHeadings(tree: HastNode, unit: string): void {
   });
 }
 
+interface MarkdownFile {
+  path?: string;
+  data: { astro?: { frontmatter?: Record<string, unknown> } };
+}
+
 interface Processor {
-  use(plugin: () => (tree: HastNode, file: { path?: string }) => void): unknown;
+  use(plugin: () => (tree: HastNode, file: MarkdownFile) => void): unknown;
 }
 
 /**
@@ -88,6 +104,9 @@ interface Processor {
 export function rehypeEmbeddedHeadings(this: Processor, options: { contentRoot: string }): void {
   this.use(() => (tree, file) => {
     const unit = embeddedUnit(file.path, options.contentRoot);
-    if (unit) nestHeadings(tree, unit);
+    if (!unit) return;
+    // Only an embedded document's front matter can name its unit: a docs page's cannot.
+    const named = file.data.astro?.frontmatter?.[UNIT_KEY];
+    nestHeadings(tree, typeof named === "string" && named !== "" ? named : unit);
   });
 }

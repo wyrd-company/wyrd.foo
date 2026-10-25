@@ -1,6 +1,8 @@
 import { defineCollection } from "astro:content";
+import { z } from "astro/zod";
 import { contentGlob } from "./lib/content-glob.ts";
 import { CONTENT_ROOT } from "./lib/content-root.ts";
+import { latestEntries } from "./lib/latest-entries.ts";
 import { pageSchema, pageSlugOf, toolFileSchema, withClosestIssues } from "./schema/index.ts";
 
 // Collections validated by the shared docs contract in src/schema/. The
@@ -49,8 +51,8 @@ const featureReadmes = defineCollection({
   }),
 });
 
-// `<key>/CHANGELOG.md`: the code unit changelog, shown in the product page's
-// Releases section.
+// `<key>/CHANGELOG.md`: the code unit changelog, shown on the product's
+// releases page (`/tools/<key>/releases`).
 const codeChangelogs = defineCollection({
   loader: contentGlob({
     pattern: "*/CHANGELOG.md",
@@ -59,4 +61,11 @@ const codeChangelogs = defineCollection({
   }),
 });
 
-export const collections = { products, pages, docsChangelogs, featureReadmes, codeChangelogs };
+// The first `## <version>` section of each `<key>/CHANGELOG.md`: the latest
+// release entry, shown in the product page's Releases section and on /releases.
+const latestReleaseEntries = defineCollection({
+  loader: latestEntries(CONTENT_ROOT),
+  schema: z.object({ version: z.string() }),
+});
+
+export const collections = { products, pages, docsChangelogs, featureReadmes, codeChangelogs, latestReleaseEntries };
