@@ -104,7 +104,7 @@ async function runRepo(options: LocalOptions, repo: LocalConfig["repos"][number]
     }
     report.ref = branch.ref;
     report.oid = branch.oid;
-    const result = await compute(report, dir, repo.owner, gitFiles(dir, branch.oid), options.releases);
+    const result = await compute(report, dir, repo.owner, gitFiles(dir, branch.oid), options.releases, false);
     if (result === undefined) return report;
     const applied = applyRepo(options.contentDir, result);
     report.findings.push(...result.findings, ...applied.findings);
@@ -126,12 +126,14 @@ export interface ValidateOptions {
   /** `owner/repo`; default from the clone's origin remote. */
   owner?: string;
   releases?: ReleaseLookup;
+  /** Publish mode's severities: an unmet publishing requirement is an error. Needs `releases`. */
+  strict?: boolean;
 }
 
 /**
  * Run local mode's checks on one checkout and report the findings. Nothing is
  * written, so key ownership is not checked. The outcome is `passed` when the
- * repo would publish.
+ * repo would publish: in local mode, or with `strict`, in publish mode.
  */
 export async function validateRepo(options: ValidateOptions): Promise<RepoReport> {
   const dir = resolve(options.dir);
@@ -148,7 +150,7 @@ export async function validateRepo(options: ValidateOptions): Promise<RepoReport
       report.oid = oid;
       files = gitFiles(dir, oid);
     }
-    const result = await compute(report, dir, options.owner, files, options.releases);
+    const result = await compute(report, dir, options.owner, files, options.releases, options.strict ?? false);
     if (result === undefined) return report;
     report.findings.push(...result.findings);
     report.outcome = result.failed ? "failed" : "passed";
@@ -160,7 +162,14 @@ export async function validateRepo(options: ValidateOptions): Promise<RepoReport
 }
 
 // The shared path of local mode and validate: name the owner, then run the core.
-async function compute(report: RepoReport, dir: string, owner: string | undefined, files: RepoFiles, releases: ReleaseLookup | undefined) {
+async function compute(
+  report: RepoReport,
+  dir: string,
+  owner: string | undefined,
+  files: RepoFiles,
+  releases: ReleaseLookup | undefined,
+  strict: boolean,
+) {
   const hasGit = existsSync(join(dir, ".git"));
   const url = hasGit ? await originUrl(dir) : undefined;
   const ownerRepo = owner ?? (url === undefined ? undefined : ownerRepoOf(url));
@@ -170,7 +179,7 @@ async function compute(report: RepoReport, dir: string, owner: string | undefine
   }
   report.ownerRepo = ownerRepo;
   const tags: RepoTags = hasGit ? gitTags(dir) : { read: async () => undefined };
-  return computeRepo({ ownerRepo, files, tags, releases, strict: false });
+  return computeRepo({ ownerRepo, files, tags, releases, strict });
 }
 
 /** The report as printed: one block per repo, then a summary line. */

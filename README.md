@@ -131,7 +131,15 @@ task dev:v2 ASTRO_ARGS="--port 4417 --host" -- --offline  # both
 task publish:local        # the publisher step only
 task validate:repo -- ../gitpr                    # one checkout's working tree
 task validate:repo -- ../gitpr --ref wyrd-foo-v2  # one ref of a checkout
+task validate:repo -- ../gitpr --strict           # fail on what publish fails on
 ```
+
+`validate:repo` reports a publishing requirement that the repo does not meet
+yet (no GitHub Release, no release tag, no changelog) as a warning, so a repo
+that does not publish yet can still be checked. Publish fails on the same
+finding. For a repo that already publishes, add `--strict`: it uses publish's
+severities, so the run fails before the tag push, not after it. `--strict`
+reads GitHub Releases, so it does not go with `--offline`.
 
 ## Browser tests
 
