@@ -1,11 +1,8 @@
 name: intentional
-version: 0.1.0
+version: 0.2.1
 docs-version: 0.1.0
-release-unit: intentional
 tagline: Intent-driven polyglot releases.
-blurb: Declare release intent once, project versions across package ecosystems, and create
-  verifiable annotated release records without handing publication or repository choreography to the
-  versioning tool.
+blurb: Declare release intent once, project versions across package ecosystems, and create verifiable annotated release records without handing publication or repository choreography to the versioning tool.
 status: stable
 category: Release & Versioning
 order: 2
@@ -19,20 +16,55 @@ kinds:
         default: true
         command: brew install wyrd-company/tools/intentional
       - method: cargo
-        os: &a1
+        os:
           - macos
           - linux
           - windows
         command: cargo install intentional-cli --locked
       - method: npm
-        os: *a1
+        os:
+          - macos
+          - linux
+          - windows
         command: npm install --global @wyrd-company/intentional
       - method: npx
-        os: *a1
+        os:
+          - macos
+          - linux
+          - windows
         command: npx --yes @wyrd-company/intentional --version
 highlights:
-  - Intent-driven polyglot releases.
+  - Pending intent files declare what changes; annotated Git tags record what was released.
+  - Projects one version into npm, Cargo, Pub, Python, MSBuild, Go, Dev Container and generic JSON, TOML and YAML manifests, keeping their formatting.
+  - Previews the next version of each release unit before it writes anything.
+  - Writes changelogs and annotated release tags; commits, pushes and publication stay with your pipeline.
+  - Adopts versions a repository already released, and takes over from Changesets.
+  - Ships as one native executable from Homebrew, Cargo or npm, and as a GitHub Action.
 media:
   - src: assets/demo.gif
-    caption: Intentional computes and previews the next version from a pending change intent
+    caption: Intentional computes and previews the next version from a pending change intent.
+    alt: Terminal recording of intentional adding a change intent and previewing the next release version.
+logo: assets/logo.svg
+logo-dark: assets/logo-dark.svg
+favicon: assets/favicon.svg
+social-image: assets/social-image.png
+release-unit: intentional
 owner: wyrd-company/intentional
+docs-path: docs/user
+release:
+  version: 0.2.1
+  date: 2026-10-26T10:12:41.000Z
+  url: https://github.com/wyrd-company/intentional/releases/tag/0.2.1
+  notes: |+
+    ## 0.2.1
+
+    ### Features
+
+    - A projection `file` that starts with `/` is relative to the repository root, so that several release units can write their versions into one shared `json`, `toml`, or `yaml` file while each changelog stays at its release-unit path. Configuration load refuses two projections that write the same field of one file, and `status`, `check`, `apply`, `stamp`, and `tag` also refuse them when they reach one file through a symlink, a hard link, or letter case. Every command refuses a projection file or changelog that resolves outside the repository.
+
+    ### Fixes
+
+    - Refuse a baseline when an existing release record's tag id, version, contract, or baseline field does not match the tag it occupies.
+    - `apply` and `stamp` no longer lose an edit when release units reach one shared projection file through different paths, such as symlinks, letter case, or a `./` prefix. A `json` pointer now selects an array element only by its index without leading zeros, so that `/versions/01` cannot write the same element as `/versions/1`.
+    - Document that an internal dependency bump propagates only between release units that share an ecosystem adapter.
+

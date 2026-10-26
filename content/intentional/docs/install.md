@@ -1,8 +1,8 @@
 ---
 title: Installation
-product: intentional
 order: 2
 install: true
+product: intentional
 relationships:
   implements: intent-driven-polyglot-release
 ---
@@ -35,7 +35,7 @@ cargo install intentional-cli --locked
 ```
 
 `--locked` builds against the crate's published lockfile. The minimum supported
-Rust version is 1.85.
+Rust version is 1.88.
 
 ## npm and npx
 
@@ -53,11 +53,11 @@ npx --yes @wyrd-company/intentional --version
 ```
 
 The npm package does not contain a second implementation. During installation
-it selects the matching Intentional GitHub Release archive, downloads it, and
-verifies its SHA-256 checksum against the release checksum evidence before
-installing the native executable. The launcher then forwards arguments,
-standard streams, signals where the platform supports them, and the native
-process exit status.
+it selects the matching archive from an immutable, attested Intentional GitHub
+Release, downloads it, and verifies its SHA-256 checksum against the release
+checksum evidence before installing the native executable. The launcher then
+forwards arguments, standard streams, signals where the platform supports
+them, and the native process exit status.
 
 The npm launcher supports these released platform and architecture pairs:
 
@@ -69,10 +69,52 @@ The npm launcher supports these released platform and architecture pairs:
 
 Use Cargo or a source build on other platforms.
 
+## Linux GNU compatibility
+
+The `intentional-linux-x86_64.tar.gz` and `intentional-linux-arm64.tar.gz`
+archives are dynamically linked GNU/Linux position-independent executables.
+Intentional builds both through pinned cross-rs 0.2.5 images whose annotated
+tag object `f8151ae777290430cf2108efacf3976d9528500b` resolves to source commit
+`88f49ff79e777bef6d3564531636ee4d3cc2f8d2`. Both image configs label
+`org.opencontainers.image.revision=88f49ff79e777bef6d3564531636ee4d3cc2f8d2`,
+version `v0.2.5`, and the cross repository source. The Dockerfiles are
+`docker/Dockerfile.x86_64-unknown-linux-gnu` and
+`docker/Dockerfile.aarch64-unknown-linux-gnu` at that commit.
+
+The build containers use Ubuntu 16.04, which is end-of-life. Both registry
+images are amd64-hosted cross-compilation containers; the aarch64 image
+produces ARM64 targets and is not a native ARM64 build container. Their GNU
+sysroots ship glibc 2.23. Release automation measures each binary and verifies
+that its maximum required glibc symbol version is `GLIBC_2.18` or lower before
+packaging. That symbol ceiling is the binary requirement; supported runtimes
+must provide glibc at least at that version.
+
+Supported GNU/Linux environments:
+
+| Environment | Execution model |
+| --- | --- |
+| Ubuntu 22.04 LTS | native or containerized |
+| Ubuntu 24.04 LTS | native or containerized |
+
+Alpine Linux and other musl-only distributions are outside this GNU contract.
+Use a supported Ubuntu release or build from source when the published GNU
+archives do not match your environment.
+
+Baseline refresh is deliberate and occurs when a Rust or compiler bump, image
+deletion or registry unavailability, measured GLIBC symbol-ceiling drift, or
+security or toolchain concerns require it. A replacement image must retain the
+same-or-older compatibility sysroot and pass the full linux-gnu evidence
+matrix; moving to the next cross tag alone is not sufficient without that proof.
+The frozen end-of-life build base carries toolchain-provenance and no-rebuild
+risk that each refresh must address explicitly.
+
 ## GitHub Release binaries
 
-Each GitHub Release contains the native archives listed above and a
-`SHA256SUMS` file. Download both from the same bare-SemVer release, verify the
+Each published GitHub Release is immutable and contains the native archives
+listed above plus `SHA256SUMS`. GitHub's signed release attestation is the
+independent identity authority for the tag and every archive digest.
+`SHA256SUMS` provides portable verification inside that immutable record.
+Download both from the same bare-SemVer release, verify the attestation and
 archive before extraction, and place the `intentional` executable on your
 `PATH`. The archive names are:
 
@@ -83,6 +125,29 @@ archive before extraction, and place the `intentional` executable on your
 
 Use this path when a package manager is unavailable or when an installation
 harness needs the native release artifact directly.
+
+On a fresh runner with GitHub CLI 2.96 or later:
+
+```bash
+release=1.2.3
+asset=intentional-linux-x86_64.tar.gz
+gh release verify "$release" --repo wyrd-company/intentional
+gh release download "$release" \
+  --repo wyrd-company/intentional \
+  --pattern "$asset" \
+  --pattern SHA256SUMS
+gh release verify-asset "$release" "$asset" \
+  --repo wyrd-company/intentional
+sha256sum --check --ignore-missing SHA256SUMS
+```
+
+`gh release verify` prints the stable per-asset digests from GitHub's signed
+attestation. `gh release verify-asset` binds the downloaded bytes to that
+specific release rather than trusting a checksum file as an independent
+authority. The npm launcher does not query GitHub's attestation API; its
+checksum trust derives from the immutable release that binds the archive and
+`SHA256SUMS`. The fresh-runner commands above additionally expose and verify
+GitHub's independently signed proof.
 
 ## GitHub Actions
 
