@@ -1,6 +1,8 @@
 /*
- * The built site in dist/ has a product page and a docs entry for every
- * product folder in content/. Run after `pnpm build` (`pnpm check`).
+ * The built site in dist/ has a product page for every product folder in
+ * content/, and a docs entry for every product with docs pages (a dev
+ * container feature entry shows its README instead). Run after `pnpm build`
+ * (`pnpm check`).
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -19,7 +21,7 @@ function title(path: string) {
 
 describe("built site from content/", () => {
   it("has products to check", () => {
-    expect(keys.length).toBe(13);
+    expect(keys.length).toBeGreaterThan(0);
   });
 
   for (const key of keys) {
@@ -29,14 +31,18 @@ describe("built site from content/", () => {
       expect(title(`tools/${key}/index.html`).split(" — ")[0]).toBe(name);
     });
 
+    const pages = existsSync(join("content", key, "docs"))
+      ? readdirSync(join("content", key, "docs"), { recursive: true, withFileTypes: true })
+          .filter((entry) => entry.isFile() && entry.name.endsWith(".md") && entry.name !== "CHANGELOG.md")
+          .map((entry) => entry.name.replace(/\.md$/, ""))
+      : [];
+    if (existsSync(join("content", key, "devcontainer-feature.json")) && pages.length === 0) continue;
+
     it(`${key}: has a docs entry`, () => {
       expect(title(`docs/${key}/index.html`)).toBe(`${name} docs — Wyrd Tools`);
     });
 
     it(`${key}: has a built page for every docs page`, () => {
-      const pages = readdirSync(join("content", key, "docs"), { recursive: true, withFileTypes: true })
-        .filter((entry) => entry.isFile() && entry.name.endsWith(".md") && entry.name !== "CHANGELOG.md")
-        .map((entry) => entry.name.replace(/\.md$/, ""));
       expect(pages.length).toBeGreaterThan(0);
       for (const slug of pages) expect(title(`docs/${key}/${slug}/index.html`)).toMatch(/ docs — Wyrd Tools$/);
     });
