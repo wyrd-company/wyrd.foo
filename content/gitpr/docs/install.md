@@ -1,6 +1,6 @@
 ---
-title: Installation
 product: gitpr
+title: Installation
 order: 2
 install: true
 ---

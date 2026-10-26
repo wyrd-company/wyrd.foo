@@ -1,6 +1,6 @@
 ---
-title: Command reference
 product: gitpr
+title: Command reference
 order: 4
 ---
 

@@ -1,6 +1,6 @@
 ---
-title: Overview
 product: gitpr
+title: Overview
 order: 1
 ---
 
