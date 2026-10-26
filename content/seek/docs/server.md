@@ -1,7 +1,7 @@
 ---
 title: Server mode
-product: seek
 order: 8
+product: seek
 ---
 
 `seek serve` runs seek as a back-end that holds the provider API keys. Point

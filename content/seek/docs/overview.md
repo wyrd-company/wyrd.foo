@@ -1,7 +1,7 @@
 ---
 title: Overview
-product: seek
 order: 1
+product: seek
 ---
 
 seek is built with Bun and TypeScript and compiles to a single-file native
