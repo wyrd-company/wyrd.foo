@@ -22,8 +22,8 @@ proposed-design:
     ```text
     tool repo                                     wyrd.foo
     ─────────                                     ────────
-    push of a code tag or a docs tag,
-    or a manual run
+    the release workflow succeeds, a docs
+    tag is pushed, or a manual run
       └─ calling workflow
            └─ reusable workflow (wyrd.foo) @v2
                 └─ publish-docs@v2 (publisher core)
@@ -42,7 +42,7 @@ proposed-design:
   publishing-requirements: |
     A repo that publishes to wyrd.foo meets all of these:
 
-    - The repo uses intentional, at version 0.1.7 or later. Its
+    - The repo uses intentional, at version 0.2.1 or later. Its
       `.intentional/config.yml` declares `contract: contract-1`, and each
       release unit has exactly one tag with `role: primary`.
     - Each product names one release unit in `release-unit:`. The default is
@@ -373,17 +373,17 @@ proposed-design:
         path: .
         projections:
           - adapter: yaml
-            file: docs/user/docs.yml
-            mode: committed
+            file: /docs/user/docs.yml
             pointer: /products/trowel/version
+            mode: committed
       trowel-docs:                     # docs unit
         path: docs/user
         depends-on: [ trowel ]
         projections:
           - adapter: yaml
-            file: docs.yml
-            mode: committed
+            file: /docs/user/docs.yml
             pointer: /products/trowel/docs-version
+            mode: committed
         tags:
           primary: { role: primary, template: "{id}@{version}" }
     ```
@@ -391,8 +391,9 @@ proposed-design:
     - `version` is the code unit's version: the version a user installs.
     - `docs-version` is the docs unit's version. The docs unit is
       `<key>-docs`, at path `docs/user`, with `depends-on: [<code unit>]` and
-      the tag `<key>-docs@{version}`. Projection file paths are relative to
-      the unit path. A docs-only intent moves only `docs-version`, so docs
+      the tag `<key>-docs@{version}`. Projection file paths are root-relative:
+      a leading `/` names a path from the repo root, whatever the unit's
+      path. A docs-only intent moves only `docs-version`, so docs
       release on their own, with their own intents, changelog and tags.
     - A repo with one docs unit keeps it at `docs/user`, so its changelog is
       `docs/user/CHANGELOG.md`. A repo with more than one docs unit gives
@@ -428,52 +429,71 @@ proposed-design:
     without edits to tool repos.
 
     ```yaml
-    name: Publish to wyrd.foo
+    name: Publish docs
 
     on:
+      workflow_run:
+        workflows: [ Release ]        # the repo's release workflow
+        types: [ completed ]
       push:
         tags:
-          - "[0-9]*"            # code unit tags ({version})
-          - "trowel-docs@*"     # docs unit tags
+          - "trowel-docs@*"           # docs unit tags
       workflow_dispatch:
         inputs:
           ref:
             description: Tag or commit to publish
             required: true
+            type: string
           feature:
             description: Feature a product on the front page
             type: boolean
             default: false
           feature-product:
             description: The product key to feature; empty when the repo has one product
+            type: string
             default: ""
           feature-days:
             description: How long the feature lasts, in days
+            type: string
             default: "14"
           feature-reason:
             description: For example "New MCP server"; default "New release"
+            type: string
             default: ""
 
-    permissions:
-      contents: read
+    permissions: {}
 
     jobs:
       publish:
+        if: >-
+          github.event_name != 'workflow_run' ||
+          (github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_repository.full_name == github.repository)
+        permissions:
+          contents: read
         uses: wyrd-company/wyrd.foo/.github/workflows/publish-docs.yml@v2
         with:
-          ref: ${{ inputs.ref || github.ref_name }}
+          ref: ${{ inputs.ref || github.event.workflow_run.head_branch || github.ref_name }}
           feature: ${{ inputs.feature || false }}
           feature-product: ${{ inputs.feature-product || '' }}
           feature-days: ${{ inputs.feature-days || '14' }}
           feature-reason: ${{ inputs.feature-reason || '' }}
-        secrets: inherit
+        secrets:
+          WYRD_TOOLS_DOCS_PUBLISHER_APP_ID: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_APP_ID }}
+          WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY }}
     ```
 
-    - The trigger is a push of a code tag or a docs tag, plus a manual run.
-      The tag patterns follow the repo's tag templates in
-      `.intentional/config.yml`.
+    - The triggers are the repo's release workflow completing, a push of a
+      `<key>-docs@*` tag, and a manual run. The release workflow runs only
+      for release tags, so a successful run from a push names a release tag
+      as its head branch, and the publisher reads that tag's GitHub Release
+      after the release workflow creates it. The `if:` guard accepts a
+      `workflow_run` only when it succeeded, came from a push and ran in the
+      same repo.
     - A plain push to `main` does not publish.
-    - A tag push passes no feature inputs, so it features nothing.
+    - A `workflow_run` or tag trigger passes no feature inputs, so it features
+      nothing.
   reusable-workflow: |
     The reusable workflow's inputs:
 
@@ -487,8 +507,8 @@ proposed-design:
     | `dry-run` | boolean | `false` | Run every check, write the result into a clone of wyrd.foo and commit it there, but do not push. |
 
     It needs the secrets `WYRD_TOOLS_DOCS_PUBLISHER_APP_ID` and
-    `WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY` (`secrets: inherit` passes
-    them). Its outputs are `outcome` (`published`, `unchanged`, `dry-run` or
+    `WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY` (the calling workflow passes
+    each by name). Its outputs are `outcome` (`published`, `unchanged`, `dry-run` or
     `failed`) and `commit`, the wyrd.foo commit it pushed (empty unless the
     outcome is `published`).
 
@@ -740,8 +760,8 @@ proposed-design:
 
     The site reads `tool.yaml` and the pages with the same module's schemas.
   featured-data: |
-    A tag push writes no `featured`: the site's pick shows a fresh code
-    release without any input (see the `site` design, `featured-product`).
+    A run triggered by a release or a docs tag writes no `featured`: the
+    site's pick shows a fresh code release without any input (see the `site` design, `featured-product`).
     `featured` comes only from the `feature` inputs of a manual run, for a
     set reason or length. The reusable workflow and the action both reject
     `feature: true` outside a manual run (an event other than
