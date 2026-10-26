@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { computeRepo, type RepoResult } from "./compute.ts";
 import { applyRepo } from "./content.ts";
 import { applyFeature, type FeatureRequest } from "./featured.ts";
-import type { ReleaseLookup } from "./releases.ts";
+import { DEFAULT_RELEASE_WAIT, waitForReleases, type ReleaseLookup, type ReleaseWait } from "./releases.ts";
 import type { Finding } from "./report.ts";
 import { gitFiles, gitTags, resolveCommit } from "./repo-files.ts";
 import { cloneSite, commitFolder, PushRejected, pushSite, remoteTip, type Identity, type SiteRemote } from "./site-repo.ts";
@@ -15,7 +15,8 @@ import { cloneSite, commitFolder, PushRejected, pushSite, remoteTip, type Identi
 // first, the push is refused; the run then clones the new tip, writes the
 // same result again (key ownership is checked again on the new content) and
 // pushes, up to `attempts` times. A refused push with no new tip is not
-// retried: it is a refusal, not a race.
+// retried: it is a refusal, not a race. A product's GitHub Release that is not
+// found yet is asked for again, within `releaseWait`, before the run fails.
 
 export const SITE_CONTENT = "content";
 export const DEFAULT_ATTEMPTS = 5;
@@ -28,6 +29,8 @@ export interface PublishOptions {
   /** `owner/repo` of the tool repo. */
   ownerRepo: string;
   releases: ReleaseLookup;
+  /** How long to wait for a GitHub Release that is not found yet. Default DEFAULT_RELEASE_WAIT. */
+  releaseWait?: ReleaseWait;
   site: SiteRemote;
   /** The commit author and committer: the publisher App bot. */
   author: Identity;
@@ -88,7 +91,7 @@ export async function publish(options: PublishOptions): Promise<PublishReport> {
     ownerRepo: options.ownerRepo,
     files: gitFiles(options.source, oid),
     tags: gitTags(options.source),
-    releases: options.releases,
+    releases: waitForReleases(options.releases, options.releaseWait ?? DEFAULT_RELEASE_WAIT),
     strict: true,
   });
   if (options.feature !== undefined) result = applyFeature(result, options.feature, options.now ?? new Date());

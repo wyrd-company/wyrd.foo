@@ -25,12 +25,14 @@ export type ReleaseLookupReason =
 export class ReleaseLookupError extends Error {
   readonly reason: ReleaseLookupReason;
   readonly tag: string;
+  readonly detail: string;
 
   constructor(reason: ReleaseLookupReason, tag: string, detail: string) {
     super(`GitHub Release for tag ${tag}: ${reason}: ${detail}`);
     this.name = "ReleaseLookupError";
     this.reason = reason;
     this.tag = tag;
+    this.detail = detail;
   }
 }
 
@@ -122,4 +124,57 @@ export function changelogSection(changelog: string, version: string): string | u
   const end = lines.findIndex((line, index) => index > start && /^##\s/.test(line));
   const body = lines.slice(start + 1, end === -1 ? undefined : end).join("\n").trim();
   return body === "" ? undefined : body;
+}
+
+/** How long publish mode waits for a GitHub Release that is not there yet. */
+export interface ReleaseWait {
+  /** The most time to wait in one run, over every tag, in milliseconds. */
+  totalMs: number;
+  /** The first wait; each later wait is twice the one before, up to `maxMs`. */
+  firstMs: number;
+  maxMs: number;
+  /** Waits `ms` milliseconds. Tests pass one that does not sleep. */
+  sleep?: (ms: number) => Promise<void>;
+  /** Prints one line before each wait. */
+  log?: (line: string) => void;
+}
+
+/** About 10 minutes in all: 15 s, 30 s, 1 min, then 2 min at a time. */
+export const DEFAULT_RELEASE_WAIT: ReleaseWait = { totalMs: 600_000, firstMs: 15_000, maxMs: 120_000 };
+
+/**
+ * A lookup that, when a Release is not found, waits and asks again, within
+ * one budget for the whole run. A docs tag pushed with a code tag starts a
+ * publish while the code release is still making the code tag's Release.
+ * Only `not-found` is waited for; any other failure is final at once.
+ */
+export function waitForReleases(lookup: ReleaseLookup, wait: ReleaseWait): ReleaseLookup {
+  const sleep = wait.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const log = wait.log ?? console.log;
+  let waited = 0;
+  return {
+    async release(ownerRepo, tag) {
+      let next = wait.firstMs;
+      for (;;) {
+        try {
+          return await lookup.release(ownerRepo, tag);
+        } catch (error) {
+          if (!(error instanceof ReleaseLookupError) || error.reason !== "not-found") throw error;
+          const ms = Math.min(next, wait.totalMs - waited);
+          if (ms <= 0) {
+            if (waited === 0) throw error;
+            throw new ReleaseLookupError("not-found", tag, `${error.detail}; still not found after waiting ${seconds(waited)}`);
+          }
+          log(`GitHub Release for tag ${tag} of ${ownerRepo} is not found yet; waiting ${seconds(ms)} before asking again (${seconds(waited + ms)} of at most ${seconds(wait.totalMs)})`);
+          await sleep(ms);
+          waited += ms;
+          next = Math.min(next * 2, wait.maxMs);
+        }
+      }
+    },
+  };
+}
+
+function seconds(ms: number): string {
+  return `${Math.round(ms / 100) / 10}s`;
 }

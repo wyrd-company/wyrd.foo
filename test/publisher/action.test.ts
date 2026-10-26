@@ -42,19 +42,26 @@ interface Run {
 }
 
 /** A GitHub Releases API that knows the Releases in `releases`, by tag. */
-async function releasesApi(releases: Record<string, { published_at: string; html_url: string; body?: string }>) {
+async function releasesApi(releases: Record<string, { published_at: string; html_url: string; body?: string }>, missingFirst: string[] = []) {
   const authorizations: (string | undefined)[] = [];
+  const asked = new Set<string>();
   const server: Server = createServer((request, response) => {
     authorizations.push(request.headers.authorization);
     const match = /^\/repos\/([^/]+\/[^/]+)\/releases\/tags\/(.+)$/.exec(request.url ?? "");
     const tag = match === null ? undefined : decodeURIComponent(match[2]);
-    const release = match?.[1] === ALPHA && tag !== undefined ? releases[tag] : undefined;
+    // A tag in `missingFirst` has no Release the first time it is asked for.
+    const late = tag !== undefined && missingFirst.includes(tag) && !asked.has(tag);
+    if (tag !== undefined) asked.add(tag);
+    const release = match?.[1] === ALPHA && tag !== undefined && !late ? releases[tag] : undefined;
     if (release === undefined) return void response.writeHead(404).end('{"message":"Not Found"}');
     response.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify({ tag_name: tag, draft: false, ...release }));
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   return { url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`, authorizations, close: () => new Promise((resolve) => server.close(resolve)) };
 }
+
+/** For a test that shortens the Release wait: a run that waits the default 10 minutes fails by this bound. */
+const SHORT_WAIT = { timeout: 60_000 };
 
 const BOTH_RELEASES = {
   "alpha-cli@1.2.0": { published_at: "2026-01-05T00:00:00Z", html_url: "https://example.invalid/alpha-cli", body: "Notes." },
@@ -78,11 +85,20 @@ describe("publish-docs@v2 action", () => {
   });
 
   /** Run the action's root and publish steps, as the runner would, with these inputs, on `event` (a tag push by default; null for none). */
-  async function runAction(source: string, inputs: Record<string, string>, event: string | null = "push"): Promise<Run> {
+  // `extra` is more process env; no action input sets it.
+  async function runAction(source: string, inputs: Record<string, string>, event: string | null = "push", extra: Record<string, string> = {}): Promise<Run> {
     const github = { repository: ALPHA, token: RELEASE_TOKEN, api_url: api.url };
     const runner = join(ws.root, "runner");
     mkdirSync(runner, { recursive: true });
-    const base = { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", GITHUB_WORKSPACE: ws.root, GITHUB_ACTION_PATH: ACTION_DIR, RUNNER_TEMP: runner, ...(event === null ? {} : { GITHUB_EVENT_NAME: event }) };
+    const base = {
+      PATH: process.env.PATH ?? "",
+      HOME: process.env.HOME ?? "",
+      GITHUB_WORKSPACE: ws.root,
+      GITHUB_ACTION_PATH: ACTION_DIR,
+      RUNNER_TEMP: runner,
+      ...(event === null ? {} : { GITHUB_EVENT_NAME: event }),
+      ...extra,
+    };
 
     const rootOutput = join(runner, "root-output");
     writeFileSync(rootOutput, "");
@@ -115,16 +131,33 @@ describe("publish-docs@v2 action", () => {
     for (const name of Object.keys(action.outputs)) assert.ok(name in run.outputs, `output ${name} is written`);
   });
 
-  it("fails with an error annotation naming the tag when a code unit's primary tag has no GitHub Release", async () => {
+  it("fails with an error annotation naming the tag when a code unit's primary tag has no GitHub Release", SHORT_WAIT, async () => {
     await api.close();
     api = await releasesApi({ "alpha-cli@1.2.0": BOTH_RELEASES["alpha-cli@1.2.0"] });
     const tip = site.rev();
-    const run = await runAction(alpha(), { ref: "wyrd-foo-v2" });
+    const run = await runAction(alpha(), { ref: "wyrd-foo-v2" }, "push", { WYRD_RELEASE_WAIT_MS: "0" });
     assert.equal(run.code, 1);
     assert.match(run.stdout, /^::error::error \[alpha-app\] GitHub Release for tag alpha-app@0\.3\.0: not-found: HTTP 404 \(requirement: GitHub Release\)$/m);
     assert.equal(run.outputs.outcome, "failed");
     assert.equal(run.outputs.commit, "");
     assert.equal(site.rev(), tip);
+  });
+
+  it("waits for a code tag's Release that is not there yet, printing a line for the wait, then publishes", SHORT_WAIT, async () => {
+    await api.close();
+    api = await releasesApi(BOTH_RELEASES, ["alpha-app@0.3.0"]);
+    const run = await runAction(alpha(), { ref: "wyrd-foo-v2" }, "push", { WYRD_RELEASE_WAIT_MS: "100" });
+    assert.equal(run.code, 0, run.stdout);
+    assert.equal(run.outputs.outcome, "published");
+    assert.match(run.stdout, new RegExp(`^GitHub Release for tag alpha-app@0\\.3\\.0 of ${ALPHA} is not found yet; waiting 0\\.1s before asking again \\(0\\.1s of at most 0\\.1s\\)$`, "m"));
+    assert.equal(api.authorizations.length, 3, "alpha-cli once, alpha-app twice");
+  });
+
+  it("refuses a WYRD_RELEASE_WAIT_MS that is not a whole number", async () => {
+    const run = await runAction(alpha(), { ref: "wyrd-foo-v2" }, "push", { WYRD_RELEASE_WAIT_MS: "10m" });
+    assert.equal(run.code, 1);
+    assert.match(run.stdout, /^::error::input: WYRD_RELEASE_WAIT_MS must be a whole number of milliseconds; it is 10m$/m);
+    assert.equal(site.pushes, 0);
   });
 
   it("fails a social image that is not 1200x630, naming the file and the field", async () => {
