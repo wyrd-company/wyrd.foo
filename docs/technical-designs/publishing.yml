@@ -658,6 +658,13 @@ proposed-design:
     the working tree as it is on disk, or a ref with `--ref`, and exits 1
     when the repo would fail. `--owner` names the `owner/repo` when the
     clone's origin does not.
+
+    A checkout can be a plain clone or a linked worktree, in local mode,
+    validate and publish mode alike. The publisher finds the git dirs the way
+    git does: a `.git` file names the worktree's own git dir, and that dir's
+    `commondir` names the common git dir. It reads `origin`, branches, tags
+    and objects from the common git dir, and `HEAD` and the other
+    per-worktree refs from the worktree's own git dir.
   content: |
     For a product, `content/<key>/` holds:
 
