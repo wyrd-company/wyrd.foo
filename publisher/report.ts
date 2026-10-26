@@ -1,6 +1,7 @@
 // What a run reports for one repo: warnings, which never stop the repo, and
 // errors, which fail it. A requirement that a repo does not meet yet is a
-// warning in local mode and an error in publish mode.
+// warning in local mode and validate, and an error in publish mode and
+// validate --strict.
 
 export type Severity = "warning" | "error";
 
@@ -30,7 +31,7 @@ export class Findings {
   readonly list: Finding[] = [];
   readonly strict: boolean;
 
-  /** `strict` is publish mode: unmet requirements are errors. */
+  /** `strict` is publish mode (and validate --strict): unmet requirements are errors. */
   constructor(strict: boolean) {
     this.strict = strict;
   }

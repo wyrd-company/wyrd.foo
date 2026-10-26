@@ -4,9 +4,9 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import { stringify } from "yaml";
-import { runLocal, validateRepo } from "../../publisher/index.ts";
-import { git, OWNER, Workspace } from "./fixture-repo.ts";
-import { ALPHA_TAGS, alphaFiles, gammaFiles } from "./fixtures.ts";
+import { computeRepo, gitFiles, gitTags, runLocal, validateRepo, type Finding } from "../../publisher/index.ts";
+import { fakeReleases, git, OWNER, Workspace } from "./fixture-repo.ts";
+import { ALPHA_CLI_RELEASE, ALPHA_TAGS, alphaFiles, gammaFiles } from "./fixtures.ts";
 
 // validate on one checkout, and the cli.ts commands run as a process.
 
@@ -140,5 +140,57 @@ describe("validate", () => {
     const run = cli("publish");
     assert.equal(run.status, 2);
     assert.match(run.stderr, /usage:/);
+  });
+});
+
+describe("validate --strict", () => {
+  const ws = new Workspace();
+  after(() => ws.remove());
+  const alpha = ws.repo("alpha", alphaFiles(), { tags: ALPHA_TAGS });
+  const gamma = ws.repo("gamma", gammaFiles());
+  // alpha-app@0.3.0 has no GitHub Release: an unmet publishing requirement.
+  const releases = fakeReleases({ [`${OWNER}/alpha@alpha-cli@1.2.0`]: ALPHA_CLI_RELEASE });
+  const unmet = (findings: Finding[]) => findings.filter((finding) => finding.requirement !== undefined);
+
+  it("reports an unmet requirement as a warning without --strict, and as an error with it", async () => {
+    const loose = await validateRepo({ dir: alpha, ref: "wyrd-foo-v2", releases });
+    assert.equal(loose.outcome, "passed");
+    assert.deepEqual(unmet(loose.findings).map((finding) => [finding.severity, finding.requirement, finding.key]), [["warning", "GitHub Release", "alpha-app"]]);
+
+    const strict = await validateRepo({ dir: alpha, ref: "wyrd-foo-v2", releases, strict: true });
+    assert.equal(strict.outcome, "failed");
+    assert.deepEqual(unmet(strict.findings).map((finding) => [finding.severity, finding.requirement, finding.key]), [["error", "GitHub Release", "alpha-app"]]);
+  });
+
+  it("reports what publish mode reports for the same commit", async () => {
+    const oid = git(alpha, "rev-parse", "wyrd-foo-v2").trim();
+    const publish = await computeRepo({ ownerRepo: `${OWNER}/alpha`, files: gitFiles(alpha, oid), tags: gitTags(alpha), releases, strict: true });
+    const strict = await validateRepo({ dir: alpha, ref: oid, releases, strict: true });
+    assert.deepEqual(strict.findings, publish.findings);
+    assert.equal(strict.outcome === "failed", publish.failed);
+  });
+
+  it("passes when the repo meets every requirement", async () => {
+    const all = fakeReleases({ [`${OWNER}/alpha@alpha-cli@1.2.0`]: ALPHA_CLI_RELEASE, [`${OWNER}/alpha@alpha-app@0.3.0`]: ALPHA_CLI_RELEASE });
+    const report = await validateRepo({ dir: alpha, ref: "wyrd-foo-v2", releases: all, strict: true });
+    assert.equal(report.outcome, "passed", report.findings.map((finding) => finding.message).join("\n"));
+  });
+
+  it("exits 1 from the command line on a finding that is only a warning without it", () => {
+    const loose = cli("validate", gamma, "--ref", "wyrd-foo-v2");
+    assert.equal(loose.status, 0, loose.stdout + loose.stderr);
+    assert.match(loose.stdout, /warning \.intentional\/config\.yml: does not exist; no release data or changelog \(requirement: intentional\)/);
+
+    const strict = cli("validate", gamma, "--ref", "wyrd-foo-v2", "--strict");
+    assert.equal(strict.status, 1, strict.stdout + strict.stderr);
+    assert.match(strict.stdout, /error \.intentional\/config\.yml: does not exist; no release data or changelog \(requirement: intentional\)/);
+    assert.match(strict.stdout, /: failed\n/);
+  });
+
+  it("refuses --offline, which cannot check GitHub Releases", () => {
+    const run = cli("validate", gamma, "--ref", "wyrd-foo-v2", "--strict", "--offline");
+    assert.equal(run.status, 2);
+    assert.match(run.stderr, /--strict reads GitHub Releases; it cannot run with --offline/);
+    assert.equal(run.stdout, "");
   });
 });

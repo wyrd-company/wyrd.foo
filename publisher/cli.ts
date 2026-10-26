@@ -7,15 +7,18 @@ import { gitHubReleases } from "./releases.ts";
 //
 //   node publisher/cli.ts local [--content .content-v2] [--config publisher/local-repos.yml]
 //                               [--tools-dir /workspaces/tools] [--offline]
-//   node publisher/cli.ts validate <repo path> [--ref <ref>] [--owner <owner/repo>] [--offline]
+//   node publisher/cli.ts validate <repo path> [--ref <ref>] [--owner <owner/repo>]
+//                                  [--strict | --offline]
 //
 // `local` fetches each configured repo's wyrd-foo-v2 branch from origin and
 // reads origin/wyrd-foo-v2 (else the local branch) into the dev content
 // folder; it exits 0 unless the run cannot start, and prints each repo's
 // warnings and errors. `validate` checks one checkout (its working tree, or
-// --ref) and exits 1 when the repo would fail. GitHub Releases are read with
-// GITHUB_TOKEN or GH_TOKEN when set; --offline skips the fetch and reads
-// local tags only.
+// --ref) and exits 1 when the repo would fail. An unmet publishing
+// requirement is a warning, as in local mode; with --strict it is an error, as
+// in publish mode, for a repo that already publishes. GitHub Releases are read
+// with GITHUB_TOKEN or GH_TOKEN when set; --offline skips the fetch and reads
+// local tags only, so it cannot go with --strict.
 
 const USAGE = "usage: cli.ts local [options] | cli.ts validate <repo path> [options]";
 
@@ -28,6 +31,7 @@ const { values, positionals } = parseArgs({
     ref: { type: "string" },
     owner: { type: "string" },
     offline: { type: "boolean", default: false },
+    strict: { type: "boolean", default: false },
   },
 });
 
@@ -46,8 +50,11 @@ if (command === "local" && rest.length === 0) {
   });
   console.log(formatReports(reports));
   console.log(`content folder: ${contentDir}`);
+} else if (command === "validate" && rest.length === 1 && values.strict && values.offline) {
+  console.error("--strict reads GitHub Releases; it cannot run with --offline");
+  process.exitCode = 2;
 } else if (command === "validate" && rest.length === 1) {
-  const report = await validateRepo({ dir: rest[0], ref: values.ref, owner: values.owner, releases });
+  const report = await validateRepo({ dir: rest[0], ref: values.ref, owner: values.owner, releases, strict: values.strict });
   console.log(formatReports([report]));
   if (report.outcome !== "passed") process.exitCode = 1;
 } else {

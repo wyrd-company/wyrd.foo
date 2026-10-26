@@ -23,7 +23,7 @@ tasks:
       - node publisher/cli.ts local {{.CLI_ARGS}}
 
   validate:repo:
-    desc: "Check one tool repo checkout against the publishing contract: task validate:repo -- <repo path> [--ref <ref>]"
+    desc: "Check one tool repo checkout against the publishing contract: task validate:repo -- <repo path> [--ref <ref>] [--strict] (--strict: fail on what publish fails on, for a repo that already publishes)"
     dir: '{{.USER_WORKING_DIR}}'
     cmds:
       - node {{.ROOT_DIR}}/publisher/cli.ts validate {{.CLI_ARGS}}

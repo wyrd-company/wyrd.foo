@@ -666,7 +666,11 @@ proposed-design:
     checkout and writes nothing, so key ownership is not checked. It reads
     the working tree as it is on disk, or a ref with `--ref`, and exits 1
     when the repo would fail. `--owner` names the `owner/repo` when the
-    clone's origin does not.
+    clone's origin does not. An unmet requirement is a warning, as in local
+    mode. With `--strict` it is an error, as in publish mode, so a repo that
+    already publishes finds every finding that would fail its publish before
+    it pushes a tag. `--strict` reads GitHub Releases, as publish mode does;
+    it refuses `--offline` and exits 2.
 
     A checkout can be a plain clone or a linked worktree, in local mode,
     validate and publish mode alike. The publisher finds the git dirs the way
