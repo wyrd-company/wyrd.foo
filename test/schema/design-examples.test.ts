@@ -7,11 +7,11 @@ import { docsFileSchema, formatIssue, parseWith } from "../../src/schema/index.t
 // The docs.yml examples in the publishing design must pass the schema, so the
 // design and the schema state one contract.
 
-const design = readFileSync(new URL("../../PUBLISHING-PROPOSAL.md", import.meta.url), "utf8");
+const design = readFileSync(new URL("../../docs/technical-designs/publishing.yml", import.meta.url), "utf8");
 const yamlBlocks = [...design.matchAll(/```yaml\n([\s\S]*?)```/g)].map((match) => parse(match[1]));
 
 function assertValid(input: unknown) {
-  const result = parseWith(docsFileSchema, input, "PUBLISHING-PROPOSAL.md");
+  const result = parseWith(docsFileSchema, input, "docs/technical-designs/publishing.yml");
   assert.ok(result.ok, result.ok ? "" : result.issues.map(formatIssue).join(" | "));
 }
 

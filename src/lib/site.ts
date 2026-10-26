@@ -5,7 +5,7 @@ export const SITE_DESCRIPTION = "Single-purpose tools for developers and the age
 
 export type NavItem = "catalog" | "docs" | "releases";
 
-/** Every product's latest release (REDESIGN.md, "Releases"). */
+/** Every product's latest release (docs/technical-designs/site.yml, releases). */
 export const RELEASES_HREF = "/releases";
 
 /** One product's releases page: its full changelog. */

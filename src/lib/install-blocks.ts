@@ -1,7 +1,7 @@
 /*
- * What the product page's install blocks show for each kind (REDESIGN.md,
- * "Install blocks by kind"): platform tabs and method pills for CLIs and apps,
- * client tabs for MCP servers, devcontainer.json snippets for features and
+ * What the product page's install blocks show for each kind
+ * (docs/technical-designs/site.yml, install-blocks): platform tabs and
+ * method pills for CLIs and apps, client tabs for MCP servers, devcontainer.json snippets for features and
  * images, and the default command the hero shows.
  */
 import type { InstallMethod, Kind, KindBlock, McpInstallMethod, OperatingSystem } from "../schema/index.ts";
@@ -61,8 +61,9 @@ export const PLATFORM_LABELS: Record<Platform, string> = {
 const PLATFORM_ORDER: Platform[] = ["macos", "linux", "windows", "docker"];
 
 /**
- * The site's repository setup for `method: apt` (REDESIGN.md: the site owns
- * the repo.wyrd.foo setup; `command` is only the install line).
+ * The site's repository setup for `method: apt`
+ * (docs/technical-designs/publishing.yml, install: the site owns the
+ * repo.wyrd.foo setup; `command` is only the install line).
  */
 export const APT_SETUP = [
   "sudo install -d -m 0755 /etc/apt/keyrings",

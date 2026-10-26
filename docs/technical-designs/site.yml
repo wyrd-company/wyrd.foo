@@ -1,0 +1,350 @@
+$schema: https://refinery.systems/ontology/technical-design
+title: The wyrd.foo site
+objective: >-
+  A static site that catalogs a few dozen tools on one front page and gives
+  each product a product page, a releases page and a docs site, for five
+  kinds of product, built from the content folders the publisher writes.
+relationships:
+  references:
+    - publishing
+proposed-design:
+  high-level-overview: |
+    wyrd.foo is a static Astro build with no backend. It reads one folder per
+    product, `content/<key>/`, in the layout the publisher writes (see the
+    `publishing` design, `content`), through Astro content collections that
+    validate with the shared schema module `src/schema/`. A product that
+    breaks the contract fails the build. The collections read `content/`
+    unless `WYRD_CONTENT_DIR` names another folder, such as the dev content
+    folder or a test fixture.
+
+    A product appears by having a folder: it is listed in the catalog, gets a
+    product page at `/tools/<key>` and a releases page at
+    `/tools/<key>/releases`, and, when it has pages, a docs site at
+    `/docs/<key>/`. No page code changes for a new product.
+
+    The visual design (colour tokens for both themes, type, spacing, shapes
+    and components) is in the root `DESIGN.md`. The mockups are on the canvas
+    <https://claude.ai/artifact/5PBQBYLMokPDzwV6nm8hsH> (page "Combined ·
+    Wyrd").
+  products-and-kinds: |
+    A product is one entry in a repo's `docs/user/docs.yml`, under its
+    product key. The key names the product everywhere: `content/<key>/`,
+    `/tools/<key>` and the `product:` field of each of its docs pages.
+
+    A product has one or more kinds, in a `kinds` array: `cli`, `mcp-server`,
+    `app`, `devcontainer-feature` and `devcontainer-image`. `app` means a
+    thing you run (for example trowel, wyrwood, xolotl). The first kind is
+    the primary kind: it gives the kind badge and the "get it" command
+    wherever a product shows as one row or card. The product page and the
+    facts list show all kinds.
+
+    A **feature entry** is the short `docs.yml` entry for one dev container
+    feature that keeps its own `README.md` and `devcontainer-feature.json` in
+    the repo (for example each feature in the devcontainers repo). Its kinds
+    are `[devcontainer-feature]`. A full product, such as trowel, can also
+    have a `devcontainer-feature` kind; it is not a feature entry.
+  shell: |
+    One shared layout (`src/layouts/SiteLayout.astro`) holds the head, the
+    header and the theme toggle for every page.
+
+    - **Theme.** Dark is the default, with a light and dark toggle in the
+      header. An inline script in the head sets `data-theme` on `<html>`
+      before the first paint, so the page never shows the wrong theme first.
+      The theme tokens are CSS custom properties with a dark and a light
+      value (`src/styles/global.css`, named in `DESIGN.md`).
+    - **Type.** Geist and Geist Mono, self-hosted.
+    - **Header.** Left: a square "W" tile and the `wyrd/tools` wordmark. Then
+      nav (Catalog, Docs, Releases), search, theme toggle, GitHub. Releases
+      goes to `/releases` on every page, and is the current item on
+      `/releases` and on `/tools/<key>/releases`.
+  product-marks: |
+    Every product shows a square mark in catalog rows, the featured card,
+    Recent releases entries, `/releases` entries, the product page hero, the
+    product's releases page and the product switcher in the docs header.
+
+    - **Logo.** A product's optional `logo` is a square SVG. An optional
+      `logo-dark` is the mark for the dark theme, for a mark that does not
+      read on both themes. Both are SVG only, so they stay sharp at every
+      size and can use `currentColor`. A feature entry's `logo` is relative
+      to its `source` folder, so the logo lives with the feature.
+    - **Monogram.** A product with no logo shows a monogram tile: the first
+      letter of its name, in the style of the site's "W" tile. Rows and cards
+      then stay aligned. One shared component draws the logo or the
+      monogram.
+  favicon-and-social-image: |
+    The product page, the product's releases page and every docs page of a
+    product use that product's favicon (`link rel="icon"`) and social image
+    (`og:image`, `twitter:image`). The shared head writes these tags for each
+    page.
+
+    - `favicon` is an SVG or PNG asset in the tool repo. When a product has
+      no favicon, the page uses its logo; when it has no logo, the page uses
+      its monogram.
+    - `social-image` is a PNG or JPEG asset in the tool repo, 1200×630. When
+      a product has no social image, the page uses the site's image.
+    - wyrd.foo generates neither. The home page and the catalog use the
+      site's own favicon and image.
+  sitemap-and-robots: |
+    The official Astro integration `@astrojs/sitemap` writes
+    `/sitemap-index.xml` and `/sitemap-0.xml` at build time, following the
+    [sitemaps.org protocol](https://www.sitemaps.org/protocol.html). URLs are
+    absolute, from `site` in `astro.config.mjs` (`https://wyrd.foo`). Entries
+    have no `lastmod`.
+
+    - **Listed:** every HTML page that is a destination: the home page,
+      `/releases`, the docs index, every product page, every product releases
+      page, and every docs page and docs changelog.
+    - **Not listed:** a page that only redirects (`/docs/<key>/`, which goes
+      to the product's first docs page). The `.md` copies of docs pages, the
+      JSON Schema and assets are not HTML pages, so the integration does not
+      list them. `src/lib/sitemap.ts` decides from the route, so a new
+      product needs no change.
+    - **`/robots.txt`** (`public/robots.txt`) allows all crawlers and names
+      `https://wyrd.foo/sitemap-index.xml`.
+    - The shared head links the sitemap:
+      `<link rel="sitemap" href="/sitemap-index.xml">`.
+  home-page: |
+    1. **Headline** ("Small, sharp tools for the people *and agents* who
+       ship."; "and agents" in accent text) and the one-line deck.
+    2. **Featured card** beside a **Recent releases** list.
+       - Featured: mark, name, kind, status, tagline, one "Get started"
+         button, and the product's media. Clicking anywhere else on the card
+         opens the product page. The browser picks the featured product (see
+         `featured-product`). The build writes its own pick into the HTML as
+         the default, so the page has a featured product without JavaScript.
+       - Recent releases (`#releases`): the five newest releases, newest
+         first. Each entry is the mark and the name on one line (long names
+         wrap) with "kind · version · date" underneath, and links to the
+         product's releases page (`/tools/<key>/releases`). Feature entries
+         are not listed. An "All releases →" link to `/releases` ends the
+         list.
+    3. **Catalog** with kind tabs (All, CLIs, MCP servers, Apps, Dev
+       container features, Dev container images) and a filter box that
+       matches name, key and category. A product shows under the tab of each
+       of its kinds, and once under All. Each feature entry is its own row,
+       in All too. One row per product: mark, name and primary kind badge,
+       tagline and category, the primary kind's "get it" command with Copy,
+       and one Docs button when the product has docs pages. The "get it"
+       column shows the one install line. For apt and rpm, Copy takes the
+       same text as Copy in the product page's install block, the repository
+       setup and then the install line, and its label says so. Copy on any
+       other method takes the shown command. Clicking anywhere else on the
+       row opens the product page. Rows hold no media. Products with an
+       `order` come first, lower first; the others follow, by `name` (case
+       ignored), then by key.
+  featured-product: |
+    The front page chooses its featured product in the browser, so a feature
+    expires on time without a rebuild:
+
+    1. An active feature (`from ≤ now < until`); if several, the latest
+       `from` wins.
+    2. Otherwise the newest release in the last 14 days.
+    3. Otherwise a weekly rotation through stable products that have media,
+       sorted by key: the number of whole UTC weeks (Monday to Monday) since
+       1969-12-29, modulo the size of the pool.
+
+    Ties go to the lower key. Feature entries are never in the pool. The
+    build writes its own pick into the HTML as the default; the script swaps
+    it only when its result differs, and clears the card when its pick has no
+    card. `src/lib/featured.ts` holds the pick and has no imports, so the
+    browser bundle stays small. The `featured` block comes from the
+    publisher (see the `publishing` design, `featured-data`).
+  product-page: |
+    `/tools/<key>`, in this order:
+
+    1. **Hero**: mark, name, tagline, description, the default install
+       command of the primary kind with Copy, then "Read the docs", "Star on
+       GitHub" and an "Other install methods ↓" link. A short facts list on
+       the right: all kinds, status, latest version and date, category,
+       repository. The latest version and date link to the page's Releases
+       section (`#releases`).
+    2. **Media**: the first media item on its own full-width row, with its
+       caption; the other items follow as a numbered tour (see
+       `media-tour`). An MP4 or WebM file shows as a muted, looping video
+       with a Pause/Play button over its bottom-left corner; any other file,
+       GIFs included, shows as an image. The video plays on load, but not
+       when the visitor's `prefers-reduced-motion` is `reduce`: then it waits
+       for the button. Without script the video does not play and keeps its
+       native controls.
+    3. **What it does**: up to six `highlights`.
+    4. **Install**: full width. One tab group for each kind, in `kinds`
+       order (for example "Install" for an app and "Dev container" for a
+       feature). The block for each kind is in `install-blocks`.
+    5. **Documentation**: a map of the docs sections and their pages.
+    6. **Releases** (`#releases`): the latest release (version, date and its
+       GitHub Release) and the latest entry of the product's changelog, from
+       its release unit, then an "All releases →" link to the product's
+       releases page when it has a changelog.
+
+    Every product page has highlights and media, except the pages of feature
+    entries. Docs pages are optional. A product with no docs pages has no
+    "Read the docs" button, no Docs button in its catalog row and no
+    Documentation section.
+  media-tour: |
+    Each tour item (not the first, full-width one) opens full size in a
+    modal built on the native `<dialog>` element.
+
+    - Each thumbnail is a link to the item's file; with script it is a
+      button (Enter and Space open it) named by the item's alt text, else its
+      caption. A video thumbnail also has a small expand button over its
+      top-right corner; a click on the video opens the modal as well.
+    - The modal shows the image or video at the largest size that fits the
+      viewport, in its own aspect ratio and never larger than its natural
+      size, with its caption, its place in the tour ("3 of 8", counting only
+      the tour items) and Previous and Next buttons. The Left and Right arrow
+      keys do the same. The tour stops at its ends: the button for the
+      missing direction is disabled and its arrow key does nothing.
+    - Esc, the Close button and a click on the backdrop close the modal.
+      Focus moves into the modal on open and returns to the thumbnail on
+      close. The page behind does not scroll and the URL does not change.
+    - A video plays in the modal as it does on the page (muted, looped, with
+      the Pause/Play button, and waiting for the button when
+      `prefers-reduced-motion` is `reduce`); it stops when the modal closes
+      or moves to another item.
+    - The panel uses the `--surface` token and the backdrop is a translucent
+      `--surface`, in both themes.
+    - Without script a thumbnail is a plain link, so it opens the full-size
+      file.
+  install-blocks: |
+    - **CLI and app**: platform tabs (macOS, Linux, Windows, Docker)
+      generated from `install[].os`, method pills for each platform, and one
+      code block (single or multi-line) with one Copy button for each method.
+      For `method: apt` and `method: rpm` the site writes the repo.wyrd.foo
+      setup lines above the product's install line (`command` is only the
+      install line). The setup is collapsed: a block shows its install line,
+      preceded by a one-line hint, "Set up the repo.wyrd.foo APT repository
+      (once)" (RPM for `method: rpm`), as secondary text with a disclosure
+      marker. The hint is a native `<details>` summary, so it opens and
+      closes with the mouse, Enter and Space, and opens without script.
+      Opened, the setup lines show above the install line in the same block.
+      Copy takes the whole block, setup and install line, whether the setup
+      is open or closed; the setup is safe to run again. The hero, the
+      install tabs and the docs install block all show it this way. An app's
+      media tour is the screenshot tour of its console.
+    - **MCP server**: one tab for each `install` entry, in install order, in
+      place of install methods. An MCP client entry (Claude Code, Claude
+      Desktop, Cursor, VS Code, JSON) gets its client's name. A plugin
+      marketplace entry (`method: plugin`) gets its label and is tagged
+      "Plugin". Below the tabs, a table of the tools the server exposes with
+      their side effects. The media is an animated GIF of an agent session.
+    - **Dev container feature**: a `devcontainer.json` snippet that adds the
+      feature.
+    - **Dev container image**: the image reference and a `devcontainer.json`
+      snippet, then a tags table of the image's registry tags.
+  feature-entry-page: |
+    A feature entry has an abbreviated page at `/tools/<key>`: the hero, the
+    `devcontainer.json` snippet, the feature's `README.md` as it is, then the
+    Releases section (`#releases`), from the release tag and the unit's
+    changelog. The name, description, version and options come from the
+    feature's `devcontainer-feature.json`. The README holds the feature's
+    options table, so the page has no generated options table and no docs
+    tree. A feature entry is never the featured product.
+
+    The README and the changelog keep their text. Their headings nest under
+    the section's heading: the hero name is the page's only `<h1>`, the top
+    level of each document becomes an `<h3>`, each deeper level moves down by
+    the same amount, and nothing goes past `<h6>`. Each embedded heading id
+    is prefixed with `readme--` (the README), `changelog--` (the full
+    changelog) or `changelog--<key>--` (a changelog entry), and a link in the
+    document to one of its headings follows, so a heading named "Releases"
+    cannot take `#releases` from the section. Docs pages render as they do
+    from their Markdown.
+  releases: |
+    A product's changelog is its release unit's `CHANGELOG.md`: a title,
+    then one `## <version>` section per release, newest first, with `###`
+    subsections (Breaking, Features, Fixes) and an optional "Earlier
+    releases" line after the last section. Each `## <version>` section is a
+    **changelog entry**; the first one is the **latest entry**. The site
+    splits a changelog into entries at its level-two (`##`) headings, and
+    renders each entry through the same Markdown pipeline and styles as the
+    full changelog.
+
+    - **`/releases`**: one entry per product that has a release and a
+      changelog, newest release first. Each entry is the product's mark,
+      name and "kind · version · date", linked to the product's releases
+      page, then its latest entry. Products without a release or without a
+      changelog are not listed, so a feature entry shows once its unit has a
+      changelog.
+
+      An entry taller than 20rem (about 12 lines of its text) is clamped to
+      that height with a fade at the bottom, and a "Show more" button below
+      it expands the entry in place. The button then reads "Show less" and
+      collapses it. It is a real `<button>` with `aria-expanded` and
+      `aria-controls` that names the entry's body, it keeps the focus, and
+      the change has no animation. A script clamps only the entries that
+      overflow, so a short entry has no button and no fade, and without
+      script every entry shows in full. The clamp is visual: search indexes
+      the whole entry. The product page's Releases section and
+      `/tools/<key>/releases` do not clamp.
+    - **`/tools/<key>/releases`**: one page for every product. The
+      breadcrumb (Catalog / category / product / Releases), the product's
+      mark and name, and the product's favicon and social image, as on its
+      product page; then the latest release and the product's full
+      changelog, or "No releases yet."
+  docs: |
+    `/docs/` lists every product that has docs. `/docs/<key>/` goes to the
+    product's first page in reading order.
+
+    - **Sticky header** in two rows: wordmark, product switcher (with each
+      product's mark), search scoped to the product, a "Releases" link to
+      `/releases`, GitHub; then section tabs (for example Get started,
+      Authoring, Using templates). Products without sections get no tab row.
+      A section tab opens the section's first page.
+    - **Left sidebar** for the current section only, with group headings and
+      reading-progress dots (done, current, ahead). It scrolls on its own.
+    - **Content**: breadcrumb, title, lead paragraph, prose up to 720px wide.
+      Tip callouts use the accent tint. No product card above the content.
+    - **"On this page"** on the right: sticky, scrolls on its own, nested
+      headings. It highlights the last heading that has scrolled past the top
+      of the viewport, so the highlight holds still while you read. At the
+      end of the page, where the last headings cannot reach the top, it
+      highlights the last heading in view. Links: back to top, copy page as
+      Markdown (the title as a heading, then the page body, also served at
+      `/docs/<key>/<slug>.md`), edit on GitHub (the page's file on the repo's
+      default branch, under the product's `docs-path`).
+    - **Version footer**: "Docs 0.2.3 · for trowel 0.2.0", from the
+      product's `docs-version` and `version`. "Docs 0.2.3" links the docs
+      unit changelog at `/docs/<key>/changelog` when the product publishes
+      one; "for trowel 0.2.0" links the product's releases page
+      (`/tools/<key>/releases`). The page slugs `changelog` and `index` are
+      reserved, in any letter case (see the `publishing` design, `pages`).
+    - Sections, groups and page order come from the product's `nav` in
+      `docs.yml`. Pages that `nav` does not list go into a trailing "More"
+      group in the last section, by `order`, then title. A product with no
+      `nav` has one section with no tab and its pages in that order, with no
+      group heading.
+    - A page with `install: true` starts with the primary kind's default
+      install command, with Copy and a link to every install method on the
+      product page. For apt and rpm the setup is collapsed as in
+      `install-blocks`, and Copy takes the whole block.
+  llms-txt: |
+    The build writes `/llms.txt` for agents, in the
+    [llmstxt.org](https://llmstxt.org) format, as plain text with no HTML.
+    Every URL is absolute, from the site's origin.
+
+    - An H1 with the site name (`Wyrd Tools`) and a blockquote with the
+      site's one-sentence description.
+    - `## Tools`: one `- [<name>](/tools/<key>): <tagline>` line for every
+      product, feature entries too, in catalog order. A feature entry's line
+      uses its description.
+    - `## <name> docs`: one section for each product that has docs pages, in
+      catalog order. Each line is `- [<page title>](/docs/<key>/<slug>.md)`,
+      in the docs reading order, and links the page's Markdown endpoint.
+    - There is no `llms-full.txt`.
+  search: |
+    Search is Pagefind (`src/components/Search.astro`), indexed at build
+    time into `dist/pagefind/`.
+
+    - The dialog uses the theme tokens.
+    - Docs pages, product pages and product releases pages are indexed with
+      a `product` filter; `/releases` is indexed with none.
+    - On a page of a product, that product's results count three times their
+      score, so they lead unless another product matches much better.
+      Results from other products still show.
+    - A `kind` filter holds every kind of the page's product, and the dialog
+      shows it as kind chips: one chip for each kind in the index. Chosen
+      chips keep only results of those kinds; with none chosen, every result
+      shows.
+    - A page is indexed through `src/components/SearchIndexMeta.astro` inside
+      its `data-pagefind-body`, which writes the `product` and `kind` filters
+      and the product name shown beside each result.

@@ -1,12 +1,27 @@
-This is a Astro website repo.
+# wyrd.foo
+
+This is an Astro website repo.
 
 Skills can be found in `.agents/skills`
 
-Discover additional skills by running `npx skills list -g`. Use relevant skills (front-end design, astro, tailwind, favicon, etc.).
+Discover additional skills by running `npx skills list -g`. Use relevant
+skills (front-end design, astro, tailwind, favicon, etc.).
+
+## Design documents
+
+- `DESIGN.md`: the visual design system (tokens and rationale). The tokens
+  mirror `src/styles/global.css`; change both together.
+- `docs/technical-designs/site.yml`: the pages and their behaviour.
+- `docs/technical-designs/publishing.yml`: the `docs/user/` contract, the
+  publisher, local mode and the reusable workflow.
+  `test/schema/design-examples.test.ts` validates its `docs.yml` examples
+  against the schema.
 
 ## Dependency exceptions
 
-- `@astrojs/check` runs on TypeScript 6 (`.pnpmfile.cjs`), because TypeScript 7 has no programmatic API yet. The rest of the project uses TypeScript 7. Remove the hook when `@astrojs/check` supports TypeScript 7.
+- `@astrojs/check` runs on TypeScript 6 (`.pnpmfile.cjs`), because
+  TypeScript 7 has no programmatic API yet. The rest of the project uses
+  TypeScript 7. Remove the hook when `@astrojs/check` supports TypeScript 7.
 
 ## Workflow lint
 
@@ -21,11 +36,17 @@ zizmor reads `.github/zizmor.yml`; add `--offline` when there is no network.
 
 ## Lint exceptions
 
-- `.github/actionlint.yaml` ignores actionlint's "invalid format" message for the `$/.github/actions/publish-docs` call in `.github/workflows/publish-docs.yml`, because actionlint does not know the `$/` self-repository syntax yet (rhysd/actionlint#760). `test/publisher/workflow.test.ts` checks that call's inputs against the action. Remove the ignore when actionlint supports `$/`.
+- `.github/actionlint.yaml` ignores actionlint's "invalid format" message
+  for the `$/.github/actions/publish-docs` call in
+  `.github/workflows/publish-docs.yml`, because actionlint does not know the
+  `$/` self-repository syntax yet (rhysd/actionlint#760).
+  `test/publisher/workflow.test.ts` checks that call's inputs against the
+  action. Remove the ignore when actionlint supports `$/`.
 
 ## Tests
 
-Three runners own the tests (vitest runs two projects). Each row names the config it is read from, by script, project or key name.
+Three runners own the tests (vitest runs two projects). Each row names the
+config it is read from, by script, project or key name.
 
 | Runner | Owns | Command | Read from |
 | --- | --- | --- | --- |

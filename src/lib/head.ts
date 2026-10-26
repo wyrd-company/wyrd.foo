@@ -4,8 +4,8 @@
  * A product page and its docs pages use the product's own favicon and social
  * image. When the product has no favicon the page uses its logo, then its
  * monogram; when it has no social image the page uses the site image
- * (REDESIGN.md, "Favicon and social image"). Pages with no product (home,
- * catalog) use the site's own favicon and image.
+ * (docs/technical-designs/site.yml, favicon-and-social-image). Pages with no
+ * product (home, catalog) use the site's own favicon and image.
  */
 
 /** Product fields the head reads. Asset values are URLs the page can serve. */

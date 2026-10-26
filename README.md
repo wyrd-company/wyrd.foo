@@ -1,23 +1,43 @@
 # wyrd.foo
 
-The landing and documentation site for [Wyrd Company](https://wyrd.company)'s
-public command-line tools. Built with [Astro](https://astro.build) and Tailwind.
+The catalog and documentation site for [Wyrd Company](https://wyrd.company)'s
+public tools: CLIs, MCP servers, apps, dev container features and dev container
+images. Built with [Astro](https://astro.build) and Tailwind.
 
-The site is a single front page cataloguing every tool, plus per-tool
-documentation. It is a static build with no backend.
+The site is a static build with no backend. The front page holds the featured
+product, recent releases and the catalog. Each product has a product page, a
+releases page and, when it ships pages, a docs site. `/releases` lists every
+product's latest release, and Pagefind indexes the product, releases and docs
+pages.
+
+## Design
+
+- [`DESIGN.md`](DESIGN.md): the visual design system, in the
+  [DESIGN.md](https://github.com/google-labs-code/design.md) format: colour
+  tokens for both themes, type, spacing, shapes and components.
+- [`docs/technical-designs/site.yml`](docs/technical-designs/site.yml): the
+  pages and their behaviour: home page, product page, install blocks, releases,
+  docs, search, sitemap and `/llms.txt`.
+- [`docs/technical-designs/publishing.yml`](docs/technical-designs/publishing.yml):
+  how a tool repo publishes: the `docs/user/` contract, the publishing
+  requirements, the publisher core, local mode, the reusable workflow and the
+  JSON Schema.
 
 ## Content model
 
 Product metadata and documentation are **data, not code**. Each product has a
 self-contained folder under `content/<key>/`, in the layout the publisher
-(`publisher/`) writes from the tool repository's `docs/user/` folder:
+(`publisher/`) writes from the tool repository's `docs/user/` folder
+(`publishing.yml`, `content`):
 
-```
+```text
 content/<key>/
-├── tool.yaml        # catalog metadata: name, tagline, category, status, kinds, highlights, media, version
+├── tool.yaml        # catalog metadata: name, tagline, category, status, kinds,
+│                    # highlights, media, version, owner, release, featured
 ├── README.md        # feature entries only: the page body
 ├── CHANGELOG.md     # the code changelog
-└── docs/            # pages at any depth (front matter: title, product, order, install),
+├── manifest.json    # dev container image products only: the image manifest
+└── docs/            # pages at any depth (title, product, order, install),
                      # assets, and the docs changelog CHANGELOG.md
 ```
 
@@ -31,12 +51,28 @@ through it, so a product that breaks the contract fails the build.
 The collections read `content/` unless `WYRD_CONTENT_DIR` names another
 folder, such as the dev content folder or a test fixture.
 
+## Publishing
+
+A tool repo publishes its products from its own release tags: its workflow
+calls the reusable workflow `.github/workflows/publish-docs.yml@v2` on a push
+of a code tag or a docs tag, or on a manual run. The workflow runs the
+`publish-docs@v2` action, which validates the repo's `docs/user/` against the
+shared schema, records release data and pushes `content/<key>/` for each
+product to `main`. The push starts the deploy. The contract, the calling
+workflow and the requirements are in
+[`docs/technical-designs/publishing.yml`](docs/technical-designs/publishing.yml).
+
+The JSON Schema for `docs/user/docs.yml` is served at
+`https://wyrd.foo/schemas/docs/v1.json`.
+
 ## Structure
 
-```
+```text
+DESIGN.md                    # the visual design system
+docs/technical-designs/      # the site and publishing designs
 content/                     # one folder per product (metadata + docs)
 src/
-├── content.config.ts        # content collections (products, pages, changelogs, feature READMEs)
+├── content.config.ts        # collections: products, pages, changelogs, READMEs
 ├── schema/                  # the docs contract, shared with the publisher
 ├── lib/                     # read/query helpers
 ├── layouts/SiteLayout.astro # base document shell
@@ -47,7 +83,9 @@ src/
     ├── tools/[key].astro    # product pages
     ├── tools/[key]/releases.astro  # each product's full changelog
     └── docs/[key]/          # docs pages
-publisher/                   # the publisher core: local mode and validation
+publisher/                   # the publisher core: publish, local and validate
+.github/actions/publish-docs # the publish-docs@v2 action
+.github/workflows/publish-docs.yml  # the reusable workflow tool repos call
 ```
 
 ## Develop
@@ -59,10 +97,10 @@ pnpm build      # static build to dist/
 pnpm preview
 ```
 
-## v2 dev server
+## Dev server over the tool repos
 
-`task dev:v2` builds the v2 content from each tool repo's `wyrd-foo-v2`
-branch, builds the site on it and serves the build, so search works:
+`task dev:v2` builds the content from each tool repo's `wyrd-foo-v2` branch,
+builds the site on it and serves the build, so search works:
 
 1. The publisher (`publisher/`) runs in local mode over the repos in
    `publisher/local-repos.yml`. For the clone at `/workspaces/tools/<name>`,
@@ -74,7 +112,7 @@ branch, builds the site on it and serves the build, so search works:
    another folder) and prints each repo's warnings and errors. An unmet
    publishing requirement (no `.intentional/`, no GitHub Release, no
    `wyrd-foo-v2` branch) is a warning. A repo with a schema or check error
-   writes nothing and the run goes on.
+   writes nothing and the run goes on (`publishing.yml`, `local-mode`).
 3. `pnpm build` builds the site and its Pagefind search index into `dist/`
    with `WYRD_CONTENT_DIR` set to that folder, and `astro preview` serves
    `dist/`. Run `task dev:v2` again to see a content change. For live reload

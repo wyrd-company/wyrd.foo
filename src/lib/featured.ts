@@ -1,5 +1,5 @@
 /*
- * The featured pick (PUBLISHING-PROPOSAL.md, "Release and featured data").
+ * The featured pick (docs/technical-designs/site.yml, featured-product).
  * The build writes its pick into the home page; the browser runs the same
  * function on its own clock and swaps the card when the result differs. This
  * module has no imports, so the browser bundle stays small.
@@ -29,10 +29,10 @@ export function utcWeek(now: number): number {
 const byKey = (a: FeaturedCandidate, b: FeaturedCandidate) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
 
 /**
- * The featured product at `now` (PUBLISHING-PROPOSAL.md, "Release and featured
- * data"): an active feature, the latest `from` first; else the newest release
- * in the last 14 days; else a weekly rotation through stable products with
- * media, by key. Ties go to the lower key.
+ * The featured product at `now` (docs/technical-designs/site.yml,
+ * featured-product): an active feature, the latest `from` first; else the
+ * newest release in the last 14 days; else a weekly rotation through stable
+ * products with media, by key. Ties go to the lower key.
  */
 export function pickFeatured(candidates: readonly FeaturedCandidate[], now: number): string | undefined {
   const sorted = [...candidates].sort(byKey);

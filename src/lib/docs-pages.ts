@@ -54,7 +54,7 @@ export function editUrl(owner: string, docsPath: string, rel: string): string {
   return `https://github.com/${owner}/edit/HEAD/${path}`;
 }
 
-/** "Docs 0.2.3 · for trowel 0.2.0" (REDESIGN.md, "Docs"). */
+/** "Docs 0.2.3 · for trowel 0.2.0" (docs/technical-designs/site.yml, docs). */
 export function versionLine(product: { name: string; version: string; docsVersion: string }) {
   return { docs: `Docs ${product.docsVersion}`, product: `for ${product.name} ${product.version}` };
 }

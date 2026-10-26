@@ -3,7 +3,7 @@
 @import "tailwindcss";
 
 /*
- * Theme tokens (REDESIGN.md, "Theme"). Dark is the default; the inline theme
+ * Theme tokens (DESIGN.md, "Colors"). Dark is the default; the inline theme
  * script in SiteHead sets data-theme on <html> before the first paint.
  */
 :root,

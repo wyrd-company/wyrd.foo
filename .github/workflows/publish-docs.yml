@@ -7,7 +7,8 @@ name: Publish to wyrd.foo
 # for wyrd.foo, and runs the publish-docs@v2 action. `$/` resolves the action
 # in this repo at the commit of this workflow, so the workflow and the action
 # never differ.
-# See PUBLISHING-PROPOSAL.md, "The calling workflow".
+# See docs/technical-designs/publishing.yml, calling-workflow and
+# reusable-workflow.
 
 on:
   workflow_call:
