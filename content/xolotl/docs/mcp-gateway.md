@@ -1,7 +1,7 @@
 ---
 title: MCP gateway
-product: xolotl
 order: 7
+product: xolotl
 ---
 
 Xolotl connects to upstream MCP servers and gives clients one MCP server at

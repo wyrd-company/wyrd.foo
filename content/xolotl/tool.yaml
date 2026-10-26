@@ -1,11 +1,8 @@
 name: xolotl
-version: 0.1.0
+version: 0.5.0
 docs-version: 0.1.0
-release-unit: xolotl
 tagline: One proxy for your LLM subscriptions, AI gateways and MCP servers.
-blurb: A self-hosted Rust proxy that gives coding agents one URL and one client key for Codex,
-  Claude, Grok and OpenCode Go subscriptions, gateway providers and MCP servers, with every real
-  credential kept in OpenBao.
+blurb: A self-hosted Rust proxy that gives coding agents one URL and one client key for Codex, Claude, Grok and OpenCode Go subscriptions, gateway providers and MCP servers, with every real credential kept in OpenBao.
 status: preview
 category: Agent Infrastructure
 order: 7
@@ -16,9 +13,65 @@ kinds:
         default: true
         command: docker pull ghcr.io/wyrd-company/xolotl:latest
 highlights:
-  - One proxy for your LLM subscriptions, AI gateways and MCP servers.
+  - Give coding agents one URL and one client key for subscriptions, AI gateways and MCP servers.
+  - Keep every real credential in OpenBao, never in the agents' containers.
+  - Spread requests over several accounts per provider and move to the next when one reaches its quota.
+  - Translate between the Anthropic Messages, OpenAI Responses and Chat Completions formats, so a client can use a model from another provider.
+  - Serve one MCP server at /mcp with code-mode access to the upstream MCP servers a key's policy allows.
+  - Set providers, models, MCP tools and limits per client key, and administer from a web UI or the CLI.
 media:
   - src: assets/demo.gif
-    caption: An operator puts a policy, issues a client key into OpenBao, and the client lists the
-      models its key can use
+    caption: An operator puts a policy, issues a client key into OpenBao, and the client lists the models its key can use.
+nav:
+  - section: Get started
+    groups:
+      - group: Introduction
+        pages:
+          - overview
+      - group: Set up
+        pages:
+          - install
+          - configuration
+  - section: Use xolotl
+    groups:
+      - group: Providers and keys
+        pages:
+          - accounts
+          - policies-and-keys
+      - group: Clients and tools
+        pages:
+          - clients
+          - mcp-gateway
+  - section: Operate
+    groups:
+      - group: Administer
+        pages:
+          - web-ui
+          - cli
+      - group: Monitor and limits
+        pages:
+          - telemetry
+          - limitations
+logo: assets/logo.svg
+logo-dark: assets/logo-dark.svg
+favicon: assets/favicon.svg
+release-unit: xolotl
 owner: wyrd-company/xolotl
+docs-path: docs/user
+release:
+  version: 0.5.0
+  date: 2026-10-22T12:08:35.000Z
+  url: https://github.com/wyrd-company/xolotl/releases/tag/0.5.0
+  notes: |+
+    
+    ### Features
+
+    - Expose cached model context and price metadata with overrides, Claude Code context hints and token estimates, API-equivalent usage costs, and an authenticated Codex-native model catalog.
+
+    ### Fixes
+
+    - Show Claude weekly model limits and available Claude and Codex resets; hide internal usage buckets.
+    - Focus Overview on actionable failures, configured provider health and 24-hour traffic, with account fixes and errors-only Usage links.
+    - Add a keyboard-accessible repository and issue-reporting link to the web UI sidebar.
+    - Keep policy and MCP server save actions visible while scrolling, and keep button labels readable before hover and while disabled in both themes.
+

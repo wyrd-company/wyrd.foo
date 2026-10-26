@@ -1,7 +1,7 @@
 ---
 title: Overview
-product: xolotl
 order: 1
+product: xolotl
 ---
 
 Xolotl is a self-hosted proxy for LLM subscriptions, AI gateway providers and

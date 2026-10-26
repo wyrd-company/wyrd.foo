@@ -1,7 +1,7 @@
 ---
 title: Policies and client keys
-product: xolotl
 order: 5
+product: xolotl
 ---
 
 Every client authenticates with its own client key (`xol_...`). Every key

@@ -1,7 +1,7 @@
 ---
 title: Configuration
-product: xolotl
 order: 3
+product: xolotl
 ---
 
 Xolotl reads one TOML file, given with `--config` or `XOLOTL_CONFIG`. Every
@@ -219,7 +219,7 @@ Only supplied values replace registry values. Unmatched models show unknown
 limits and prices. Prices are USD per token, displayed per million tokens.
 Codex catalog synthesis defaults to text input, no shell tools, and no reasoning
 levels. Declare supported capabilities explicitly. Native Codex entries retain
-the upstream fields. See [Model metadata design](design/model-metadata).
+the upstream fields. See [Model metadata design](https://github.com/wyrd-company/xolotl/blob/main/docs/design/model-metadata.md).
 
 ## `[mcp]`
 

@@ -1,7 +1,7 @@
 ---
 title: Subscription accounts
-product: xolotl
 order: 4
+product: xolotl
 ---
 
 A subscription account is a login to a consumer subscription or an API-key plan.

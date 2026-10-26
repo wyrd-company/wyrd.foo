@@ -1,7 +1,7 @@
 ---
 title: Telemetry
-product: xolotl
 order: 10
+product: xolotl
 ---
 
 Xolotl exports traces, logs and metrics over OTLP/HTTP when
