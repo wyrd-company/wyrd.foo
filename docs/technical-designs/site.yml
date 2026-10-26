@@ -95,7 +95,7 @@ proposed-design:
       `/releases`, the docs index, every product page, every product releases
       page, and every docs page and docs changelog.
     - **Not listed:** a page that only redirects (`/docs/<key>/`, which goes
-      to the product's first docs page). The `.md` copies of docs pages, the
+      to the product's first docs page), and the 404 page. The `.md` copies of docs pages, the
       JSON Schema and assets are not HTML pages, so the integration does not
       list them. `src/lib/sitemap.ts` decides from the route, so a new
       product needs no change.
@@ -317,6 +317,22 @@ proposed-design:
       install command, with Copy and a link to every install method on the
       product page. For apt and rpm the setup is collapsed as in
       `install-blocks`, and Copy takes the whole block.
+  not-found-page: |
+    A URL that has no page answers with status 404 and the 404 page
+    (`src/pages/404.astro`, built to `/404.html`, which Cloudflare Pages
+    serves for every unknown URL). It is in the shared layout: the site
+    header, the footer and the site's favicon and image.
+
+    - **Content**: "404" in small mono type, the title "Page not found", one
+      sentence that says the link may be wrong or the page may have moved,
+      and, with script, the requested path in inline code.
+    - **Actions**: "Browse the catalog" (the primary button, to
+      `/#catalog`), "Search", which opens the search dialog, and "Go home"
+      (to `/`).
+    - **Out of every index**: the head has `robots` `noindex` and no
+      canonical URL or `og:url`, because the page answers at URLs that are
+      not its own. It is not in the sitemap, has no `data-pagefind-body`, so
+      search does not index it, and is not in `/llms.txt`.
   llms-txt: |
     The build writes `/llms.txt` for agents, in the
     [llmstxt.org](https://llmstxt.org) format, as plain text with no HTML.

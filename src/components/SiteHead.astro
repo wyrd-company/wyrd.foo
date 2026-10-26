@@ -12,8 +12,11 @@ interface Props {
   description?: string;
   /** The product this page belongs to (its product page or a docs page). */
   product?: HeadProduct;
+  /** A page served at URLs that are not its own (the 404 page): no canonical
+   * URL, no og:url, and crawlers are told not to index it. */
+  noindex?: boolean;
 }
-const { title, description, product } = Astro.props;
+const { title, description, product, noindex = false } = Astro.props;
 
 const site = Astro.site ?? Astro.url;
 const canonical = new URL(Astro.url.pathname, site).href;
@@ -41,7 +44,7 @@ const socialImage = new URL(resolveSocialImage(product), site).href;
 <meta name="generator" content={Astro.generator} />
 <title>{title}</title>
 {description && <meta name="description" content={description} />}
-<link rel="canonical" href={canonical} />
+{noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
 <link rel="sitemap" href="/sitemap-index.xml" />
 <link rel="icon" type={favicon.type} href={favicon.href} />
 {!product && <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />}
@@ -50,7 +53,7 @@ const socialImage = new URL(resolveSocialImage(product), site).href;
 <meta property="og:site_name" content="Wyrd Tools" />
 <meta property="og:title" content={title} />
 {description && <meta property="og:description" content={description} />}
-<meta property="og:url" content={canonical} />
+{!noindex && <meta property="og:url" content={canonical} />}
 <meta property="og:image" content={socialImage} />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content={title} />
