@@ -66,6 +66,11 @@ Then:
    replace that block with `task: docs:validate`. Toha cannot remove a block
    it did not write.
 
+The caller uses the `v2` tag, which wyrd.foo moves to each `2.y.z` release, so
+the repo takes contract fixes without an edit. zizmor's default policy reports
+that reference as `unpinned-uses`; a repo that runs zizmor configures or
+ignores that finding.
+
 `task docs:validate` needs a wyrd.foo checkout with its dependencies
 installed. `WYRD_FOO_DIR` names it (default `../wyrd.foo`). Arguments after
 `--` go to the publisher, for example `task docs:validate -- --offline`.
