@@ -64,6 +64,12 @@ product to `main`. The push starts the deploy. The contract, the calling
 workflow and the requirements are in
 [`docs/technical-designs/publishing.yml`](docs/technical-designs/publishing.yml).
 
+To onboard a tool repo, apply the Toha template in
+[`templates/tool-docs/`](templates/tool-docs/README.md) from
+`gh:wyrd-company/wyrd.foo@main#templates/tool-docs`. It writes the
+`docs/user/` starter, the calling workflow and the Intentional docs unit, and
+`toha apply --update` brings later template changes into the repo.
+
 The JSON Schema for `docs/user/docs.yml` is served at
 `https://wyrd.foo/schemas/docs/v1.json`.
 
@@ -87,6 +93,7 @@ src/
     ├── tools/[key]/releases.astro  # each product's full changelog
     └── docs/[key]/          # docs pages
 publisher/                   # the publisher core: publish, local and validate
+templates/tool-docs/         # the Toha template that onboards a tool repo
 .github/actions/publish-docs # the publish-docs@v2 action
 .github/workflows/publish-docs.yml  # the reusable workflow tool repos call
 ```
