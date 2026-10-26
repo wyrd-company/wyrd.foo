@@ -1,0 +1,4 @@
+  docs:validate:
+    desc: Check docs/user/ against the wyrd.foo publishing contract (needs a wyrd.foo checkout with its dependencies installed; WYRD_FOO_DIR names it, default ../wyrd.foo)
+    cmds:
+      - node "{% raw %}{{.WYRD_FOO_DIR | default "../wyrd.foo"}}{% endraw %}/publisher/cli.ts" validate "{% raw %}{{.ROOT_DIR}}" {{.CLI_ARGS}}{% endraw %}

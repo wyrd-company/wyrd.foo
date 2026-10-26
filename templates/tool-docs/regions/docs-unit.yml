@@ -1,0 +1,15 @@
+  # The public docs release on their own, so the docs footer can say which
+  # docs describe which {{ name }} version. Docs units are tag-only.
+  {{ key }}-docs:
+    path: docs/user
+    depends-on:
+    - {{ release_unit }}
+    projections:
+    - adapter: yaml
+      file: /docs/user/docs.yml
+      pointer: /products/{{ key }}/docs-version
+      mode: committed
+    tags:
+      primary:
+        role: primary
+        template: '{id}@{version}'
