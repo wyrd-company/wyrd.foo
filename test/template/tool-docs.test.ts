@@ -160,7 +160,7 @@ interface Unit {
 }
 
 before(() => {
-  const version = run(TOHA, ["--version"], scratch);
+  const version = spawnSync(TOHA, ["--version"], { encoding: "utf8" });
   assert.equal(version.status, 0, `Toha is not runnable as ${TOHA}; set TOHA to the Toha 0.4.0 binary`);
 });
 
