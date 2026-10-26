@@ -1,11 +1,9 @@
 name: t3c
 version: 0.1.0
 docs-version: 0.1.0
-release-unit: t3c
+release-unit: t3code-cli
 tagline: Run T3 Code conversations from your terminal and automation.
-blurb: A Node command-line client and TypeScript library for stock T3 Code. Pair named servers, run
-  or continue conversations, inspect threads, and preserve clear output and exit codes in
-  automation.
+blurb: A Node command-line client and TypeScript library for stock T3 Code. Pair named servers, run or continue conversations, inspect threads, and preserve clear output and exit codes in automation.
 status: preview
 category: Agent Tooling
 kinds:
@@ -24,8 +22,65 @@ kinds:
           - linux
         command: brew install wyrd-company/tools/t3c
 highlights:
-  - Run T3 Code conversations from your terminal and automation.
+  - Run a conversation on a stock T3 Code server from a terminal or an automation harness.
+  - Pair named server profiles, and keep session tokens out of the argument list by reading them from stdin.
+  - Continue a thread, list threads and projects, and read a thread's last message.
+  - Answers go to stdout and progress to stderr, with --json for structured results and --stream for incremental output.
+  - The same client ships as the TypeScript library @wyrd-company/t3code-lib.
 media:
   - src: assets/demo.gif
-    caption: t3c pairs a profile, starts and waits for a thread, and lists projects
+    caption: Pairing a profile, starting and waiting for a thread, continuing it, and listing projects.
+nav:
+  - section: Get started
+    groups:
+      - group: Basics
+        pages:
+          - getting-started
+          - auth
+  - section: Reference
+    groups:
+      - group: Using t3c
+        pages:
+          - commands
+          - policy
+          - dagu
+      - group: Library
+        pages:
+          - library-reference
 owner: wyrd-company/t3code-client
+docs-path: docs/user/t3c
+release:
+  version: 0.1.0
+  date: 2026-10-18T01:29:41.000Z
+  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-cli%400.1.0
+  notes: "## 0.1.0\r
+
+    \r
+
+    ### Features\r
+
+    \r
+
+    - Provide the t3c Node command-line client for stock T3 Code, with its command contract, commander composition, version reporting, structured output, shared error mapping, installable executable and isolated live acceptance recipe.\r
+
+    \  \r
+
+    \  Specify the t3c command surface, execution policies and Dagu harness contract.\r
+
+    \  \r
+
+    \  Pair named server profiles from links and stdin tokens, probe exact profile credentials and effective overrides, switch the current server and remove local credentials.\r
+
+    \  \r
+
+    \  Run prompts from arguments, files or stdin against selected projects, models and worktrees; start, send to, wait on, read, list, interrupt and answer threads; list and ensure projects; and report server providers and models. Waiting commands support run deadlines that detach or interrupt, signal interruption, pending-request policies, approval decisions, streaming and structured results.\r
+
+    \  Prepare tagged documentation, generated library reference, isolated recorded demo, registry shrinkwrap handoff and Homebrew distribution with local artifact validation.\r
+
+    \  \r
+
+    \  Preserve the tap formula when published bytes differ, protect existing Homebrew installations with preflight regression coverage, and record the unreleased CLI demo without a visible interim version frame.\r
+
+    \  \r
+
+    \  Record real stdin pairing to a fresh profile, start and wait on one linked thread and run, and list its selected project; preserve generic continuation and thread listing with verified outcomes.\r\n"

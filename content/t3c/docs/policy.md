@@ -1,6 +1,6 @@
 ---
-title: Output, exits and requests
 product: t3c
+title: Output, exits and requests
 order: 4
 relationships:
   references:

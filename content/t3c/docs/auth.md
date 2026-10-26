@@ -1,6 +1,6 @@
 ---
-title: Auth and profiles
 product: t3c
+title: Auth and profiles
 order: 2
 relationships:
   references:
