@@ -12,6 +12,8 @@ pages.
 
 ## Design
 
+- [`docs/concepts/wyrd-foo.yml`](docs/concepts/wyrd-foo.yml): the concept:
+  what the site is for and what it does.
 - [`DESIGN.md`](DESIGN.md): the visual design system, in the
   [DESIGN.md](https://github.com/google-labs-code/design.md) format: colour
   tokens for both themes, type, spacing, shapes and components.
