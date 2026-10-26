@@ -1,7 +1,7 @@
 ---
 title: Overview
-product: menagerie
 order: 1
+product: menagerie
 relationships:
   references:
     - menagerie

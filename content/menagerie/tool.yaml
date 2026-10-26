@@ -1,12 +1,8 @@
 name: menagerie
-version: 0.1.0
+version: 0.2.0
 docs-version: 0.1.0
-release-unit: menagerie
 tagline: Manage workspaces and fleets of development containers through a web UI.
-blurb: One container that creates workspaces from Toha templates through their interviews, shows
-  every workspace with its devcontainer, starts, stops, rebuilds and upgrades them, and backs each
-  one up to its own Git branch. Managers sign in through OpenID Connect; Wyrwood supplies its SSH
-  key and registry credentials.
+blurb: One container that creates workspaces from Toha templates through their interviews, shows every workspace with its devcontainer, starts, stops, rebuilds and upgrades them, and backs each one up to its own Git branch. Managers sign in through OpenID Connect; Wyrwood supplies its SSH key and registry credentials.
 status: preview
 category: Dev Containers
 order: 10
@@ -17,8 +13,43 @@ kinds:
         default: true
         command: docker pull ghcr.io/wyrd-company/menagerie:0.1.0
 highlights:
-  - Manage workspaces and fleets of development containers through a web UI.
+  - Creates a workspace from a Toha template by answering the template's interview in the browser.
+  - Lists every workspace with the state of its devcontainer, and starts, stops and rebuilds it as a job with a live console.
+  - Upgrades a workspace to a newer template version, asks only the new questions and keeps local edits.
+  - Backs up each workspace to its own branch in one Git repository after every change.
+  - "Signs managers in through your OpenID Connect provider and holds no key or secret itself: Wyrwood supplies them."
+  - Runs as one container with no database; the workspace files stay the source of truth.
 media:
+  - src: assets/demo.gif
+    caption: Creating a workspace through its interview, then upgrading it.
+    alt: Recording of the Menagerie web UI creating a workspace from a template interview and then upgrading it.
   - src: assets/list.png
-    caption: The workspace list
+    caption: The workspace list with the state of each devcontainer.
+    alt: The Menagerie workspace list showing each workspace and its container state.
+  - src: assets/create-interview.png
+    caption: A template interview that creates a workspace.
+    alt: The create-workspace form showing a template's interview questions.
+  - src: assets/upgrade-interview.png
+    caption: An upgrade that asks one new question.
+    alt: The upgrade form asking only the question the newer template added.
+logo: assets/logo.svg
+social-image: assets/social-image.png
+release-unit: menagerie
 owner: wyrd-company/menagerie
+docs-path: docs/user
+release:
+  version: 0.2.0
+  date: 2026-10-25T19:06:18.000Z
+  url: https://github.com/wyrd-company/menagerie/releases/tag/0.2.0
+  notes: |
+    The web UI has a new look: a plain operations console with the Menagerie logo, and a dark theme that follows the operating system setting.
+
+    ## Image
+
+    ```sh
+    docker pull ghcr.io/wyrd-company/menagerie:0.2.0
+    ```
+
+    Index digest: `sha256:e375441423239bb69a44ceb58730410df0ff101a9906bd54fdc2112c452090e2` (linux/amd64 `sha256:b82ff2ef…`, linux/arm64 `sha256:7f75c182…`).
+
+    See the [install guide](https://github.com/wyrd-company/menagerie/blob/0.2.0/docs/install.md) and the [changelog](https://github.com/wyrd-company/menagerie/blob/0.2.0/CHANGELOG.md).

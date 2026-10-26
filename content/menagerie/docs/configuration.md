@@ -1,7 +1,7 @@
 ---
 title: Configuration
-product: menagerie
 order: 3
+product: menagerie
 relationships:
   references:
     - configuration
