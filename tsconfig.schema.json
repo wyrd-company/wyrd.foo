@@ -11,6 +11,7 @@
     "test/schema/**/*.ts",
     "test/publisher/**/*.ts",
     "test/build/**/*.ts",
+    "test/template/**/*.ts",
     "test/browser/**/*.ts"
   ]
 }
