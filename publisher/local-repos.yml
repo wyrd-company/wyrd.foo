@@ -17,3 +17,4 @@ repos:
   - name: agent-svgtools
   - name: devcontainer-builder
   - name: devcontainers
+  - name: menagerie
