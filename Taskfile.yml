@@ -6,7 +6,50 @@ tasks:
     cmds:
       - astro dev
 
+  dev:v2:
+    desc: "Publish each tool repo's wyrd-foo-v2 branch into the dev content folder, then build the site and its Pagefind search index on it and serve the build with astro preview (publisher options after --; astro preview options in ASTRO_ARGS)"
+    env:
+      WYRD_CONTENT_DIR: '{{.WYRD_CONTENT_DIR | default ".content-v2"}}'
+    cmds:
+      - task: publish:local
+      - pnpm build
+      - pnpm astro preview {{.ASTRO_ARGS}}
+
+  publish:local:
+    desc: Run the publisher in local mode over publisher/local-repos.yml into the dev content folder (pass --offline after --)
+    env:
+      WYRD_CONTENT_DIR: '{{.WYRD_CONTENT_DIR | default ".content-v2"}}'
+    cmds:
+      - node publisher/cli.ts local {{.CLI_ARGS}}
+
+  validate:repo:
+    desc: "Check one tool repo checkout against the publishing contract: task validate:repo -- <repo path> [--ref <ref>]"
+    dir: '{{.USER_WORKING_DIR}}'
+    cmds:
+      - node {{.ROOT_DIR}}/publisher/cli.ts validate {{.CLI_ARGS}}
+
   install:
     desc: Install dependencies
     cmds:
       - pnpm install
+
+  build:
+    desc: Build the site and its search index
+    cmds:
+      - pnpm build
+
+  test:
+    desc: Typecheck the docs contract, the publisher and the site, then run the schema, publisher and site tests
+    cmds:
+      - pnpm typecheck
+      - pnpm test
+
+  test:browser:
+    desc: Run the browser tests against the built site (run `task build` first)
+    cmds:
+      - pnpm test:browser
+
+  check:
+    desc: Typecheck, run every test, build the site, then run the built-output and browser checks
+    cmds:
+      - pnpm check

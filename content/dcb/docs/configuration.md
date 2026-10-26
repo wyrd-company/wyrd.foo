@@ -1,5 +1,6 @@
 ---
 title: Configuration
+product: dcb
 order: 4
 relationships:
   references: [ usage ]

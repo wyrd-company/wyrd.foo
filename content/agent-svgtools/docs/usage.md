@@ -1,5 +1,6 @@
 ---
 title: The reconstruction workflow
+product: agent-svgtools
 order: 3
 relationships:
   uses: agent-svgtools-skill

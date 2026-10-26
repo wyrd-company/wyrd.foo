@@ -1,5 +1,6 @@
 ---
 title: Configuration
+product: menagerie
 order: 3
 relationships:
   references:

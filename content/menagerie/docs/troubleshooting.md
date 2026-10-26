@@ -1,5 +1,6 @@
 ---
 title: Troubleshooting
+product: menagerie
 order: 5
 relationships:
   references:

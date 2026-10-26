@@ -1,5 +1,6 @@
 ---
 title: How scoring works
+product: agent-svgtools
 order: 5
 relationships:
   references: agent-svgtools-comparison-engine

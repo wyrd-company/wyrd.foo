@@ -1,5 +1,6 @@
 ---
 title: MCP gateway
+product: xolotl
 order: 7
 ---
 

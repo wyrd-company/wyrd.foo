@@ -1,0 +1,17 @@
+# A CLI whose default install is rpm, so its row carries the repository setup.
+name: rpmly-cli
+version: 1.0.0
+docs-version: 1.0.0
+release-unit: rpmly-cli
+owner: example-org/rpmly-cli
+tagline: Count the spoons in a drawer.
+blurb: A sample command-line product installed from a rpm repository.
+status: preview
+category: Knowledge & Planning
+order: 4
+kinds:
+  - kind: cli
+    install:
+      - { method: rpm, os: [linux], command: sudo dnf install rpmly-cli }
+highlights: [Counts spoons]
+media: [{ src: assets/demo.png, caption: A sample session }]

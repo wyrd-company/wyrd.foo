@@ -1,0 +1,46 @@
+---
+/* "What it does": the product's highlights, numbered. */
+interface Props {
+  highlights: string[];
+}
+const { highlights } = Astro.props;
+---
+
+<ol class="highlights">
+  {
+    highlights.map((text, index) => (
+      <li class="highlight">
+        <span class="highlight-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+        <p>{text}</p>
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .highlights {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .highlight {
+    padding: 20px 22px 22px;
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+  }
+  .highlight-number {
+    display: block;
+    font-family: var(--font-code);
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .highlight p {
+    margin: 10px 0 0;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+</style>

@@ -1,5 +1,6 @@
 ---
 title: Installation
+product: xolotl
 order: 2
 install: true
 ---

@@ -1,0 +1,106 @@
+---
+/*
+ * One release entry of a changelog, rendered (src/lib/latest-entries.ts): the
+ * body of its `## <version>` section, passed in the default slot. Its
+ * subsection headings ("Features", "Fixes") are labels, as in the full
+ * changelog.
+ *
+ * With `id`, a body taller than the clamp height is clamped, with a fade and
+ * a "Show more" button that expands it in place (behaviour in
+ * lib/release-clamp.ts). The button is hidden until the script finds the
+ * body overflowing, so without script the whole entry shows. `id` names the
+ * body, for the button's `aria-controls`.
+ */
+import ProductProse from "./ProductProse.astro";
+
+interface Props {
+  id?: string;
+}
+const { id } = Astro.props;
+---
+
+<div class="release-entry" data-release-clamp={id ? "" : undefined}>
+  <div class="release-entry-body" id={id} data-release-body={id ? "" : undefined}>
+    <ProductProse>
+      <slot />
+    </ProductProse>
+  </div>
+  {
+    id && (
+      <button type="button" class="release-entry-toggle" data-release-toggle aria-expanded="false" aria-controls={id} hidden>
+        Show more
+      </button>
+    )
+  }
+</div>
+
+<script>
+  import { startReleaseClamp } from "../../lib/release-clamp";
+
+  document.querySelectorAll<HTMLElement>("[data-release-clamp]").forEach((entry) => {
+    const body = entry.querySelector<HTMLElement>("[data-release-body]")!;
+    const measure = startReleaseClamp({
+      entry,
+      body,
+      button: entry.querySelector<HTMLButtonElement>("[data-release-toggle]")!,
+    });
+    measure();
+    // Text wraps differently at another width, so an entry can start or stop overflowing.
+    let width = body.clientWidth;
+    new ResizeObserver(() => {
+      if (body.clientWidth === width) return;
+      width = body.clientWidth;
+      measure();
+    }).observe(body);
+  });
+</script>
+
+<style>
+  .release-entry {
+    /* 20rem: about 12 lines of the entry's 15.5px text at a 1.7 line height. */
+    --release-clamp: calc(var(--spacing) * 80);
+  }
+  .release-entry :global(.product-prose h3) {
+    margin: 1.6em 0 0.4em;
+    font-family: var(--font-code);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .release-entry :global(.product-prose > h3:first-child) {
+    margin-top: 0;
+  }
+  .release-entry.is-clamped .release-entry-body {
+    position: relative;
+    max-height: var(--release-clamp);
+    overflow: hidden;
+  }
+  .release-entry.is-clamped .release-entry-body::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 6rem;
+    background: linear-gradient(to bottom, transparent, var(--surface));
+    pointer-events: none;
+  }
+  .release-entry-toggle {
+    margin-top: 8px;
+    min-height: 32px;
+    padding: 0 12px;
+    background: none;
+    border: 1px solid var(--divider);
+    border-radius: 999px;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .release-entry-toggle[hidden] {
+    display: none;
+  }
+  .release-entry-toggle:hover {
+    background: var(--surface-2);
+  }
+</style>

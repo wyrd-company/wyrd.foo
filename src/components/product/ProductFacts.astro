@@ -1,0 +1,116 @@
+---
+/*
+ * The short facts list beside the hero: all kinds, status, latest version and
+ * date (a link to the page's Releases section), category and repository.
+ */
+import type { Kind, Status } from "../../schema/index";
+import { KIND_LABELS } from "../../lib/kinds";
+import { STATUS_LABELS, formatReleaseDate } from "../../lib/product-facts";
+
+interface Props {
+  kinds: Kind[];
+  status?: Status;
+  version: string;
+  date?: Date;
+  category: string;
+  /** `owner/repo` on GitHub. */
+  owner: string;
+}
+const { kinds, status, version, date, category, owner } = Astro.props;
+---
+
+<dl class="facts">
+  <div class="facts-row">
+    <dt>{kinds.length > 1 ? "Kinds" : "Kind"}</dt>
+    <dd data-fact="kinds">{kinds.map((kind) => KIND_LABELS[kind]).join(" · ")}</dd>
+  </div>
+  {
+    status && (
+      <div class="facts-row">
+        <dt>Status</dt>
+        <dd data-fact="status">
+          <span class:list={["facts-status", `is-${status}`]}>{STATUS_LABELS[status]}</span>
+        </dd>
+      </div>
+    )
+  }
+  <div class="facts-row">
+    <dt>Latest</dt>
+    <dd data-fact="latest" class="facts-mono">
+      <a class="facts-latest" href="#releases">
+        {version}
+        {date && <span class="facts-date"> · {formatReleaseDate(date)}</span>}
+      </a>
+    </dd>
+  </div>
+  <div class="facts-row">
+    <dt>Category</dt>
+    <dd data-fact="category">{category}</dd>
+  </div>
+  <div class="facts-row">
+    <dt>Repository</dt>
+    <dd data-fact="repository"><a href={`https://github.com/${owner}`}>{owner}</a></dd>
+  </div>
+</dl>
+
+<style>
+  .facts {
+    margin: 0;
+    font-size: 14px;
+  }
+  .facts-row {
+    display: grid;
+    grid-template-columns: 104px 1fr;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--divider);
+  }
+  .facts-row:first-child {
+    padding-top: 0;
+  }
+  .facts dt {
+    color: var(--text-faint);
+  }
+  .facts dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .facts-mono {
+    font-family: var(--font-code);
+    font-size: 13px;
+  }
+  .facts-date {
+    color: var(--text-2);
+  }
+  .facts-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 600;
+    color: var(--status-color);
+  }
+  .facts-status::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  /* Status colours meet 4.5:1 on the page in each theme. */
+  .is-stable {
+    --status-color: #5fd38d;
+  }
+  .is-preview {
+    --status-color: #f0b44c;
+  }
+  .is-planned {
+    --status-color: var(--text-2);
+  }
+  :global(:root[data-theme="light"]) .is-stable {
+    --status-color: #12703a;
+  }
+  :global(:root[data-theme="light"]) .is-preview {
+    --status-color: #8a5300;
+  }
+</style>

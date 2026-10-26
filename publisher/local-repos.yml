@@ -1,0 +1,20 @@
+# Tool repos that local mode reads. Each is read from its local clone at
+# <tools dir>/<name> (default tools dir /workspaces/tools; override with
+# WYRD_TOOLS_DIR or --tools-dir). `path` overrides the clone path and `owner`
+# the owner/repo read from the clone's origin remote.
+branch: wyrd-foo-v2
+repos:
+  - name: gitpr
+  - name: intentional
+  - name: toha
+  - name: trowel
+  - name: xolotl
+  - name: wyrwood
+  - name: t3code-client
+  - name: beholder
+  - name: seek-cli
+  - name: tagver
+  - name: agent-svgtools
+  - name: devcontainer-builder
+  - name: devcontainers
+  - name: menagerie

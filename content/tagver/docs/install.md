@@ -1,5 +1,6 @@
 ---
 title: Installation
+product: tagver
 order: 2
 install: true
 ---

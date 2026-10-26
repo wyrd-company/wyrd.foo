@@ -1,0 +1,92 @@
+---
+/*
+ * One MP4 or WebM file on the product page: muted, looped video with a
+ * pause button (behaviour in lib/product-video.ts). The markup has no
+ * `autoplay`: the script starts the video unless the visitor prefers reduced
+ * motion. Without script the native controls stay. A video with no `src` is a
+ * template: the media tour's dialog (ProductMedia.astro) sets it and starts it.
+ */
+interface Props {
+  src?: string;
+  /** What the video shows. */
+  label: string;
+}
+const { src, label } = Astro.props;
+---
+
+<div class="media-video" data-media-video>
+  <video src={src} muted loop playsinline controls preload="metadata" aria-label={label}></video>
+  <button type="button" class="media-toggle" data-media-toggle data-playing="false" aria-label={`Play video: ${label}`} hidden>
+    <span class="media-toggle-pause" aria-hidden="true">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <rect x="5" y="4" width="5" height="16" rx="1"></rect>
+        <rect x="14" y="4" width="5" height="16" rx="1"></rect>
+      </svg>
+      Pause
+    </span>
+    <span class="media-toggle-play" aria-hidden="true">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"></path>
+      </svg>
+      Play
+    </span>
+  </button>
+</div>
+
+<script>
+  import { REDUCED_MOTION_QUERY, startProductVideo } from "../../lib/product-video";
+
+  const reducedMotion = matchMedia(REDUCED_MOTION_QUERY).matches;
+  document.querySelectorAll<HTMLElement>("[data-media-video]").forEach((wrapper) => {
+    startProductVideo({
+      video: wrapper.querySelector("video")!,
+      button: wrapper.querySelector<HTMLButtonElement>("[data-media-toggle]")!,
+      name: wrapper.querySelector("video")!.getAttribute("aria-label") ?? "",
+      reducedMotion,
+    });
+  });
+</script>
+
+<style>
+  .media-video {
+    position: relative;
+  }
+  video {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .media-toggle {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    padding: 0 12px;
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 999px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .media-toggle[hidden] {
+    display: none;
+  }
+  .media-toggle:hover {
+    background: var(--surface-2);
+  }
+  .media-toggle-pause,
+  .media-toggle-play {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .media-toggle[data-playing="true"] .media-toggle-play,
+  .media-toggle[data-playing="false"] .media-toggle-pause {
+    display: none;
+  }
+</style>

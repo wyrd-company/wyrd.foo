@@ -1,0 +1,95 @@
+---
+/*
+ * A product's releases page, /tools/<key>/releases
+ * (docs/technical-designs/site.yml, releases): the product's breadcrumb, mark
+ * and name, then a Releases section like the product page's, with the full
+ * code changelog in place of its latest entry.
+ */
+import { getCollection, render } from "astro:content";
+import ProductMark from "../../../components/ProductMark.astro";
+import ProductReleases from "../../../components/product/ProductReleases.astro";
+import ProductSection from "../../../components/product/ProductSection.astro";
+import SearchIndexMeta from "../../../components/SearchIndexMeta.astro";
+import SiteLayout from "../../../layouts/SiteLayout.astro";
+import { productAssetUrl } from "../../../lib/product-assets";
+import { productHead } from "../../../lib/product-head";
+
+export async function getStaticPaths() {
+  const products = await getCollection("products");
+  return products.map((entry) => ({ params: { key: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const key = entry.id;
+const tool = entry.data;
+const head = productHead(key, tool);
+const logoDark = "logo-dark" in tool && tool["logo-dark"] ? productAssetUrl(key, tool["logo-dark"]) : undefined;
+
+// A product with no changelog is expected.
+const [changelog] = await getCollection("codeChangelogs", (file) => file.id === key);
+const Changelog = changelog ? (await render(changelog)).Content : undefined;
+---
+
+<SiteLayout title={`${tool.name} releases — Wyrd Tools`} description={`Every release of ${tool.name}.`} product={head} nav="releases">
+  <article class="product-releases site-width" data-product-releases={key} data-pagefind-body>
+    <SearchIndexMeta product={key} productName={tool.name} kinds={tool.kinds.map((block) => block.kind)} />
+    <!-- The result title: the content form, as SearchIndexMeta writes its values. -->
+    <span hidden data-pagefind-ignore><span data-pagefind-meta="title">{tool.name} releases</span></span>
+    <header class="product-releases-head">
+      <nav class="product-releases-crumbs" aria-label="Breadcrumb" data-pagefind-ignore>
+        <a href="/#catalog">Catalog</a>
+        <span aria-hidden="true">/</span>
+        <span>{tool.category}</span>
+        <span aria-hidden="true">/</span>
+        <a href={`/tools/${key}`}>{tool.name}</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page" class="product-releases-crumb-current">Releases</span>
+      </nav>
+      <div class="product-releases-title">
+        <ProductMark name={tool.name} logo={head.logo} logoDark={head.logo ? logoDark : undefined} size="card" />
+        <h1>{tool.name}</h1>
+      </div>
+    </header>
+    <ProductSection id="releases" title="Releases">
+      <ProductReleases release={tool.release} changelog={Changelog ? "full" : undefined}>
+        {Changelog && <Changelog />}
+      </ProductReleases>
+    </ProductSection>
+  </article>
+</SiteLayout>
+
+<style>
+  .product-releases {
+    padding-top: 28px;
+    padding-bottom: 96px;
+  }
+  .product-releases-crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-faint);
+  }
+  .product-releases-crumb-current {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .product-releases-title {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .product-releases-title h1 {
+    margin: 0;
+    font-family: var(--font-code);
+    font-size: clamp(32px, 4vw, 44px);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+  .product-releases :global(.product-section) {
+    padding-top: 48px;
+  }
+</style>

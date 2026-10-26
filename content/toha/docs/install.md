@@ -1,5 +1,6 @@
 ---
 title: Installation
+product: toha
 order: 2
 install: true
 relationships:

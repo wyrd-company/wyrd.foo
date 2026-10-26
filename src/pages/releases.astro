@@ -1,0 +1,140 @@
+---
+/*
+ * /releases (docs/technical-designs/site.yml, releases): one entry per
+ * product that has a release and a changelog, newest release first. Each
+ * entry is the product's
+ * mark, name, kind, version and date, linked to the product's releases page,
+ * then its latest changelog entry, clamped when it is long (ReleaseEntry).
+ */
+import { getCollection, render } from "astro:content";
+import ProductMark from "../components/ProductMark.astro";
+import ReleaseEntry from "../components/product/ReleaseEntry.astro";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { formatDate, KIND_LABEL, type HomeEntry } from "../lib/home";
+import { releaseListings } from "../lib/releases";
+import { productReleasesHref } from "../lib/site";
+
+const [products, latestEntries] = await Promise.all([getCollection("products"), getCollection("latestReleaseEntries")]);
+const entries: HomeEntry[] = products.map((product) => ({ key: product.id, data: product.data, hasDocs: false }));
+const byKey = new Map(latestEntries.map((entry) => [entry.id, entry]));
+const listings = await Promise.all(
+  releaseListings(entries, new Set(byKey.keys())).map(async (listing) => ({
+    ...listing,
+    Content: (await render(byKey.get(listing.key)!)).Content,
+  })),
+);
+---
+
+<SiteLayout title="Releases — Wyrd Tools" description="The latest release of every Wyrd tool." nav="releases">
+  <section class="releases site-width" data-pagefind-body>
+    <h1>Releases</h1>
+    <p class="releases-deck">The latest release of each tool, newest first.</p>
+    {
+      listings.length === 0 ? (
+        <p class="releases-empty">No releases yet.</p>
+      ) : (
+        <ol class="releases-list">
+          {listings.map(({ key, name, kind, version, date, logo, logoDark, Content }) => (
+            <li>
+              <article class="releases-item" data-release-entry={key}>
+                <a class="releases-item-head" href={productReleasesHref(key)}>
+                  <ProductMark name={name} logo={logo} logoDark={logoDark} size="card" />
+                  <span class="releases-item-text">
+                    <h2 class="release-entry-name">{name}</h2>
+                    <span class="release-entry-meta">
+                      {KIND_LABEL[kind]} · {version} ·{" "}
+                      <time datetime={date.toISOString().slice(0, 10)}>{formatDate(date)}</time>
+                    </span>
+                  </span>
+                  <span class="releases-item-all" aria-hidden="true">
+                    All releases →
+                  </span>
+                </a>
+                <ReleaseEntry id={`release-body-${key}`}>
+                  <Content />
+                </ReleaseEntry>
+              </article>
+            </li>
+          ))}
+        </ol>
+      )
+    }
+  </section>
+</SiteLayout>
+
+<style>
+  .releases {
+    padding-block: 48px 96px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 40px;
+    letter-spacing: -0.03em;
+  }
+  .releases-deck {
+    margin: 8px 0 32px;
+    color: var(--text-2);
+  }
+  .releases-empty {
+    color: var(--text-faint);
+  }
+  .releases-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .releases-item {
+    padding: 20px 24px 24px;
+    background: var(--surface);
+    border: 1px solid var(--divider);
+    border-radius: 10px;
+  }
+  .releases-item-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--divider);
+    color: var(--text);
+  }
+  .releases-item-head:hover {
+    text-decoration: none;
+  }
+  .releases-item-head:hover .release-entry-name {
+    color: var(--accent);
+  }
+  .releases-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-grow: 1;
+    min-width: 0;
+  }
+  .release-entry-name {
+    margin: 0;
+    font-family: var(--font-code);
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+  .release-entry-meta {
+    font-size: 13px;
+    color: var(--text-faint);
+  }
+  .releases-item-all {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  @media (max-width: 560px) {
+    .releases-item-all {
+      display: none;
+    }
+  }
+</style>

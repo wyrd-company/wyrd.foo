@@ -1,0 +1,37 @@
+---
+/*
+ * The docs changelog of a product: /docs/<key>/changelog, linked from the
+ * docs version footer. The page slug `changelog` is reserved for it (see `RESERVED_SLUGS`).
+ */
+import { render } from "astro:content";
+import SearchIndexMeta from "../../../components/SearchIndexMeta.astro";
+import DocsArticle from "../../../components/docs/DocsArticle.astro";
+import DocsShell from "../../../components/docs/DocsShell.astro";
+import DocsSidebar from "../../../components/docs/DocsSidebar.astro";
+import { getDocsProducts, type DocsProduct } from "../../../lib/docs";
+
+export async function getStaticPaths() {
+  const products = await getDocsProducts();
+  return products
+    .filter((product) => product.changelog !== undefined)
+    .map((product) => ({ params: { key: product.key }, props: { product, products } }));
+}
+
+interface Props {
+  product: DocsProduct;
+  products: DocsProduct[];
+}
+const { product, products } = Astro.props;
+const { Content } = await render(product.changelog!);
+const section = product.map[0];
+---
+
+<DocsShell title="Docs changelog" product={product} products={products} section={null}>
+  <DocsSidebar slot="sidebar" section={section} current="" />
+  <div data-pagefind-body>
+    <SearchIndexMeta product={product.key} productName={product.name} kinds={product.kinds} />
+    <DocsArticle product={product} title="Docs changelog" section={null}>
+      <Content />
+    </DocsArticle>
+  </div>
+</DocsShell>

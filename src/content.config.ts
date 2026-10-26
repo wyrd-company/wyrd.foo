@@ -1,45 +1,71 @@
-import { defineCollection, z } from "astro:content";
-import { glob } from "astro/loaders";
+import { defineCollection } from "astro:content";
+import { z } from "astro/zod";
+import { contentGlob } from "./lib/content-glob.ts";
+import { CONTENT_ROOT } from "./lib/content-root.ts";
+import { latestEntries } from "./lib/latest-entries.ts";
+import { pageSchema, pageSlugOf, toolFileSchema, withClosestIssues } from "./schema/index.ts";
 
-// The `content/` tree simulates the "docs tap": each tool repo pushes a
-// self-contained folder — `content/<tool>/tool.yaml` (catalog metadata) plus
-// `content/<tool>/docs/*.md` (pages). The site reads it; adding a folder
-// self-registers a tool on the landing catalog and the docs nav.
-
-const tools = defineCollection({
-  loader: glob({
+// Collections validated by the shared docs contract in src/schema/. The
+// publisher writes `<root>/<key>/tool.yaml`, and under `<root>/<key>/docs/`
+// the product's docs folder (docs/user/ or docs/user/<key>/): pages at any
+// depth, assets, and the docs changelog `CHANGELOG.md`, which is data, not a
+// page. Adding a folder adds a product to the catalog and the docs nav.
+// The root is WYRD_CONTENT_DIR, default `content/`.
+const products = defineCollection({
+  loader: contentGlob({
     pattern: "*/tool.yaml",
-    base: "./content",
-    // content/gitpr/tool.yaml -> "gitpr"
+    base: CONTENT_ROOT,
     generateId: ({ entry }) => entry.split("/")[0],
   }),
-  schema: z.object({
-    name: z.string(),
-    tagline: z.string(),
-    blurb: z.string(),
-    category: z.string(),
-    language: z.string(),
-    status: z.enum(["stable", "preview", "planned"]),
-    repo: z.string().url(),
-    order: z.number().default(999),
-    install: z
-      .array(z.object({ label: z.string(), command: z.string() }))
-      .default([]),
+  // A product entry and a feature entry are a union: report the closest one's
+  // fields, so a broken tool.yaml names the field.
+  schema: withClosestIssues(toolFileSchema),
+});
+
+const pages = defineCollection({
+  loader: contentGlob({
+    pattern: ["*/docs/**/*.md", "!*/docs/CHANGELOG.md"],
+    base: CONTENT_ROOT,
+    // <key>/docs/guides/getting-started.md -> "<key>/getting-started"
+    generateId: ({ entry }) => `${entry.split("/")[0]}/${pageSlugOf(entry)}`,
+  }),
+  schema: pageSchema,
+});
+
+// `<key>/docs/CHANGELOG.md`: the docs unit changelog, linked from the docs
+// version footer (`/docs/<key>/changelog`).
+const docsChangelogs = defineCollection({
+  loader: contentGlob({
+    pattern: "*/docs/CHANGELOG.md",
+    base: CONTENT_ROOT,
+    generateId: ({ entry }) => entry.split("/")[0],
   }),
 });
 
-const docs = defineCollection({
-  loader: glob({
-    pattern: "*/docs/*.md",
-    base: "./content",
-    // content/gitpr/docs/overview.md -> "gitpr/overview"
-    generateId: ({ entry }) => entry.replace("/docs/", "/").replace(/\.md$/, ""),
-  }),
-  schema: z.object({
-    title: z.string(),
-    order: z.number(),
-    install: z.boolean().default(false),
+// `<key>/README.md`: the page body of a feature entry.
+const featureReadmes = defineCollection({
+  loader: contentGlob({
+    pattern: "*/README.md",
+    base: CONTENT_ROOT,
+    generateId: ({ entry }) => entry.split("/")[0],
   }),
 });
 
-export const collections = { tools, docs };
+// `<key>/CHANGELOG.md`: the code unit changelog, shown on the product's
+// releases page (`/tools/<key>/releases`).
+const codeChangelogs = defineCollection({
+  loader: contentGlob({
+    pattern: "*/CHANGELOG.md",
+    base: CONTENT_ROOT,
+    generateId: ({ entry }) => entry.split("/")[0],
+  }),
+});
+
+// The first `## <version>` section of each `<key>/CHANGELOG.md`: the latest
+// release entry, shown in the product page's Releases section and on /releases.
+const latestReleaseEntries = defineCollection({
+  loader: latestEntries(CONTENT_ROOT),
+  schema: z.object({ version: z.string() }),
+});
+
+export const collections = { products, pages, docsChangelogs, featureReadmes, codeChangelogs, latestReleaseEntries };

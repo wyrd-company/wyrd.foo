@@ -1,0 +1,34 @@
+$schema: https://refinery.systems/ontology/concept
+description:
+  - >-
+    wyrd.foo is the landing site for Wyrd Company's public tools. Its front
+    page describes each tool, and each tool gets its own docs section, so a
+    visitor finds, understands and installs a tool in one place.
+  - >-
+    The site is built to grow. Each tool repo publishes its own entry and docs,
+    so a new tool joins the catalog without a change to the site.
+properties:
+  catalog: >-
+    A front page that lists every tool with a short description, its kind and
+    how to install it.
+  docs-sections: >-
+    One docs section for each tool, with its own pages, navigation and
+    version.
+  professional-theme: >-
+    One consistent, professional visual theme across the catalog and the docs.
+  room-to-grow: >-
+    A layout that stays usable as the catalog grows from a handful of tools to
+    a dozen or more.
+features:
+  describe-each-tool: >-
+    Describes each tool on the front page, so a visitor can compare tools at a
+    glance.
+  document-each-tool: >-
+    Gives each tool a docs section, so its users find its documentation in one
+    place.
+  add-tools-without-site-changes: >-
+    Accepts a new tool from that tool's own repo, so the catalog grows without
+    work on the site.
+benefits:
+  - One place to discover and learn Wyrd Company's tools.
+  - Each tool's docs stay with the tool that owns them.

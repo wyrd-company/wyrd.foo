@@ -1,0 +1,16 @@
+---
+import SiteLayout from "../../../../../../src/layouts/SiteLayout.astro";
+---
+
+<SiteLayout
+  title="Example with assets"
+  product={{
+    key: "example",
+    name: "Example",
+    logo: "/assets/example/logo.svg",
+    favicon: "/assets/example/favicon.png",
+    socialImage: "/assets/example/social.png",
+  }}
+>
+  <p>A product with its own favicon, logo and social image.</p>
+</SiteLayout>

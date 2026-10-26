@@ -1,0 +1,44 @@
+---
+/*
+ * The docs version footer: "Docs 0.2.3 · for trowel 0.2.0". "Docs <version>"
+ * links the docs changelog when the product publishes one; "for <name>
+ * <version>" links the product's releases page.
+ */
+import type { DocsProduct } from "../../lib/docs";
+import { changelogHref, versionLine } from "../../lib/docs-pages";
+import { productReleasesHref } from "../../lib/site";
+
+interface Props {
+  product: DocsProduct;
+}
+const { product } = Astro.props;
+const line = versionLine({ name: product.name, version: product.data.version, docsVersion: product.data["docs-version"] });
+---
+
+<p class="docs-version" data-pagefind-ignore>
+  {product.changelog ? <a href={changelogHref(product.key)}>{line.docs}</a> : <span>{line.docs}</span>}
+  <span class="docs-version-sep" aria-hidden="true">·</span>
+  <a href={productReleasesHref(product.key)}>{line.product}</a>
+</p>
+
+<style>
+  .docs-version {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    font-family: var(--font-code);
+    font-size: 12.5px;
+    color: var(--text-faint);
+  }
+  .docs-version a {
+    color: var(--text-2);
+    text-decoration: underline;
+    text-decoration-color: var(--divider);
+    text-underline-offset: 3px;
+  }
+  .docs-version a:hover {
+    color: var(--accent);
+    text-decoration-color: currentColor;
+  }
+</style>

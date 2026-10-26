@@ -1,0 +1,140 @@
+---
+/*
+ * The product page, /tools/<key> (docs/technical-designs/site.yml,
+ * product-page): hero and facts, media, highlights, install, documentation
+ * and the latest release.
+ * The product's full changelog is on /tools/<key>/releases. A feature
+ * entry gets the abbreviated page: hero, the devcontainer.json snippet, its
+ * README as it is, and releases.
+ */
+import { getCollection, render } from "astro:content";
+import ProductDocsMap from "../../components/product/ProductDocsMap.astro";
+import ProductFacts from "../../components/product/ProductFacts.astro";
+import ProductHero from "../../components/product/ProductHero.astro";
+import ProductHighlights from "../../components/product/ProductHighlights.astro";
+import ProductInstall from "../../components/product/ProductInstall.astro";
+import ProductMedia from "../../components/product/ProductMedia.astro";
+import ProductProse from "../../components/product/ProductProse.astro";
+import ProductReleases from "../../components/product/ProductReleases.astro";
+import ProductSection from "../../components/product/ProductSection.astro";
+import SearchIndexMeta from "../../components/SearchIndexMeta.astro";
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { docsMap } from "../../lib/docs-map";
+import { heroInstall } from "../../lib/install-blocks";
+import { productAssetUrl } from "../../lib/product-assets";
+import { productHead } from "../../lib/product-head";
+import { productReleasesHref } from "../../lib/site";
+
+export async function getStaticPaths() {
+  const products = await getCollection("products");
+  return products.map((entry) => ({ params: { key: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const key = entry.id;
+const tool = entry.data;
+const asset = (path: string | undefined) => (path === undefined ? undefined : productAssetUrl(key, path));
+
+const head = productHead(key, tool);
+const kinds = tool.kinds.map((block) => block.kind);
+const latest = tool.release ?? { version: tool.version, date: undefined };
+
+// The lookups filter the collection: a product with no changelog or README is expected.
+const [latestEntry] = await getCollection("latestReleaseEntries", (file) => file.id === key);
+const LatestEntry = latestEntry ? (await render(latestEntry)).Content : undefined;
+
+// A feature entry: its README is the page body; it has no docs pages.
+const feature = "source" in tool ? tool : undefined;
+const [readme] = feature ? await getCollection("featureReadmes", (file) => file.id === key) : [];
+const Readme = readme ? (await render(readme)).Content : undefined;
+
+// A full product.
+const product = "source" in tool ? undefined : tool;
+// A page belongs to the product its `product:` names; its id is `<key>/<slug>`.
+const pages = product
+  ? (await getCollection("pages", (page) => page.data.product === key)).map((page) => ({
+      slug: page.id.slice(page.id.indexOf("/") + 1),
+      title: page.data.title,
+      order: page.data.order,
+    }))
+  : [];
+const map = product ? docsMap(product.nav, pages) : [];
+const media = product ? product.media.map((item) => ({ ...item, src: productAssetUrl(key, item.src) })) : [];
+---
+
+<SiteLayout
+  title={product ? `${tool.name} — ${product.tagline}` : `${tool.name} — Wyrd Tools`}
+  description={product ? product.tagline : feature!.description}
+  product={head}
+>
+  <article class="product site-width" data-product={key} data-page={product ? "product" : "feature"} data-pagefind-body>
+    <SearchIndexMeta product={key} productName={tool.name} kinds={kinds} />
+    <ProductHero
+      name={tool.name}
+      tagline={product?.tagline}
+      description={product ? product.blurb : feature!.description}
+      category={tool.category}
+      logo={head.logo}
+      logoDark={asset(product?.["logo-dark"])}
+      install={product ? heroInstall(product.kinds[0]) : undefined}
+      docsHref={pages.length > 0 ? `/docs/${key}/` : undefined}
+      owner={tool.owner}
+      installLink={product ? undefined : "Add to devcontainer.json"}
+    >
+      <ProductFacts
+        slot="facts"
+        kinds={kinds}
+        status={product?.status}
+        version={latest.version}
+        date={latest.date}
+        category={tool.category}
+        owner={tool.owner}
+      />
+    </ProductHero>
+    {
+      product && (
+        <>
+          <ProductMedia media={media} tourTitle={kinds.includes("app") ? "Console tour" : "More"} />
+          <ProductSection id="highlights" title="What it does">
+            <ProductHighlights highlights={product.highlights} />
+          </ProductSection>
+        </>
+      )
+    }
+    <ProductSection id="install" title="Install">
+      <ProductInstall kinds={tool.kinds} />
+    </ProductSection>
+    {
+      Readme && (
+        <ProductSection id="readme" title="README">
+          <ProductProse>
+            <Readme />
+          </ProductProse>
+        </ProductSection>
+      )
+    }
+    {
+      map.length > 0 && (
+        <ProductSection id="docs" title="Documentation">
+          <ProductDocsMap map={map} href={(slug) => `/docs/${key}/${slug}`} />
+        </ProductSection>
+      )
+    }
+    <ProductSection id="releases" title="Releases">
+      <ProductReleases
+        release={tool.release}
+        changelog={LatestEntry ? "latest" : undefined}
+        entryVersion={latestEntry?.data.version}
+        allHref={productReleasesHref(key)}
+      >
+        {LatestEntry && <LatestEntry />}
+      </ProductReleases>
+    </ProductSection>
+  </article>
+</SiteLayout>
+
+<style>
+  .product {
+    padding-bottom: 96px;
+  }
+</style>

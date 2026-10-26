@@ -1,5 +1,6 @@
 ---
 title: Hooks and messages
+product: toha
 order: 8
 relationships:
   describes: toha

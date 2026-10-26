@@ -1,20 +1,38 @@
-relationships:
-  implements: intent-driven-polyglot-release
 name: intentional
+version: 0.1.0
+docs-version: 0.1.0
+release-unit: intentional
 tagline: Intent-driven polyglot releases.
-blurb: >-
-  Declare release intent once, project versions across package ecosystems, and create verifiable annotated release records without handing publication or repository choreography to the versioning tool.
-category: Release & Versioning
-language: Rust
+blurb: Declare release intent once, project versions across package ecosystems, and create
+  verifiable annotated release records without handing publication or repository choreography to the
+  versioning tool.
 status: stable
-repo: https://github.com/wyrd-company/intentional
+category: Release & Versioning
 order: 2
-install:
-  - label: Homebrew
-    command: brew install wyrd-company/tools/intentional
-  - label: Cargo
-    command: cargo install intentional-cli --locked
-  - label: npm
-    command: npm install --global @wyrd-company/intentional
-  - label: npx
-    command: npx --yes @wyrd-company/intentional --version
+kinds:
+  - kind: cli
+    install:
+      - method: homebrew
+        os:
+          - macos
+          - linux
+        default: true
+        command: brew install wyrd-company/tools/intentional
+      - method: cargo
+        os: &a1
+          - macos
+          - linux
+          - windows
+        command: cargo install intentional-cli --locked
+      - method: npm
+        os: *a1
+        command: npm install --global @wyrd-company/intentional
+      - method: npx
+        os: *a1
+        command: npx --yes @wyrd-company/intentional --version
+highlights:
+  - Intent-driven polyglot releases.
+media:
+  - src: assets/demo.gif
+    caption: Intentional computes and previews the next version from a pending change intent
+owner: wyrd-company/intentional

@@ -1,0 +1,53 @@
+---
+/*
+ * A product's mark: its logo, or its monogram tile when it has none. With a
+ * `logoDark`, the dark theme shows that mark instead of `logo`. Logo values
+ * are URLs (lib/product-assets.ts). The mark is decorative: the product name
+ * always shows beside it.
+ */
+import Monogram from "./Monogram.astro";
+
+const SIZES = { row: 28, card: 44, hero: 72 } as const;
+
+interface Props {
+  name: string;
+  logo?: string;
+  logoDark?: string;
+  size?: keyof typeof SIZES;
+  class?: string;
+}
+const { name, logo, logoDark, size = "row", class: klass } = Astro.props;
+const px = SIZES[size];
+---
+
+{
+  logo ? (
+    <span class:list={["product-mark", klass]} data-size={size} style={`--mark-size: ${px}px`} aria-hidden="true">
+      <img class:list={["product-mark-img", { "is-light": logoDark }]} src={logo} alt="" width={px} height={px} />
+      {logoDark && <img class="product-mark-img is-dark" src={logoDark} alt="" width={px} height={px} />}
+    </span>
+  ) : (
+    <Monogram name={name} size={size} class={klass} />
+  )
+}
+
+<style>
+  .product-mark {
+    display: inline-flex;
+    flex-shrink: 0;
+    width: var(--mark-size);
+    height: var(--mark-size);
+  }
+  .product-mark-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .product-mark-img.is-dark,
+  :global(:root[data-theme="dark"]) .product-mark-img.is-light {
+    display: none;
+  }
+  :global(:root[data-theme="dark"]) .product-mark-img.is-dark {
+    display: block;
+  }
+</style>

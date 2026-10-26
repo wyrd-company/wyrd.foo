@@ -1,5 +1,6 @@
 ---
 title: Installation
+product: intentional
 order: 2
 install: true
 relationships:

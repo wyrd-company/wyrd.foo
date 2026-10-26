@@ -1,5 +1,6 @@
 ---
 title: CLI reference
+product: xolotl
 order: 9
 ---
 

@@ -1,0 +1,20 @@
+# A dev container image: a full entry with a hand-written tags list.
+schemaVersion: 1
+assets: [assets/demo.gif]
+products:
+  sample-image:
+    name: Sample base image
+    version: 1.0.0
+    docs-version: 0.1.0
+    tagline: A sample dev container image.
+    blurb: A dev container image used as a test fixture.
+    status: stable
+    category: Dev Containers
+    highlights: [Starts fast.]
+    media: [{ src: assets/demo.gif, caption: Opening the image. }]
+    kinds:
+      - kind: devcontainer-image
+        ref: ghcr.io/example-org/images/sample
+        tags:
+          - { tag: latest, base: ubuntu-noble, architectures: [amd64, arm64] }
+          - { tag: "1" }

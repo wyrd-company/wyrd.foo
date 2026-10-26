@@ -1,0 +1,229 @@
+---
+/*
+ * "On this page": the page's headings, nested. It highlights the last
+ * heading that has scrolled past the top of the viewport, so the highlight
+ * holds still while you read. Then: back to top, Copy page as Markdown, Edit
+ * this page on GitHub.
+ */
+import type { MarkdownHeading } from "astro";
+
+interface Props {
+  title: string;
+  headings: MarkdownHeading[];
+  markdownUrl: string;
+  editUrl: string;
+}
+const { title, headings, markdownUrl, editUrl } = Astro.props;
+const shown = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+<aside class="docs-toc" aria-label="On this page" data-pagefind-ignore>
+  <p class="docs-toc-label">On this page</p>
+  <p class="docs-toc-title">{title}</p>
+  <div class="docs-toc-progress" aria-hidden="true"><span data-docs-progress></span></div>
+  {
+    shown.length > 0 && (
+      <nav class="docs-toc-nav">
+        <ul>
+          {shown.map((h) => (
+            <li data-depth={h.depth}>
+              <a href={`#${h.slug}`} data-toc-target={h.slug}>
+                {h.text}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )
+  }
+  <div class="docs-toc-actions">
+    <a href="#top">↑ Back to top</a>
+    <button type="button" data-copy-markdown={markdownUrl}>
+      <span data-copy-label>Copy page as Markdown</span>
+    </button>
+    <a href={editUrl} rel="noopener" target="_blank">Edit this page on GitHub ↗</a>
+  </div>
+</aside>
+
+<script>
+  import { activeHeading } from "../../lib/docs-toc";
+
+  const links = [...document.querySelectorAll<HTMLAnchorElement>("[data-toc-target]")];
+  const targets = links
+    .map((a) => document.getElementById(a.dataset.tocTarget!))
+    .filter((el): el is HTMLElement => el !== null);
+  const bar = document.querySelector<HTMLElement>("[data-docs-progress]");
+  const header = document.querySelector<HTMLElement>(".docs-header");
+
+  let queued = false;
+  function update() {
+    queued = false;
+    // A heading a TOC link scrolled to sits just under the header (its
+    // scroll-margin-top), so the line allows for that margin.
+    const line = (header?.getBoundingClientRect().bottom ?? 0) + 12;
+    const doc = document.documentElement;
+    const atEnd = Math.ceil(doc.scrollTop + doc.clientHeight) >= doc.scrollHeight - 2;
+    const current = activeHeading(
+      targets.map((el) => el.getBoundingClientRect().top),
+      { line, bottom: doc.clientHeight, atEnd },
+    );
+    links.forEach((a, i) => {
+      if (i === current) a.setAttribute("aria-current", "location");
+      else a.removeAttribute("aria-current");
+    });
+    if (bar) {
+      const span = doc.scrollHeight - doc.clientHeight;
+      bar.style.transform = `scaleX(${span > 0 ? Math.min(1, doc.scrollTop / span) : 1})`;
+    }
+  }
+  function queue() {
+    if (!queued) {
+      queued = true;
+      requestAnimationFrame(update);
+    }
+  }
+  addEventListener("scroll", queue, { passive: true });
+  addEventListener("resize", queue);
+  update();
+
+  /** The page's Markdown; rejects when the endpoint does not answer ok. */
+  function fetchMarkdown(url: string): Promise<string> {
+    const text = fetch(url).then((response) => {
+      if (!response.ok) throw new Error(String(response.status));
+      return response.text();
+    });
+    text.catch(() => {}); // the caller's await reports it; this one only marks it handled
+    return text;
+  }
+
+  /**
+   * A clipboard item whose text is still being fetched, or undefined where the
+   * browser lacks ClipboardItem or does not take a promise as its value (it
+   * throws when the item is made).
+   */
+  function clipboardItem(markdown: Promise<string>): ClipboardItem | undefined {
+    if (typeof ClipboardItem === "undefined") return undefined;
+    const blob = markdown.then((text) => new Blob([text], { type: "text/plain" }));
+    blob.catch(() => {});
+    try {
+      return new ClipboardItem({ "text/plain": blob });
+    } catch {
+      return undefined;
+    }
+  }
+
+  document.querySelectorAll<HTMLButtonElement>("[data-copy-markdown]").forEach((button) => {
+    const label = button.querySelector<HTMLElement>("[data-copy-label]")!;
+    const idle = label.textContent;
+    button.addEventListener("click", async () => {
+      try {
+        // The write starts inside the click, with the fetch still pending.
+        // WebKit's documented rule is that a clipboard write happens within
+        // the user gesture, which a write made after an awaited fetch may miss.
+        const markdown = fetchMarkdown(button.dataset.copyMarkdown!);
+        const item = clipboardItem(markdown);
+        if (item) await navigator.clipboard.write([item]);
+        else await navigator.clipboard.writeText(await markdown);
+        label.textContent = "Copied";
+      } catch {
+        label.textContent = "Copy failed";
+      }
+      setTimeout(() => (label.textContent = idle), 1600);
+    });
+  });
+</script>
+
+<style>
+  .docs-toc {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13.5px;
+  }
+  .docs-toc-label {
+    margin: 0;
+    font-family: var(--font-code);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .docs-toc-title {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .docs-toc-progress {
+    height: 2px;
+    background: var(--divider);
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .docs-toc-progress span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  .docs-toc-nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 1px solid var(--divider);
+  }
+  .docs-toc-nav a {
+    position: relative;
+    display: block;
+    padding: 4px 0 4px 14px;
+    color: var(--text-2);
+    line-height: 1.45;
+  }
+  .docs-toc-nav li[data-depth="3"] a {
+    padding-left: 26px;
+    font-size: 13px;
+  }
+  .docs-toc-nav a:hover {
+    color: var(--text);
+    text-decoration: none;
+  }
+  .docs-toc-nav a[aria-current="location"] {
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .docs-toc-nav a[aria-current="location"]::before {
+    content: "";
+    position: absolute;
+    left: -1px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: var(--accent);
+  }
+  .docs-toc-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    margin-top: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--divider);
+    font-family: var(--font-code);
+    font-size: 12.5px;
+  }
+  .docs-toc-actions a,
+  .docs-toc-actions button {
+    padding: 4px 0;
+    color: var(--text-2);
+    background: none;
+    border: 0;
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+  }
+  .docs-toc-actions a:hover,
+  .docs-toc-actions button:hover {
+    color: var(--accent);
+    text-decoration: none;
+  }
+</style>

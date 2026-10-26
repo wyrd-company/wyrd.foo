@@ -1,0 +1,85 @@
+---
+/*
+ * The frame of every docs page of a product: the shared layout with the
+ * two-row docs header in place of the site header, then sidebar, content and
+ * "On this page" in three columns. The sidebars stick under the header and
+ * scroll on their own.
+ */
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import DocsHeader from "./DocsHeader.astro";
+import type { DocsProduct } from "../../lib/docs";
+
+interface Props {
+  title: string;
+  product: DocsProduct;
+  products: DocsProduct[];
+  section: string | null;
+}
+const { title, product, products, section } = Astro.props;
+const head = {
+  key: product.key,
+  name: product.name,
+  logo: product.logo,
+  favicon: product.favicon,
+  socialImage: product.socialImage,
+};
+---
+
+<SiteLayout title={`${title} · ${product.name} docs — Wyrd Tools`} description={product.data.tagline} product={head} nav="docs">
+  <DocsHeader slot="header" product={product} products={products} section={section} />
+  <div class="docs-shell site-width" id="top">
+    <div class="docs-side"><slot name="sidebar" /></div>
+    <div class="docs-main"><slot /></div>
+    <div class="docs-aside"><slot name="toc" /></div>
+  </div>
+</SiteLayout>
+
+<style>
+  .docs-shell {
+    /* The height of the sticky docs header: two rows and its line. */
+    --docs-top: 105px;
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr) 232px;
+    gap: 56px;
+    align-items: start;
+  }
+  .docs-side,
+  .docs-aside {
+    position: sticky;
+    top: var(--docs-top);
+    max-height: calc(100vh - var(--docs-top));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-block: 32px;
+    scrollbar-width: thin;
+  }
+  .docs-main {
+    padding-block: 32px 64px;
+    min-width: 0;
+  }
+  /* No section tabs: the header is one row. */
+  :global(body:not(:has(.docs-tabs))) .docs-shell {
+    --docs-top: 61px;
+  }
+  @media (max-width: 1180px) {
+    .docs-shell {
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 40px;
+    }
+    .docs-aside {
+      display: none;
+    }
+  }
+  @media (max-width: 800px) {
+    .docs-shell {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+    }
+    .docs-side {
+      position: static;
+      max-height: none;
+      padding-block: 20px 0;
+      border-bottom: 1px solid var(--divider);
+    }
+  }
+</style>

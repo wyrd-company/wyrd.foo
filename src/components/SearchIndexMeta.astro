@@ -1,0 +1,24 @@
+---
+/*
+ * What Pagefind indexes about a product's page (docs or product page): the
+ * `product` filter, one `kind` filter value per kind of the product, and the
+ * product name shown beside each result. Put it inside the element that has
+ * `data-pagefind-body`.
+ */
+import type { Kind } from "../schema/index.ts";
+
+interface Props {
+  product: string;
+  productName: string;
+  kinds: readonly Kind[];
+}
+const { product, productName, kinds } = Astro.props;
+---
+
+<!-- The content form, so a value with a comma stays one value. The values are
+     kept out of the indexed text; Pagefind still reads filters and meta there. -->
+<span hidden data-pagefind-ignore>
+  <span data-pagefind-filter="product">{product}</span>
+  <span data-pagefind-meta="productName">{productName}</span>
+  {kinds.map((kind) => <span data-pagefind-filter="kind">{kind}</span>)}
+</span>

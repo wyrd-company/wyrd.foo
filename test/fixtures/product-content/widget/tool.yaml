@@ -1,0 +1,62 @@
+# A CLI with every asset, a nav with an unlisted page, and every platform.
+name: widget
+version: 1.4.0
+docs-version: 1.4.2
+release-unit: widget
+owner: example-org/widget
+tagline: Turn sample inputs into sample outputs.
+blurb: >-
+  Widget reads a sample input, plans the change it would make, and writes the
+  output only when you accept the plan. It is a test fixture product.
+status: stable
+category: Templates & Scaffolding
+order: 1
+logo: assets/logo.svg
+logo-dark: assets/logo-dark.svg
+favicon: assets/favicon.png
+social-image: assets/social.png
+highlights:
+  - Plans every change before it writes a file.
+  - Reads inputs from a folder, a file or standard input.
+  - Writes output as files or as one JSON document.
+  - Runs the same plan from a script or an agent.
+media:
+  - src: assets/terminal.png
+    caption: Planning a sample change in a terminal.
+    alt: A terminal that shows a widget plan.
+nav:
+  - section: Get started
+    groups:
+      - group: Basics
+        pages: [getting-started, configuration]
+  - section: Reference
+    groups:
+      - group: Commands
+        pages: [commands]
+kinds:
+  - kind: cli
+    install:
+      - method: homebrew
+        os: [macos, linux]
+        default: true
+        command: brew install example-org/tap/widget
+      - method: apt
+        os: [linux]
+        label: Debian, Ubuntu
+        command: sudo apt install widget
+      - method: rpm
+        os: [linux]
+        label: Fedora, RHEL
+        command: sudo dnf install widget
+      - method: cargo
+        os: [macos, linux, windows]
+        command: cargo install widget
+      - method: winget
+        os: [windows]
+        command: winget install ExampleOrg.Widget
+      - method: docker
+        command: docker run --rm -it ghcr.io/example-org/widget
+release:
+  version: 1.4.0
+  date: 2026-09-30
+  url: https://github.com/example-org/widget/releases/tag/1.4.0

@@ -1,0 +1,20 @@
+# A CLI with a logo, an order, docs pages and a recent release.
+name: alpha-cli
+version: 1.4.0
+docs-version: 1.4.0
+release-unit: alpha-cli
+owner: example-org/alpha
+tagline: Sort and label the boxes in a storage room.
+blurb: A sample command-line product for the home page fixtures.
+status: stable
+category: Git & Review
+order: 1
+logo: assets/logo.svg
+kinds:
+  - kind: cli
+    install:
+      - { method: cargo, os: [macos, linux, windows], command: cargo install alpha-cli }
+      - { method: homebrew, os: [macos, linux], default: true, command: brew install example-org/tap/alpha-cli }
+highlights: [Sorts boxes]
+media: [{ src: assets/demo.png, caption: A sample session, alt: A terminal with sample output }]
+release: { version: 1.4.0, date: 2026-09-30 }

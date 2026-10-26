@@ -1,0 +1,17 @@
+# A CLI whose default install is apt, so its row carries the repository setup.
+name: aptly-cli
+version: 1.0.0
+docs-version: 1.0.0
+release-unit: aptly-cli
+owner: example-org/aptly-cli
+tagline: Count the spoons in a drawer.
+blurb: A sample command-line product installed from a apt repository.
+status: preview
+category: Knowledge & Planning
+order: 3
+kinds:
+  - kind: cli
+    install:
+      - { method: apt, os: [linux], command: sudo apt install aptly-cli }
+highlights: [Counts spoons]
+media: [{ src: assets/demo.png, caption: A sample session }]

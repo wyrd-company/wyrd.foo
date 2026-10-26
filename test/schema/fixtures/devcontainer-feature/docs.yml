@@ -1,0 +1,13 @@
+# Feature entries: the short form, with and without the optional fields.
+schemaVersion: 1
+assets: []
+products:
+  sample-feature:
+    kinds: [{ kind: devcontainer-feature }]
+    source: src/features/sample-feature
+  other-feature:
+    kinds: [{ kind: devcontainer-feature, ref: ghcr.io/example-org/features/other:2 }]
+    source: src/features/other
+    category: Dev Containers
+    logo: logo.svg
+    release-unit: other-feature-unit

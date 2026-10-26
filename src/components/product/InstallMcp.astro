@@ -1,0 +1,92 @@
+---
+/*
+ * The install block of an MCP server: one tab per client or plugin
+ * marketplace, each with its command and Copy, then the table of the tools
+ * the server exposes and their side effects.
+ */
+import CodeBlock from "./CodeBlock.astro";
+import type { ClientTab } from "../../lib/install-blocks";
+
+interface Props {
+  tabs: ClientTab[];
+  tools: { name: string; description: string; effect: string }[];
+  id: string;
+}
+const { tabs, tools, id } = Astro.props;
+const panelId = (index: number) => `${id}-${index}`;
+---
+
+<div class="install-card" data-install-block="mcp-server">
+  <div class="install-body">
+    <p class="install-label">Add to your agent</p>
+    <div class="install-pills" role="tablist" aria-label="MCP client">
+      {
+        tabs.map((tab, index) => (
+          <button
+            type="button"
+            role="tab"
+            class="install-pill"
+            id={`${panelId(index)}-tab`}
+            aria-controls={panelId(index)}
+            aria-selected={tab.selected ? "true" : "false"}
+            tabindex={tab.selected ? 0 : -1}
+            data-marketplace={tab.marketplace ? "" : undefined}
+          >
+            {tab.marketplace && <span class="mcp-plugin-tag">Plugin</span>}
+            {tab.label}
+          </button>
+        ))
+      }
+    </div>
+    {
+      tabs.map((tab, index) => (
+        <div role="tabpanel" id={panelId(index)} aria-labelledby={`${panelId(index)}-tab`} hidden={!tab.selected}>
+          <CodeBlock code={tab.command} prompt={tab.prompt} label={`${tab.label} command`} />
+        </div>
+      ))
+    }
+  </div>
+  <div class="install-body mcp-tools">
+    <p class="install-label" id={`${id}-tools`}>Tools this server exposes</p>
+    <div class="mcp-tools-scroll">
+      <table class="install-table" aria-labelledby={`${id}-tools`}>
+        <thead>
+          <tr><th scope="col">Tool</th><th scope="col">What it does</th><th scope="col">Side effects</th></tr>
+        </thead>
+        <tbody>
+          {
+            tools.map((tool) => (
+              <tr>
+                <td><code>{tool.name}</code></td>
+                <td>{tool.description}</td>
+                <td class="mcp-effect">{tool.effect}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+  .mcp-tools {
+    border-top: 1px solid var(--divider);
+  }
+  .mcp-tools-scroll {
+    overflow-x: auto;
+  }
+  .mcp-effect {
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+  .mcp-plugin-tag {
+    font-family: var(--font-code);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
+</style>

@@ -23,3 +23,12 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# v2 dev content folder (written by the publisher in local mode)
+.content-v2/
+
+# fixture site builds (pnpm build:fixtures)
+dist-fixtures/
+
+# browser test output
+test-results/

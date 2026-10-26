@@ -1,0 +1,130 @@
+name: Publish to wyrd.foo
+
+# The only entry point for tool repos: a tool repo's publishing workflow calls
+# it on a push of a code tag or a docs tag, and on a manual run. It refuses
+# `feature: true` on any other event, so a tag push never features a product.
+# It then checks out the tool repo at the ref, mints the publisher App token
+# for wyrd.foo, and runs the publish-docs@v2 action. `$/` resolves the action
+# in this repo at the commit of this workflow, so the workflow and the action
+# never differ.
+# See docs/technical-designs/publishing.yml, calling-workflow and
+# reusable-workflow.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: The tag or commit of the tool repo to publish.
+        required: true
+        type: string
+      feature:
+        description: Feature a product on the front page from now (manual runs only).
+        required: false
+        type: boolean
+        default: false
+      feature-product:
+        description: The product key to feature. Optional when the repo has one product that can be featured.
+        required: false
+        type: string
+        default: ""
+      feature-days:
+        description: How long the feature lasts, in whole days.
+        required: false
+        type: string
+        default: "14"
+      feature-reason:
+        description: Why the product is featured. Empty means "New release".
+        required: false
+        type: string
+        default: ""
+      dry-run:
+        description: Compute and commit into a clone of wyrd.foo, without pushing.
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      WYRD_TOOLS_DOCS_PUBLISHER_APP_ID:
+        required: true
+      WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY:
+        required: true
+    outputs:
+      outcome:
+        description: published, unchanged, dry-run or failed.
+        value: ${{ jobs.publish.outputs.outcome }}
+      commit:
+        description: The wyrd.foo commit pushed; empty unless the outcome is published.
+        value: ${{ jobs.publish.outputs.commit }}
+
+permissions:
+  contents: read
+
+# One publish at a time per tool repo; publishes from different repos race on
+# wyrd.foo main, and the action retries those.
+concurrency:
+  group: publish-docs-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      outcome: ${{ steps.publish.outputs.outcome }}
+      commit: ${{ steps.publish.outputs.commit }}
+    steps:
+      - name: Refuse feature outside a manual run
+        if: inputs.feature && github.event_name != 'workflow_dispatch'
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          echo "::error title=feature is only allowed on a manual run::The calling workflow ran on a ${EVENT_NAME} event with feature: true. Only a workflow_dispatch run may feature a product."
+          exit 1
+
+      - name: Check out the tool repo at the ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          path: source
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Mint the publisher App token for wyrd.foo
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_APP_ID }}
+          private-key: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY }}
+          owner: wyrd-company
+          repositories: wyrd.foo
+          permission-contents: write
+
+      - name: Name the App bot
+        id: bot
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          set -euo pipefail
+          id="$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)"
+          echo "name=${APP_SLUG}[bot]" >> "$GITHUB_OUTPUT"
+          echo "email=${id}+${APP_SLUG}[bot]@users.noreply.github.com" >> "$GITHUB_OUTPUT"
+
+      - name: Publish
+        id: publish
+        uses: $/.github/actions/publish-docs
+        with:
+          source: source
+          ref: ${{ inputs.ref }}
+          owner: ${{ github.repository }}
+          site-token: ${{ steps.app-token.outputs.token }}
+          release-token: ${{ github.token }}
+          author-name: ${{ steps.bot.outputs.name }}
+          author-email: ${{ steps.bot.outputs.email }}
+          feature: ${{ inputs.feature }}
+          feature-product: ${{ inputs.feature-product }}
+          feature-days: ${{ inputs.feature-days }}
+          feature-reason: ${{ inputs.feature-reason }}
+          dry-run: ${{ inputs.dry-run }}

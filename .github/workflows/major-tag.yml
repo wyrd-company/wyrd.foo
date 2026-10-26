@@ -1,0 +1,56 @@
+name: Move the major tag
+
+# On a push of a release tag X.Y.Z, moves the tag vX that tool repos call
+# (publish-docs.yml@vX) to the release, so that vX is always the highest
+# X.y.z. A release that is not the highest X.y.z leaves vX where it is. A tag
+# push runs this workflow as it is at the tagged commit, so a release tag on a
+# commit without it moves nothing. The tag is moved through the GitHub API,
+# so the job checks nothing out and keeps no credentials on disk.
+# See README.md, "Releases".
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+permissions: {}
+
+concurrency:
+  group: major-tag
+  cancel-in-progress: false
+
+jobs:
+  move:
+    name: Move the major tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # create the vX tag object and create or move its ref
+    steps:
+      - name: Move the major tag to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::$TAG is not a release tag X.Y.Z."
+            exit 1
+          fi
+          MAJOR="${TAG%%.*}"
+          HIGHEST="$(gh api "repos/$REPO/git/matching-refs/tags/$MAJOR." --paginate --jq '.[].ref' \
+            | sed 's#^refs/tags/##' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)"
+          if [[ "$HIGHEST" != "$TAG" ]]; then
+            echo "::notice::v$MAJOR stays: $TAG is not the highest $MAJOR.y.z release ($HIGHEST)."
+            exit 0
+          fi
+          COMMIT="$(gh api "repos/$REPO/commits/$TAG" --jq .sha)"
+          OBJECT="$(gh api "repos/$REPO/git/tags" -f tag="v$MAJOR" -f message="v$MAJOR: $TAG" \
+            -f object="$COMMIT" -f type=commit --jq .sha)"
+          if gh api "repos/$REPO/git/ref/tags/v$MAJOR" --silent 2>/dev/null; then
+            gh api -X PATCH "repos/$REPO/git/refs/tags/v$MAJOR" -f sha="$OBJECT" -F force=true --silent
+          else
+            gh api "repos/$REPO/git/refs" -f ref="refs/tags/v$MAJOR" -f sha="$OBJECT" --silent
+          fi
+          echo "::notice::v$MAJOR now points to $TAG ($COMMIT)."

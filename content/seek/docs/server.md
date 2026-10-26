@@ -1,5 +1,6 @@
 ---
 title: Server mode
+product: seek
 order: 8
 ---
 

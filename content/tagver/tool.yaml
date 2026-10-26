@@ -1,14 +1,31 @@
 name: tagver
+version: 0.1.0
+docs-version: 0.1.0
+release-unit: tagver
 tagline: SemVer from your Git tags. Zero dependencies.
-blurb: >-
-  A fast Rust CLI and library that calculates version numbers from Git tags and commit height. MinVer-inspired, built on gitoxide, a single static binary with JSON output and a GitHub Action.
-category: Release & Versioning
-language: Rust
+blurb: A fast Rust CLI and library that calculates version numbers from Git tags and commit height.
+  MinVer-inspired, built on gitoxide, a single static binary with JSON output and a GitHub Action.
 status: stable
-repo: https://github.com/wyrd-company/tagver
+category: Release & Versioning
 order: 4
-install:
-  - label: Cargo
-    command: cargo install tagver-cli
-  - label: Homebrew
-    command: brew install wyrd-company/tools/tagver
+kinds:
+  - kind: cli
+    install:
+      - method: cargo
+        os:
+          - macos
+          - linux
+          - windows
+        default: true
+        command: cargo install tagver-cli
+      - method: homebrew
+        os:
+          - macos
+          - linux
+        command: brew install wyrd-company/tools/tagver
+highlights:
+  - SemVer from your Git tags. Zero dependencies.
+media:
+  - src: demo.gif
+    caption: tagver command-line demo
+owner: wyrd-company/tagver

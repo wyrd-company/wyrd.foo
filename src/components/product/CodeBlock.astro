@@ -1,0 +1,134 @@
+---
+/*
+ * One command or snippet in a dark code block with one Copy button. A shell
+ * command gets a "$" prompt on its first line; the prompt is not copied.
+ *
+ * An apt or rpm install line comes with the site's repository setup. The setup
+ * sits above the install line in a native <details>, closed until the visitor
+ * opens it: it needs no script, Enter and Space work on the summary, and the
+ * closed lines stay in the page for Copy, which takes the whole block.
+ */
+import type { RepoSetup } from "../../lib/install-blocks";
+
+interface Props {
+  code: string;
+  /** The repository setup above the install line, behind a one-line hint. */
+  setup?: RepoSetup;
+  /** Show a "$" prompt before the first line. */
+  prompt?: boolean;
+  /** Accessible name of the block, for example "Homebrew install command". */
+  label?: string;
+  class?: string;
+}
+const { code, setup, prompt = false, label, class: klass } = Astro.props;
+---
+
+<div class:list={["code-block", klass]} data-code-block role="group" aria-label={label}>
+  {prompt && <span class="code-block-prompt" aria-hidden="true">$</span>}
+  <div class="code-block-body">
+    {
+      setup && (
+        <details class="code-block-setup" data-code-setup>
+          <summary>{setup.hint}</summary>
+          <pre>{setup.code}</pre>
+        </details>
+      )
+    }
+    <pre>{code}</pre>
+  </div>
+  <button type="button" class="code-block-copy" data-copy>Copy</button>
+</div>
+
+<script>
+  import { startCopyButtons } from "../../lib/product-tabs";
+
+  startCopyButtons();
+</script>
+
+<style>
+  .code-block {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--code-bg);
+    color: var(--code-text);
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    padding: 14px 84px 14px 16px;
+  }
+  .code-block-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .code-block pre {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border-radius: 0;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .code-block-setup summary {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin-bottom: 2px;
+    border-radius: 4px;
+    color: #8e8e97;
+    font: 400 12.5px/22px var(--font-text);
+    cursor: pointer;
+    list-style: none;
+  }
+  .code-block-setup summary::-webkit-details-marker {
+    display: none;
+  }
+  .code-block-setup summary::before {
+    content: "▸";
+    content: "▸" / "";
+    display: inline-block;
+    width: 1.1em;
+    transition: transform 120ms;
+  }
+  .code-block-setup[open] summary::before {
+    transform: rotate(90deg);
+  }
+  .code-block-setup summary:hover {
+    color: #ededef;
+  }
+  .code-block-setup summary:focus-visible {
+    outline: 2px solid #6aa5ff;
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .code-block-setup summary::before {
+      transition: none;
+    }
+  }
+  .code-block-prompt {
+    font-family: var(--font-code);
+    font-size: 13px;
+    line-height: 1.7;
+    color: #8e8e97;
+    user-select: none;
+  }
+  .code-block-copy {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 6px;
+    border: 1px solid #2c2c33;
+    background: #1b1b1f;
+    color: #ededef;
+    font: 500 12px/1 var(--font-text);
+    cursor: pointer;
+  }
+  .code-block-copy:hover {
+    border-color: #6aa5ff;
+  }
+</style>

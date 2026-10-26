@@ -1,0 +1,44 @@
+---
+/*
+ * A product monogram: the first letter of the name on a square tile, in the
+ * style of the site's "W" tile. Products with no logo show it wherever a
+ * logo would go; the favicon fallback draws the same tile (lib/head.ts).
+ */
+import { monogramLetter } from "../lib/head";
+
+const SIZES = { row: 28, card: 44, hero: 72 } as const;
+
+interface Props {
+  name: string;
+  /** Where the tile shows: a catalog row (and the header), a card, a hero. */
+  size?: keyof typeof SIZES;
+  class?: string;
+}
+const { name, size = "row", class: klass } = Astro.props;
+const px = SIZES[size];
+---
+
+<span
+  class:list={["monogram", klass]}
+  style={`--monogram-size: ${px}px`}
+  data-size={size}
+  aria-hidden="true">{monogramLetter(name)}</span
+>
+
+<style>
+  .monogram {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--monogram-size);
+    height: var(--monogram-size);
+    border-radius: calc(var(--monogram-size) / 7);
+    background: var(--tile);
+    color: var(--tile-text);
+    font-family: var(--font-code);
+    font-size: calc(var(--monogram-size) * 0.54);
+    font-weight: 600;
+    line-height: 1;
+  }
+</style>

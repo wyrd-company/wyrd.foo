@@ -1,5 +1,6 @@
 ---
 title: Usage
+product: menagerie
 order: 4
 relationships:
   references:

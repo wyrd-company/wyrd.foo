@@ -1,5 +1,6 @@
 ---
 title: Overview
+product: menagerie
 order: 1
 relationships:
   references:
