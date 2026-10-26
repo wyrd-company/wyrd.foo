@@ -1,7 +1,7 @@
 ---
 title: Overview
-product: agent-svgtools
 order: 1
+product: agent-svgtools
 relationships:
   demonstrates: owl-reconstruction-demo
   references: README

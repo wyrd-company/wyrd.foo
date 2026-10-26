@@ -1,7 +1,7 @@
 ---
 title: How scoring works
-product: agent-svgtools
 order: 5
+product: agent-svgtools
 relationships:
   references: agent-svgtools-comparison-engine
 ---
