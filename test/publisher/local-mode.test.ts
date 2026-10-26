@@ -481,7 +481,8 @@ describe("fetchBranch: stopping a fetch that passed its bound", () => {
       assert.equal(pidsOf(stub).length, 2, "the fetch reached the stub ssh");
       // The sleeping child would end by itself after 20 s.
       assert.ok(elapsed >= 1_000 && elapsed < 10_000, `returned in ${elapsed} ms: after the grace, before the stub ends by itself`);
-      for (const pid of pidsOf(stub)) assert.ok(!isAlive(pid), `process ${pid} started by the fetch is gone`);
+      // The result follows SIGKILL being sent and the pipe closing; the kernel may still be ending the processes.
+      for (const pid of pidsOf(stub)) assert.ok(await goneWithin(pid, 2_000), `process ${pid} started by the fetch is gone`);
     });
   });
 
