@@ -7,15 +7,18 @@ import { parse } from "yaml";
 // third-party actions only at a full commit SHA with its version in a comment
 // (Renovate keeps both current), and check out without leaving the token in
 // the git config. The comment is the action's release tag as published, with
-// or without a `v`.
+// or without a `v`. The major-tag workflow runs no action: it calls the GitHub
+// API with gh, so it has nothing to pin and checks nothing out.
 
 const REPO = new URL("../../", import.meta.url).pathname;
 const FILES = [
   ".github/workflows/pr-build.yml",
   ".github/workflows/cd.yml",
+  ".github/workflows/major-tag.yml",
   ".github/actions/deploy-cf-pages/action.yml",
   ".github/actions/deploy-gh-pages/action.yml",
 ];
+const NO_ACTIONS = new Set([".github/workflows/major-tag.yml"]);
 
 interface Step {
   uses?: string;
@@ -32,6 +35,11 @@ for (const path of FILES) {
 
   describe(path, () => {
     it("pins every action to a full commit SHA with a version comment", () => {
+      if (NO_ACTIONS.has(path)) {
+        assert.ok(steps.length > 0, "the workflow has steps");
+        assert.equal(steps.filter((step) => step.uses !== undefined).length, 0, "the workflow runs no action");
+        return;
+      }
       assert.ok(remote.length > 0, "the workflow uses actions");
       for (const { uses } of remote) {
         assert.match(uses!, /^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/, uses);
@@ -42,7 +50,7 @@ for (const path of FILES) {
 
     it("checks out without persisting credentials", () => {
       const checkouts = remote.filter(({ uses }) => uses!.startsWith("actions/checkout@"));
-      if (file.jobs) assert.ok(checkouts.length > 0, "the workflow checks out");
+      if (file.jobs && !NO_ACTIONS.has(path)) assert.ok(checkouts.length > 0, "the workflow checks out");
       for (const checkout of checkouts) assert.equal(checkout.with?.["persist-credentials"], false);
     });
   });

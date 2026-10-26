@@ -177,15 +177,10 @@ To release:
    Commit the result as `chore(release): X.Y.Z`, alone in its release PR.
 3. When the release commit is on `main`, check it out and run
    `intentional tag --plan release-plan.json`. This makes the `X.Y.Z` tag.
-4. Move the major tag that tool repos call to the same commit, then push both
-   tags:
-
-   ```sh
-   git tag -fa vX -m "vX: X.Y.Z" X.Y.Z^{}
-   git push origin X.Y.Z
-   git push --force origin vX
-   ```
+4. Push the tag: `git push origin X.Y.Z`. The push runs
+   `.github/workflows/major-tag.yml`, which moves `vX` to the release when it
+   is the highest `X.y.z`.
 
 Release tags are bare versions, such as `2.0.0`. The major tag keeps its `v`,
 such as `v2`, because tool repos call `publish-docs.yml@v2`. Intentional does
-not manage the major tag.
+not manage the major tag; the major-tag workflow does.

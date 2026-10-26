@@ -75,6 +75,7 @@ contract.
   inputs, the docs contract or the content layout that breaks a tool repo is
   `major`.
 - Do not edit `CHANGELOG.md` or the `package.json` version by hand.
-- Do not run `intentional apply` or `intentional tag`, and do not move the
-  `v<major>` tag, unless the release is approved. README.md, "Releases", gives
-  the steps.
+- Do not run `intentional apply` or `intentional tag`, or push a release tag,
+  unless the release is approved. README.md, "Releases", gives the steps.
+- Do not move the `v<major>` tag by hand. A push of a release tag `X.Y.Z` runs
+  `.github/workflows/major-tag.yml`, which moves `vX` to the highest `X.y.z`.
