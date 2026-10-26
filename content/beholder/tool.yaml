@@ -1,10 +1,8 @@
 name: beholder
-version: 0.1.0
+version: 0.1.1
 docs-version: 0.1.0
-release-unit: beholder
 tagline: See structural risk and dependency relationships in code.
-blurb: A Rust library and CLI that indexes symbols, complexity, references, and cohesion, then
-  compares revisions to rank the structural risk in a change.
+blurb: A Rust library and CLI that indexes symbols, complexity, references, and cohesion, then compares revisions to rank the structural risk in a change.
 status: preview
 category: Code Intelligence
 order: 7
@@ -18,17 +16,42 @@ kinds:
         default: true
         command: brew install wyrd-company/tools/beholder
       - method: cargo
-        os: &a1
+        os:
           - macos
           - linux
           - windows
         command: cargo install beholder-cli
       - method: npm
-        os: *a1
+        os:
+          - macos
+          - linux
+          - windows
         command: npm install --global @wyrd-company/beholder
 highlights:
-  - See structural risk and dependency relationships in code.
+  - Indexes symbols, nesting-weighted complexity, references and cohesion from the working tree.
+  - Compares two revisions by stable symbol identity and ranks the riskiest changed symbols first.
+  - Renders one analysis as text, JSON, SARIF annotations or a pull request comment.
+  - Stores analysis in a custom Git ref, so results travel with the repository and need no service.
+  - Runs as a GitHub Action that annotates a pull request and keeps one sticky comment.
 media:
-  - src: assets/placeholder.svg
-    caption: Placeholder until the product has media.
+  - src: assets/report.png
+    caption: A ranked report of the riskiest symbols between two revisions.
+    alt: Terminal output of beholder report listing changed symbols by risk percentile.
+logo: assets/brand/mark-light.svg
+logo-dark: assets/brand/mark-dark.svg
+favicon: assets/brand/favicon.svg
+social-image: assets/brand/social-image.png
+release-unit: beholder
 owner: wyrd-company/beholder
+docs-path: docs/user
+release:
+  version: 0.1.1
+  date: 2026-10-21T04:23:38.000Z
+  url: https://github.com/wyrd-company/beholder/releases/tag/0.1.1
+  notes: |+
+    ## 0.1.1
+
+    ### Fixes
+
+    - Publish documentation independently of releases, validate changes across supported platforms, and keep manual release builds separate from GitHub, Cargo, npm and Homebrew publication.
+

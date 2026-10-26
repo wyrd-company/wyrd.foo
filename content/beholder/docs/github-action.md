@@ -1,6 +1,6 @@
 ---
-title: GitHub Action
 product: beholder
+title: GitHub Action
 order: 4
 ---
 

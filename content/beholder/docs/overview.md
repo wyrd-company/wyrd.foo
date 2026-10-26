@@ -1,6 +1,6 @@
 ---
-title: Overview
 product: beholder
+title: Overview
 order: 1
 ---
 

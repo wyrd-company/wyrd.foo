@@ -1,6 +1,6 @@
 ---
-title: Stored results
 product: beholder
+title: Stored results
 order: 5
 ---
 

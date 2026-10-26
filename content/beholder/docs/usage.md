@@ -1,6 +1,6 @@
 ---
-title: Command usage
 product: beholder
+title: Command usage
 order: 3
 ---
 
