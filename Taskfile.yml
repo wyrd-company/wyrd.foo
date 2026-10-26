@@ -44,6 +44,11 @@ tasks:
       - pnpm typecheck
       - pnpm test
 
+  test:template:
+    desc: "Apply the tool-docs Toha template to scratch repos and check the result and an update (TOHA names Toha 0.4.0, INTENTIONAL names Intentional 0.2.1)"
+    cmds:
+      - pnpm test:template
+
   test:browser:
     desc: Run the browser tests against the built site (run `task build` first)
     cmds:

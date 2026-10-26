@@ -70,7 +70,7 @@ function check(row: string[], citation: Citation): string | undefined {
 
 describe("the AGENTS.md runner table", () => {
   it("has a row for each test folder and runner", () => {
-    assert.equal(rows.length, 6);
+    assert.equal(rows.length, 7);
   });
 
   it("cites no config by file and line number", () => {

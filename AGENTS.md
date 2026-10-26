@@ -52,12 +52,17 @@ config it is read from, by script, project or key name.
 | --- | --- | --- | --- |
 | node:test | `test/schema/**/*.test.ts` | `pnpm test:schema` | `package.json` script `test:schema` |
 | node:test | `test/publisher/**/*.test.ts` | `pnpm test:publisher` | `package.json` script `test:publisher` |
-| vitest `unit` | `test/**/*.test.ts`, minus `test/schema/**`, `test/publisher/**` and `test/build/**` | `pnpm test:site` | `vitest.config.ts` key `exclude`, `vitest.config.ts` project `unit`, `package.json` script `test:site` |
+| vitest `unit` | `test/**/*.test.ts`, minus `test/schema/**`, `test/publisher/**`, `test/build/**` and `test/template/**` | `pnpm test:site` | `vitest.config.ts` key `exclude`, `vitest.config.ts` project `unit`, `package.json` script `test:site` |
 | node:test | `test/build/**/*.test.ts` | `pnpm test:build` | `package.json` script `test:build` |
+| node:test | `test/template/**/*.test.ts` | `pnpm test:template` | `package.json` script `test:template` |
 | vitest `dist` | `test/**/*.dist.ts` | `pnpm test:dist` (builds the fixtures first) | `vitest.config.ts` project `dist`, `package.json` script `test:dist` |
 | Playwright | `test/browser/**/*.spec.ts` | `pnpm test:browser` (builds the home, docs and product fixtures first) | `package.json` script `test:browser`, `test/browser/config.ts` key `testMatch` (the `testDir` and `testMatch` defaults) |
 
-`pnpm test` runs the first four rows; `pnpm check` runs all of them.
+`pnpm test` runs the first four rows; `pnpm check` runs all of them except
+`pnpm test:template`. That suite runs the Toha template in
+`templates/tool-docs/` with the real Toha 0.4.0 and Intentional 0.2.1, which
+hosted CI does not have; run it after a change to the template
+(`templates/tool-docs/README.md`, "Test").
 
 A new node:test folder must be added to the `exclude` list in `vitest.config.ts`
 (and given its own `pnpm test:*` script that `pnpm test` runs), or vitest
