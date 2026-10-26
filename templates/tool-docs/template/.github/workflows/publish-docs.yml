@@ -1,0 +1,63 @@
+# Publishes docs/user/ to wyrd.foo through the wyrd.foo reusable workflow:
+# when the {{ release_workflow }} workflow succeeds for a pushed release tag, on a
+# push of a docs tag, and by dispatch for an existing tag or commit. The docs
+# come from the ref. A plain push to main does not publish. The publisher
+# reads the release tag's GitHub Release, which the {{ release_workflow }}
+# workflow creates, so a release publishes only after that workflow succeeds.
+# Requires org secrets WYRD_TOOLS_DOCS_PUBLISHER_APP_ID / _PRIVATE_KEY.
+name: Publish docs
+
+on:
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: [ {{ release_workflow | tojson }} ]
+    types: [ completed ]
+  push:
+    tags:
+      - "{{ key }}-docs@*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Tag or commit to publish
+        required: true
+        type: string
+      feature:
+        description: Feature a product on the front page
+        type: boolean
+        default: false
+      feature-product:
+        description: The product key to feature; empty when the repo has one product
+        type: string
+        default: ""
+      feature-days:
+        description: How long the feature lasts, in days
+        type: string
+        default: "14"
+      feature-reason:
+        description: For example "New MCP server"; default "New release"
+        type: string
+        default: ""
+
+permissions: {}
+
+jobs:
+  publish:
+    name: Publish to wyrd.foo
+    # The {{ release_workflow }} workflow runs only for release tags, so a
+    # successful run from a push names a release tag as its head branch.
+    if: >-{% raw %}
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
+    permissions:
+      contents: read
+    uses: wyrd-company/wyrd.foo/.github/workflows/publish-docs.yml@v2
+    with:
+      ref: ${{ inputs.ref || github.event.workflow_run.head_branch || github.ref_name }}
+      feature: ${{ inputs.feature || false }}
+      feature-product: ${{ inputs.feature-product || '' }}
+      feature-days: ${{ inputs.feature-days || '14' }}
+      feature-reason: ${{ inputs.feature-reason || '' }}
+    secrets:
+      WYRD_TOOLS_DOCS_PUBLISHER_APP_ID: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_APP_ID }}
+      WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY }}{% endraw %}

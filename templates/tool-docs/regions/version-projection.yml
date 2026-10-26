@@ -1,0 +1,5 @@
+    # The wyrd.foo product page shows the installed version.
+    - adapter: yaml
+      file: /docs/user/docs.yml
+      pointer: /products/{{ key }}/version
+      mode: committed

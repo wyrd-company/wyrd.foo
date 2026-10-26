@@ -1,0 +1,138 @@
+# ---
+# relationships:
+#   implements: publishing
+# ---
+# Onboards a tool repo to wyrd.foo publishing (docs/technical-designs/publishing.yml).
+# Apply and update it from its Git address; README.md gives the commands.
+name: tool-docs
+description: Onboard a tool repo to wyrd.foo publishing
+
+data:
+  categories:
+    - Git & Review
+    - Release & Versioning
+    - Templates & Scaffolding
+    - Dev Containers
+    - Agent Tooling
+    - Agent Infrastructure
+    - Code Intelligence
+    - Knowledge & Planning
+  install_methods: [ homebrew, apt, rpm, aur, nix, cargo, npm, npx, pipx, go, winget, scoop, docker, archive, script ]
+
+interview:
+  - id: key
+    type: text
+    prompt: Product key
+    description: The folder content/<key>/, the route /tools/<key> and the product of each page.
+    required: true
+    validate:
+      regex: '^[a-z0-9][a-z0-9-]*$'
+  - id: name
+    type: text
+    prompt: Display name
+    default: "{{ key }}"
+    required: true
+  - id: release_unit
+    type: text
+    prompt: Code release unit
+    description: The Intentional release unit whose version users install.
+    default: "{{ key }}"
+    required: true
+  - id: version
+    type: text
+    prompt: Current version of the code release unit
+    default: "0.1.0"
+    required: true
+    validate:
+      regex: '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+  - id: tagline
+    type: text
+    prompt: Tagline (one line)
+    required: true
+  - id: blurb
+    type: text
+    prompt: Description for the product page hero
+    required: true
+  - id: status
+    type: select
+    prompt: Status
+    options: [ stable, preview, planned ]
+    default: preview
+  - id: category
+    type: select
+    prompt: Category
+    options: categories
+    default: Agent Tooling
+  - id: kind
+    type: select
+    prompt: Primary kind
+    options: [ cli, app, mcp-server ]
+    default: cli
+  - id: install_method
+    type: select
+    prompt: Install method
+    options: install_methods
+    default: homebrew
+    when: kind != 'mcp-server'
+  - id: install_command
+    type: text
+    prompt: "{{ 'Claude Code add command' if kind == 'mcp-server' else 'Install command' }}"
+    required: true
+  - id: release_workflow
+    type: text
+    prompt: Name of the workflow that creates the GitHub Release
+    default: Release
+    required: true
+  - id: intentional
+    type: confirm
+    prompt: Add the docs unit and the version projections to .intentional/config.yml?
+    default: true
+  - id: code_unit_projections
+    type: confirm
+    prompt: Does the code release unit already have a projections list?
+    default: true
+    when: intentional
+  - id: taskfile
+    type: select
+    prompt: Taskfile to add docs:validate to
+    options: [ none, Taskfile.yml, taskfile.yml, Taskfile.yaml, taskfile.yaml ]
+    default: none
+
+inject:
+  # The code unit projects the installed version into docs.yml. The anchor
+  # must be the only `    projections:` line, so this rule comes before the
+  # docs unit, which adds another.
+  - into: .intentional/config.yml
+    region: wyrd-foo-version
+    when: intentional and code_unit_projections
+    source: regions/version-projection.yml
+    anchor: { after: "    projections:", occurrence: only }
+  - into: .intentional/config.yml
+    region: wyrd-foo-version
+    when: intentional and not code_unit_projections
+    source: regions/version-projections.yml
+    anchor: { after: "  {{ release_unit }}:", occurrence: only }
+  - into: .intentional/config.yml
+    region: wyrd-foo-docs-unit
+    when: intentional
+    source: regions/docs-unit.yml
+    anchor: { after: "release-units:", occurrence: only }
+  - into: "{{ taskfile }}"
+    region: wyrd-foo-docs-validate
+    when: taskfile != 'none'
+    source: regions/docs-validate.yml
+    anchor: { after: "tasks:", occurrence: only }
+
+messages:
+  after-apply: |
+    Next steps:
+    - Replace docs/user/assets/media.svg, the highlights and the starter page.
+    {%- if intentional %}
+    - Commit, then run `intentional tag --baseline --version {{ key }}-docs=0.1.0`.
+      Until that tag exists, `intentional check` reports missing-baseline.
+    - Add a `patch` intent for {{ key }}-docs with the first docs change.
+    {%- endif %}
+    {%- if taskfile != 'none' %}
+    - If {{ taskfile }} has a v1 docs:check that mirrors the v1 publish gate,
+      replace that block with `task: docs:validate`.
+    {%- endif %}

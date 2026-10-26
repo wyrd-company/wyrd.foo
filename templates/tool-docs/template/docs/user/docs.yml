@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://wyrd.foo/schemas/docs/v1.json
+# ---
+# relationships:
+#   publishes-to: wyrd-foo
+# ---
+# The products this repo publishes to wyrd.foo. Made by the wyrd.foo
+# tool-docs template; the contract is docs/technical-designs/publishing.yml
+# in wyrd-company/wyrd.foo.
+#
+# Intentional writes `version` (release unit {{ release_unit }}) and
+# `docs-version` (docs unit {{ key }}-docs). Do not edit them by hand.
+# `intentional check` reports missing-baseline for {{ key }}-docs until its
+# baseline tag exists:
+#   intentional tag --baseline --version {{ key }}-docs=0.1.0
+# The first docs intent is `patch`.
+schemaVersion: 1
+assets:
+  - assets/media.svg
+products:
+  {{ key }}:
+    name: {{ name | tojson }}
+    version: {{ version }}
+    docs-version: 0.1.0
+    release-unit: {{ release_unit }}
+    tagline: {{ tagline | tojson }}
+    blurb: {{ blurb | tojson }}
+    status: {{ status }}
+    category: {{ category | tojson }}
+    highlights:
+      - {{ tagline | tojson }}
+    media:
+      # Replace with a recording or screenshot of {{ name }}.
+      - src: assets/media.svg
+        caption: {{ (name ~ " placeholder image") | tojson }}
+    kinds:
+      - kind: {{ kind }}
+        install:
+{%- if kind == 'mcp-server' %}
+          - method: claude-code
+            command: {{ install_command | tojson }}
+        tools:
+          - name: example
+            description: Replace with each tool the server offers.
+            effect: Read-only
+{%- else %}
+          - method: {{ install_method }}
+{%- if install_method != 'docker' %}
+            os: [ macos, linux ]
+{%- endif %}
+            command: {{ install_command | tojson }}
+{%- endif %}
