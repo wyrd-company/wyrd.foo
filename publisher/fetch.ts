@@ -15,6 +15,13 @@ const FETCH_TIMEOUT_MS = 60_000;
  */
 export const FETCH_KILL_GRACE_MS = 5_000;
 
+/**
+ * Interval at which the run re-checks, after the bound passes, whether git's
+ * process group has gone, in milliseconds. git's stderr closes while the
+ * group's last processes are still exiting, and nothing else wakes the run.
+ */
+const GROUP_POLL_MS = 10;
+
 export type FetchResult = { ok: true } | { ok: false; message: string };
 
 export interface FetchOptions {
@@ -60,6 +67,7 @@ export function fetchBranch(dir: string, branch: string, options: FetchOptions =
       }
     };
     let grace: NodeJS.Timeout | undefined;
+    let poll: NodeJS.Timeout | undefined;
     const timer = setTimeout(() => {
       timedOut = true;
       signal("SIGTERM");
@@ -70,11 +78,20 @@ export function fetchBranch(dir: string, branch: string, options: FetchOptions =
       }, graceMs);
     }, timeoutMs);
     // After a timeout, the result waits until the group is gone or was sent
-    // SIGKILL: git leaving first does not end the processes it started.
+    // SIGKILL: git leaving first does not end the processes it started. The
+    // group can outlive git's stderr by a moment, so the wait polls for it.
     const finish = () => {
-      if (!closed || (timedOut && !killed && signal(0))) return;
+      if (!closed) return;
+      if (timedOut && !killed && signal(0)) {
+        poll ??= setTimeout(() => {
+          poll = undefined;
+          finish();
+        }, GROUP_POLL_MS);
+        return;
+      }
       clearTimeout(timer);
       clearTimeout(grace);
+      clearTimeout(poll);
       if (timedOut) return resolve({ ok: false, message: `timed out after ${timeoutMs / 1000} s` });
       if (code === 0) return resolve({ ok: true });
       const detail = stderr.split("\n").find((line) => line.trim() !== "")?.trim() ?? `git fetch exited with code ${code}`;
@@ -83,6 +100,7 @@ export function fetchBranch(dir: string, branch: string, options: FetchOptions =
     child.on("error", (error) => {
       clearTimeout(timer);
       clearTimeout(grace);
+      clearTimeout(poll);
       resolve({ ok: false, message: error.message });
     });
     child.on("close", (exitCode) => {

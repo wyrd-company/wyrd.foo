@@ -485,6 +485,22 @@ describe("fetchBranch: stopping a fetch that passed its bound", () => {
     });
   });
 
+  it("returns without the grace when git exits at once but a process it started, no longer on its stderr, takes a moment to exit on SIGTERM", async () => {
+    // git's stderr closes and git exits on SIGTERM while the stub is still running its trap, so the group
+    // is not yet gone when the run first looks. The result must follow the group's exit, not the grace.
+    const script = `exec 2>/dev/null\ntrap 'sleep 0.5; exit 0' TERM\necho $$ > "$0.pids"\nsleep 20 &\necho $! >> "$0.pids"\nwait`;
+    await withHangingRemote("slow-exit", script, async (dir, stub) => {
+      const started = Date.now();
+      const result = await fetchBranch(dir, "wyrd-foo-v2", { timeoutMs: 300, graceMs: 8_000 });
+      const elapsed = Date.now() - started;
+      assert.deepEqual(result, { ok: false, message: "timed out after 0.3 s" });
+      assert.equal(pidsOf(stub).length, 2, "the fetch reached the stub ssh");
+      assert.ok(elapsed >= 800, `returned in ${elapsed} ms, after the stub's trap finished`);
+      assert.ok(elapsed < 5_000, `returned in ${elapsed} ms, before the 8 s grace`);
+      for (const pid of pidsOf(stub)) assert.ok(!isAlive(pid), `process ${pid} started by the fetch is gone`);
+    });
+  });
+
   it("waits for the grace when git exits but a process it started, no longer on its stderr, ignores SIGTERM", async () => {
     // Without git's stderr, the stub no longer holds the pipe that ends the run.
     const script = `exec 2>/dev/null\ntrap '' TERM\necho $$ > "$0.pids"\nsleep 20 &\necho $! >> "$0.pids"\nwait`;
