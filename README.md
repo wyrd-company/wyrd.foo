@@ -19,7 +19,7 @@ pages.
   tokens for both themes, type, spacing, shapes and components.
 - [`docs/technical-designs/site.yml`](docs/technical-designs/site.yml): the
   pages and their behaviour: home page, product page, install blocks, releases,
-  docs, search, sitemap and `/llms.txt`.
+  docs, the 404 page, search, sitemap and `/llms.txt`.
 - [`docs/technical-designs/publishing.yml`](docs/technical-designs/publishing.yml):
   how a tool repo publishes: the `docs/user/` contract, the publishing
   requirements, the publisher core, local mode, the reusable workflow and the
@@ -82,6 +82,7 @@ src/
 └── pages/
     ├── index.astro          # front-page catalog
     ├── releases.astro       # every product's latest release
+    ├── 404.astro            # the page for every URL that has no page
     ├── tools/[key].astro    # product pages
     ├── tools/[key]/releases.astro  # each product's full changelog
     └── docs/[key]/          # docs pages
@@ -137,7 +138,8 @@ task validate:repo -- ../gitpr --ref wyrd-foo-v2  # one ref of a checkout
 Behaviour that only a real browser shows (the theme before the first paint, the
 toggle, the system preference, the home page's tabs, filter, Copy and featured
 card, the product page's sections for each kind, the releases pages in each
-theme, and the docs pages' sticky header and "On this page") is checked with
+theme, the docs pages' sticky header and "On this page", and the 404 status
+and links of an unknown URL) is checked with
 [Playwright Test](https://playwright.dev/docs/test-intro) in `test/browser/`.
 The suite serves the built site (`dist/`) with `astro preview` on a free port,
 and stops the server when the run ends, however it ends. The home, docs and

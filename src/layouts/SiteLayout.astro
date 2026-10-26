@@ -18,14 +18,16 @@ interface Props {
   product?: HeadProduct & { key: string };
   /** The header nav item for this page. */
   nav?: NavItem;
+  /** The page is served at URLs that are not its own (the 404 page). */
+  noindex?: boolean;
 }
-const { title, description, product, nav } = Astro.props;
+const { title, description, product, nav, noindex } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
-    <SiteHead title={title} description={description} product={product} />
+    <SiteHead title={title} description={description} product={product} noindex={noindex} />
   </head>
   <body>
     <slot name="header">
