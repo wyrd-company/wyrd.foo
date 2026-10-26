@@ -1,6 +1,6 @@
 ---
-title: GitHub Action
 product: tagver
+title: GitHub Action
 order: 5
 ---
 

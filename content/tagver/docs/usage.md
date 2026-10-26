@@ -1,6 +1,6 @@
 ---
-title: Usage
 product: tagver
+title: Usage
 order: 3
 ---
 

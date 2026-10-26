@@ -1,6 +1,6 @@
 ---
-title: Configuration
 product: tagver
+title: Configuration
 order: 4
 ---
 
