@@ -507,7 +507,8 @@ proposed-design:
     Runs from one tool repo do not overlap: the workflow's concurrency group
     is the tool repo, and a new run waits for the running one. Runs from
     different repos race on wyrd.foo `main`, and the publisher retries those
-    (see `publisher`). A run times out after 15 minutes.
+    (see `publisher`). A run times out after 15 minutes, which leaves room
+    for the publisher's wait of at most 10 minutes for a GitHub Release.
 
     The action is a composite action that sets up Node 24 and pnpm, installs
     wyrd.foo's dependencies with the frozen lockfile, and runs
@@ -580,6 +581,14 @@ proposed-design:
        - For a product, the publisher fails if that tag has no published
          GitHub Release. From the release it reads date, URL and notes (the
          Release body); the version is `version`.
+       - A docs tag pushed with a code tag starts a publish while the code
+         release is still making that tag's Release. So when the Release is
+         not found, the publisher waits and asks again: 15 seconds, 30
+         seconds, 1 minute, then 2 minutes at a time, at most 10 minutes in
+         all for the run, over every product. It prints a line before each
+         wait. When the bound is used up, the finding says how long it
+         waited. Any other lookup failure (refused, unreachable, malformed)
+         fails at once. Local mode and validate do not wait.
        - For a feature entry, the publisher reads the version from
          `devcontainer-feature.json` and builds the tag from it. The date is
          the annotated tag's date (a lightweight tag gives its commit date,
