@@ -2,7 +2,7 @@ import { appendFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { FeatureRequest } from "./featured.ts";
 import { publish, type PublishReport } from "./publish.ts";
-import { gitHubReleases } from "./releases.ts";
+import { DEFAULT_RELEASE_WAIT, gitHubReleases, type ReleaseWait } from "./releases.ts";
 import { formatFinding, type Finding } from "./report.ts";
 
 // The publish-docs@v2 action entry (.github/actions/publish-docs/action.yml).
@@ -10,6 +10,8 @@ import { formatFinding, type Finding } from "./report.ts";
 // publish mode, prints each finding as an annotation and writes the step
 // outputs. Exit 1 when nothing was published because of an error.
 // PUBLISH_FEATURE=true is refused unless GITHUB_EVENT_NAME is workflow_dispatch.
+// WYRD_RELEASE_WAIT_MS, which no action input sets, bounds the wait for a
+// GitHub Release in tests; the default is DEFAULT_RELEASE_WAIT.
 
 const INPUTS = [
   "PUBLISH_SOURCE",
@@ -85,6 +87,13 @@ function summary(report: PublishReport): string {
   return lines.join("\n");
 }
 
+function releaseWait(): ReleaseWait {
+  const value = process.env.WYRD_RELEASE_WAIT_MS?.trim();
+  if (value === undefined || value === "") return DEFAULT_RELEASE_WAIT;
+  if (!/^\d+$/.test(value)) throw new InputError(`WYRD_RELEASE_WAIT_MS must be a whole number of milliseconds; it is ${value}`);
+  return { ...DEFAULT_RELEASE_WAIT, totalMs: Number.parseInt(value, 10) };
+}
+
 async function main(): Promise<number> {
   let report: PublishReport;
   try {
@@ -93,6 +102,7 @@ async function main(): Promise<number> {
       ref: input("PUBLISH_REF") as string,
       ownerRepo: input("PUBLISH_OWNER") as string,
       releases: gitHubReleases({ token: input("PUBLISH_RELEASE_TOKEN", false), apiUrl: input("PUBLISH_API_URL", false) }),
+      releaseWait: releaseWait(),
       site: { url: input("PUBLISH_SITE_URL") as string, branch: input("PUBLISH_SITE_BRANCH") as string, token: input("PUBLISH_SITE_TOKEN", false) },
       author: { name: input("PUBLISH_AUTHOR_NAME") as string, email: input("PUBLISH_AUTHOR_EMAIL") as string },
       feature: featureRequest(),

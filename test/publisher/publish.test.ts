@@ -7,7 +7,20 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { parse } from "yaml";
-import { applyFeature, cloneSite, publish, type PublishOptions, type RepoResult } from "../../publisher/index.ts";
+import {
+  applyFeature,
+  cloneSite,
+  DEFAULT_RELEASE_WAIT,
+  publish,
+  ReleaseLookupError,
+  runLocal,
+  validateRepo,
+  type GitHubRelease,
+  type PublishOptions,
+  type ReleaseLookupReason,
+  type ReleaseWait,
+  type RepoResult,
+} from "../../publisher/index.ts";
 import { fakeReleases, OWNER, Workspace } from "./fixture-repo.ts";
 import { ALPHA_CLI_RELEASE, ALPHA_TAGS, alphaFiles, BETA_TAGS, betaFiles } from "./fixtures.ts";
 import { SITE_TOKEN, siteRepo, type SiteRepo } from "./site-server.ts";
@@ -23,6 +36,32 @@ const alphaReleases = () =>
   fakeReleases({ [`${ALPHA}@alpha-cli@1.2.0`]: ALPHA_CLI_RELEASE, [`${ALPHA}@alpha-app@0.3.0`]: ALPHA_APP_RELEASE });
 const betaReleases = () => fakeReleases({ [`${BETA}@sample-image@2.0.0`]: { date: new Date("2026-03-06T00:00:00Z"), url: "https://example.invalid/r" } });
 const OTHER_TOOL = "owner: sample-org/other\nname: other\n";
+
+/** For a test that passes a recording wait: a wait that sleeps for real fails it by this bound, not by a hang. */
+const NO_REAL_SLEEP = { timeout: 30_000 };
+
+/** The default wait with a sleep that records each wait and returns at once, and a log that records each line. */
+function recordingWait(): { wait: ReleaseWait; sleeps: number[]; lines: string[] } {
+  const sleeps: number[] = [];
+  const lines: string[] = [];
+  return { sleeps, lines, wait: { ...DEFAULT_RELEASE_WAIT, sleep: async (ms) => void sleeps.push(ms), log: (line) => void lines.push(line) } };
+}
+
+/** GitHub Releases where each tag answers with its list of outcomes in turn; the last one repeats. */
+function scriptedReleases(table: Record<string, (GitHubRelease | ReleaseLookupReason)[]>) {
+  const calls: string[] = [];
+  return {
+    calls,
+    async release(ownerRepo: string, tag: string): Promise<GitHubRelease> {
+      const key = `${ownerRepo}@${tag}`;
+      const outcomes = table[key] ?? ["not-found"];
+      const entry = outcomes[Math.min(calls.filter((call) => call === key).length, outcomes.length - 1)];
+      calls.push(key);
+      if (typeof entry === "string") throw new ReleaseLookupError(entry, tag, "from the fixture");
+      return entry;
+    },
+  };
+}
 
 describe("publish mode", () => {
   let ws: Workspace;
@@ -159,16 +198,16 @@ describe("publish mode", () => {
     assert.ok(report.findings.some((finding) => finding.severity === "error" && /main did not move, so it is not retried/.test(finding.message)));
   });
 
-  it("fails, naming the tag, when a product's primary tag has no GitHub Release, and pushes nothing", async () => {
+  it("fails, naming the tag, when a product's primary tag has no GitHub Release, and pushes nothing", NO_REAL_SLEEP, async () => {
     const tip = site.rev();
     const releases = fakeReleases({ [`${ALPHA}@alpha-cli@1.2.0`]: ALPHA_CLI_RELEASE });
-    const report = await publish(options(alpha(), { releases }));
+    const report = await publish(options(alpha(), { releases, releaseWait: recordingWait().wait }));
     assert.equal(report.outcome, "failed");
     const errors = report.findings.filter((finding) => finding.severity === "error");
     assert.equal(errors.length, 1, JSON.stringify(report.findings));
     assert.equal(errors[0].key, "alpha-app");
     assert.equal(errors[0].requirement, "GitHub Release");
-    assert.match(errors[0].message, /GitHub Release for tag alpha-app@0\.3\.0: not-found/);
+    assert.match(errors[0].message, /GitHub Release for tag alpha-app@0\.3\.0: not-found: from the fixture; still not found after waiting 600s/);
     assert.deepEqual(site.authorizations, [], "a failed repo does not reach the site");
     assert.equal(site.rev(), tip);
   });
@@ -299,5 +338,108 @@ describe("site transport", () => {
       await new Promise((resolve) => other.close(resolve));
       await new Promise((resolve) => redirector.close(resolve));
     }
+  });
+});
+
+describe("publish mode: waiting for a GitHub Release", () => {
+  let ws: Workspace;
+  let site: SiteRepo;
+
+  beforeEach(async () => {
+    ws = new Workspace();
+    site = await siteRepo({ "content/other/tool.yaml": OTHER_TOOL });
+  });
+  afterEach(async () => {
+    await site.close();
+    ws.remove();
+  });
+
+  const run = (releases: PublishOptions["releases"], releaseWait: ReleaseWait) =>
+    publish({
+      source: ws.repo("alpha", alphaFiles(), { tags: ALPHA_TAGS }),
+      ref: "wyrd-foo-v2",
+      ownerRepo: ALPHA,
+      releases,
+      releaseWait,
+      site: { url: site.url, branch: "main", token: SITE_TOKEN },
+      author: BOT,
+    });
+
+  it("asks again with backoff until the Release is there, says so on each wait, then publishes", NO_REAL_SLEEP, async () => {
+    const releases = scriptedReleases({
+      [`${ALPHA}@alpha-cli@1.2.0`]: [ALPHA_CLI_RELEASE],
+      [`${ALPHA}@alpha-app@0.3.0`]: ["not-found", "not-found", ALPHA_APP_RELEASE],
+    });
+    const { wait, sleeps, lines } = recordingWait();
+    const report = await run(releases, wait);
+    assert.equal(report.outcome, "published", JSON.stringify(report.findings));
+    assert.deepEqual(sleeps, [15_000, 30_000]);
+    assert.deepEqual(lines, [
+      `GitHub Release for tag alpha-app@0.3.0 of ${ALPHA} is not found yet; waiting 15s before asking again (15s of at most 600s)`,
+      `GitHub Release for tag alpha-app@0.3.0 of ${ALPHA} is not found yet; waiting 30s before asking again (45s of at most 600s)`,
+    ]);
+    assert.equal(parse(site.show("content/alpha-app/tool.yaml")).release.url, ALPHA_APP_RELEASE.url);
+  });
+
+  it("stops at the bound, about 10 minutes in all, then fails naming the tag and the wait", NO_REAL_SLEEP, async () => {
+    const releases = scriptedReleases({ [`${ALPHA}@alpha-cli@1.2.0`]: [ALPHA_CLI_RELEASE] });
+    const { wait, sleeps, lines } = recordingWait();
+    const report = await run(releases, wait);
+    assert.equal(report.outcome, "failed");
+    assert.deepEqual(sleeps, [15_000, 30_000, 60_000, 120_000, 120_000, 120_000, 120_000, 15_000]);
+    assert.equal(sleeps.reduce((sum, ms) => sum + ms, 0), 600_000);
+    assert.equal(lines.length, sleeps.length);
+    assert.match(lines.at(-1)!, /waiting 15s before asking again \(600s of at most 600s\)$/);
+    const error = report.findings.find((finding) => finding.severity === "error");
+    assert.match(error!.message, /^GitHub Release for tag alpha-app@0\.3\.0: not-found: from the fixture; still not found after waiting 600s$/);
+    assert.equal(site.pushes, 0);
+  });
+
+  it("keeps one bound for the whole run, over every missing tag", NO_REAL_SLEEP, async () => {
+    const releases = scriptedReleases({});
+    const { wait, sleeps } = recordingWait();
+    const report = await run(releases, wait);
+    assert.equal(report.outcome, "failed");
+    assert.equal(sleeps.reduce((sum, ms) => sum + ms, 0), 600_000);
+    const errors = report.findings.filter((finding) => finding.requirement === "GitHub Release").map((finding) => finding.message);
+    assert.deepEqual(errors, [
+      "GitHub Release for tag alpha-cli@1.2.0: not-found: from the fixture; still not found after waiting 600s",
+      "GitHub Release for tag alpha-app@0.3.0: not-found: from the fixture; still not found after waiting 600s",
+    ]);
+  });
+
+  for (const reason of ["denied", "unreachable", "malformed"] as const) {
+    it(`does not wait when the lookup is ${reason}`, NO_REAL_SLEEP, async () => {
+      const releases = scriptedReleases({ [`${ALPHA}@alpha-cli@1.2.0`]: [ALPHA_CLI_RELEASE], [`${ALPHA}@alpha-app@0.3.0`]: [reason, ALPHA_APP_RELEASE] });
+      const { wait, sleeps } = recordingWait();
+      const report = await run(releases, wait);
+      assert.equal(report.outcome, "failed");
+      assert.deepEqual(sleeps, []);
+      assert.match(report.findings.find((finding) => finding.severity === "error")!.message, new RegExp(`alpha-app@0\\.3\\.0: ${reason}: from the fixture$`));
+    });
+  }
+
+  it("fails at once with a bound of 0", NO_REAL_SLEEP, async () => {
+    const releases = scriptedReleases({ [`${ALPHA}@alpha-cli@1.2.0`]: [ALPHA_CLI_RELEASE] });
+    const { wait, sleeps } = recordingWait();
+    const report = await run(releases, { ...wait, totalMs: 0 });
+    assert.equal(report.outcome, "failed");
+    assert.deepEqual(sleeps, []);
+    assert.match(report.findings.find((finding) => finding.severity === "error")!.message, /alpha-app@0\.3\.0: not-found: from the fixture$/);
+  });
+
+  // Local mode and validate take no wait: a wait there would sleep for real,
+  // so the timeout fails the test.
+  it("local mode and validate ask once and do not wait", { timeout: 10_000 }, async () => {
+    const dir = ws.repo("alpha", alphaFiles(), { tags: ALPHA_TAGS });
+    const local = scriptedReleases({ [`${ALPHA}@alpha-cli@1.2.0`]: [ALPHA_CLI_RELEASE] });
+    const [report] = await runLocal({ config: { branch: "wyrd-foo-v2", repos: [{ name: "alpha" }] }, toolsDir: ws.toolsDir, contentDir: ws.contentDir, releases: local });
+    assert.equal(report.outcome, "published");
+    assert.deepEqual(local.calls.filter((call) => call.endsWith("alpha-app@0.3.0")), [`${ALPHA}@alpha-app@0.3.0`]);
+
+    const validate = scriptedReleases({ [`${ALPHA}@alpha-cli@1.2.0`]: [ALPHA_CLI_RELEASE] });
+    const validated = await validateRepo({ dir, ref: "wyrd-foo-v2", releases: validate });
+    assert.equal(validated.outcome, "passed");
+    assert.deepEqual(validate.calls.filter((call) => call.endsWith("alpha-app@0.3.0")), [`${ALPHA}@alpha-app@0.3.0`]);
   });
 });
