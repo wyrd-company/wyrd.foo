@@ -1,5 +1,6 @@
 ---
 title: Installation
+product: menagerie
 order: 2
 relationships:
   references:

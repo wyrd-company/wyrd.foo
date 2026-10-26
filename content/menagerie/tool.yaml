@@ -1,17 +1,24 @@
-# ---
-# relationships:
-#   publishes-to: wyrd-foo
-#   references: [ README, menagerie ]
-# ---
 name: menagerie
+version: 0.1.0
+docs-version: 0.1.0
+release-unit: menagerie
 tagline: Manage workspaces and fleets of development containers through a web UI.
-blurb: >-
-  One container that creates workspaces from Toha templates through their interviews, shows every workspace with its devcontainer, starts, stops, rebuilds and upgrades them, and backs each one up to its own Git branch. Managers sign in through OpenID Connect; Wyrwood supplies its SSH key and registry credentials.
-category: Developer Tools
-language: Go
+blurb: One container that creates workspaces from Toha templates through their interviews, shows
+  every workspace with its devcontainer, starts, stops, rebuilds and upgrades them, and backs each
+  one up to its own Git branch. Managers sign in through OpenID Connect; Wyrwood supplies its SSH
+  key and registry credentials.
 status: preview
-repo: https://github.com/wyrd-company/menagerie
+category: Dev Containers
 order: 10
-install:
-  - label: Container image
-    command: docker pull ghcr.io/wyrd-company/menagerie:0.1.0
+kinds:
+  - kind: app
+    install:
+      - method: docker
+        default: true
+        command: docker pull ghcr.io/wyrd-company/menagerie:0.1.0
+highlights:
+  - Manage workspaces and fleets of development containers through a web UI.
+media:
+  - src: assets/list.png
+    caption: The workspace list
+owner: wyrd-company/menagerie

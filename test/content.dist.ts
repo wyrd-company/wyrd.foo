@@ -19,7 +19,7 @@ function title(path: string) {
 
 describe("built site from content/", () => {
   it("has products to check", () => {
-    expect(keys.length).toBe(12);
+    expect(keys.length).toBe(13);
   });
 
   for (const key of keys) {

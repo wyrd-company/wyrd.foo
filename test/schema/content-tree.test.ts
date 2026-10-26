@@ -16,6 +16,7 @@ const KEYS = [
   "dcb",
   "gitpr",
   "intentional",
+  "menagerie",
   "seek",
   "t3c",
   "tagver",
