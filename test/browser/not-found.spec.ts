@@ -2,6 +2,7 @@
  * The 404 page in a browser, on the site build: a URL with no page answers
  * 404 with the 404 page, and the page's links and search work.
  */
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { assertSiteShell } from "./support";
 
@@ -40,6 +41,24 @@ test("the 404 page's Search button opens the search dialog", async ({ page }) =>
   await page.locator("main").getByRole("button", { name: "Search" }).click();
   await expect(dialog).toBeVisible();
   await expect(dialog.locator(".wsearch-input")).toBeFocused();
+});
+
+test("the 404 page shows the requested path, decoded", async ({ page }) => {
+  await openMissing(page);
+  await expect(page.locator("[data-not-found-path] code")).toHaveText(MISSING);
+
+  const response = await page.goto("/caf%C3%A9/", { waitUntil: "domcontentloaded" });
+  expect(response?.status()).toBe(404);
+  await expect(page.locator("[data-not-found-path] code")).toHaveText("/café/");
+});
+
+test("a path with a malformed escape shows as it was sent", async ({ page }) => {
+  // astro preview answers such a path with 500; Cloudflare Pages serves the
+  // 404 page. Serve dist/404.html for it, as Pages does.
+  const body = readFileSync("dist/404.html", "utf8");
+  await page.route("**/%E0%A4%A/", (route) => route.fulfill({ status: 404, contentType: "text/html", body }));
+  await page.goto("/%E0%A4%A/", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("[data-not-found-path] code")).toHaveText("/%E0%A4%A/");
 });
 
 test("search does not find the 404 page", async ({ page }) => {
