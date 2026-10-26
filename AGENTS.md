@@ -62,3 +62,19 @@ config it is read from, by script, project or key name.
 A new node:test folder must be added to the `exclude` list in `vitest.config.ts`
 (and given its own `pnpm test:*` script that `pnpm test` runs), or vitest
 collects its `*.test.ts` files and fails on `node:test` imports.
+
+## Releases
+
+The repo is one Intentional release unit, `wyrd-foo`
+(`.intentional/config.yml`). Its version is the version of the `publish-docs`
+contract.
+
+- Add an intent with
+  `intentional add --release-unit wyrd-foo:<bump> --message "..."` for each
+  change that tool repos or site users see. A change to the `publish-docs`
+  inputs, the docs contract or the content layout that breaks a tool repo is
+  `major`.
+- Do not edit `CHANGELOG.md` or the `package.json` version by hand.
+- Do not run `intentional apply` or `intentional tag`, and do not move the
+  `v<major>` tag, unless the release is approved. README.md, "Releases", gives
+  the steps.

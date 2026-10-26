@@ -6,7 +6,8 @@ import { parse } from "yaml";
 // The PR build and CD workflows, and the deploy actions CD calls, run
 // third-party actions only at a full commit SHA with its version in a comment
 // (Renovate keeps both current), and check out without leaving the token in
-// the git config.
+// the git config. The comment is the action's release tag as published, with
+// or without a `v`.
 
 const REPO = new URL("../../", import.meta.url).pathname;
 const FILES = [
@@ -35,7 +36,7 @@ for (const path of FILES) {
       for (const { uses } of remote) {
         assert.match(uses!, /^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/, uses);
         const line = source.split("\n").find((candidate) => candidate.includes(`uses: ${uses}`));
-        assert.match(line ?? "", / # v\d+\.\d+\.\d+$/, `${uses} has a version comment`);
+        assert.match(line ?? "", / # v?\d+\.\d+\.\d+$/, `${uses} has a version comment`);
       }
     });
 

@@ -517,6 +517,14 @@ proposed-design:
     `GITHUB_EVENT_NAME` is `workflow_dispatch`, before it reads the site.
     It prints each finding as a workflow annotation and the run's summary to
     the step summary.
+
+    Tool repos call the workflow at `@v2`, the major tag of wyrd.foo's own
+    release unit, `wyrd-foo`. The unit's version is the version of this
+    contract: the workflow's inputs, secrets and outputs, the docs contract
+    and the content layout. A change that breaks a tool repo is a new major.
+    Each `2.x.y` release has the tag `2.x.y`, and `v2` moves to it. The
+    intentional tag templates cannot hold a `v`, so the release moves `v2`
+    (see README.md, "Releases").
   publisher: |
     Every run computes all of the repo's products from the files at the ref,
     so the result is the same for every trigger. The trigger only chooses the

@@ -161,3 +161,31 @@ includes the suite.
 Deployment runs from `.github/workflows/cd.yml` on push to `main`. The target is
 selected by the `DEPLOY_TARGET` repository variable (`cf_pages` for Cloudflare
 Pages or `gh_pages` for GitHub Pages); leaving it unset skips deployment.
+
+## Releases
+
+The repo is one [Intentional](https://wyrd.foo/docs/intentional/overview)
+release unit, `wyrd-foo`. Its version is the version of the `publish-docs`
+contract that tool repos call, and `CHANGELOG.md` records each release. A
+change that tool repos or site users see adds an intent with
+`intentional add`. The PR build runs `intentional check`.
+
+To release:
+
+1. Run `intentional status` and confirm the next version.
+2. Run `intentional plan > release-plan.json`, then `intentional apply`.
+   Commit the result as `chore(release): X.Y.Z`, alone in its release PR.
+3. When the release commit is on `main`, check it out and run
+   `intentional tag --plan release-plan.json`. This makes the `X.Y.Z` tag.
+4. Move the major tag that tool repos call to the same commit, then push both
+   tags:
+
+   ```sh
+   git tag -fa vX -m "vX: X.Y.Z" X.Y.Z^{}
+   git push origin X.Y.Z
+   git push --force origin vX
+   ```
+
+Release tags are bare versions, such as `2.0.0`. The major tag keeps its `v`,
+such as `v2`, because tool repos call `publish-docs.yml@v2`. Intentional does
+not manage the major tag.
