@@ -1,7 +1,7 @@
 ---
 title: Overview
-product: wyrwood
 order: 1
+product: wyrwood
 relationships:
   references:
     - wyrwood

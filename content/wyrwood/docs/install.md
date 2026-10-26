@@ -1,7 +1,7 @@
 ---
 title: Installation
-product: wyrwood
 order: 2
+product: wyrwood
 install: true
 relationships:
   references:

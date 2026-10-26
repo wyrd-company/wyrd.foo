@@ -1,11 +1,8 @@
 name: wyrwood
-version: 0.1.0
+version: 0.4.0
 docs-version: 0.1.0
-release-unit: wyrwood
 tagline: OpenBao-backed secrets and signing for containers, with nothing stored inside.
-blurb: "A controller that owns policy and an agent on each Docker host that gives every bound
-  container a directory of sockets: an OpenBao endpoint carrying the container's own token and an
-  SSH agent whose keys live in OpenBao."
+blurb: "A controller that owns policy and an agent on each Docker host that gives every bound container a directory of sockets: an OpenBao endpoint carrying the container's own token and an SSH agent whose keys live in OpenBao."
 status: preview
 category: Agent Infrastructure
 order: 6
@@ -15,7 +12,6 @@ kinds:
       - method: apt
         os:
           - linux
-        default: true
         command: sudo apt install wyrwood
       - method: rpm
         os:
@@ -26,8 +22,58 @@ kinds:
           - linux
         command: paru -S wyrwood-bin
 highlights:
-  - OpenBao-backed secrets and signing for containers, with nothing stored inside.
+  - A bound container holds no token, no key, and no secret file.
+  - Each container gets a socket directory with vault.sock for the OpenBao API and ssh-agent.sock for SSH.
+  - SSH identities are OpenBao Transit keys and SSH-engine certificates, and OpenBao produces every signature.
+  - A policy pairs an OpenBao policy with a container contract, and changes apply on the next request.
+  - Agents enroll over SSH with host-generated keys that an operator approves in the web interface.
+  - Operational events are bounded and categorical, with no tokens, secret values, or raw upstream errors.
 media:
-  - src: assets/demo.gif
-    caption: Wyrwood web interface and command-line demo
+  - src: assets/web-agents.png
+    caption: Agents page with one key pending approval.
+    alt: The Agents page of the controller web interface listing an agent whose key awaits approval.
+  - src: assets/web-policy.png
+    caption: Policy editor with a saved policy.
+    alt: The policy editor showing a saved policy document.
+  - src: assets/web-bind.png
+    caption: Binding policies to a container.
+    alt: The binding panel for attaching policies to a container.
+  - src: assets/web-container-setup.png
+    caption: Container setup examples in the binding panel.
+    alt: Container setup examples shown in the binding panel.
+  - src: assets/web-containers.png
+    caption: A bound container that conforms to its contract.
+    alt: The containers list with a bound container that meets its contract.
+  - src: assets/web-keys.png
+    caption: OpenBao keys page with Transit keys and SSH-engine roles.
+    alt: The keys page listing OpenBao Transit keys and SSH-engine roles.
+  - src: assets/web-events.png
+    caption: Controller events, newest first.
+    alt: The events page listing controller events with the newest first.
+  - src: assets/web-account-menu.png
+    caption: Account menu with Security and Sign out.
+    alt: The account menu open to show Security and Sign out.
+  - src: assets/web-versions.png
+    caption: Controller and agent versions with update status.
+    alt: The versions page showing controller and agent versions and their update status.
+logo: assets/emblem-light.svg
+logo-dark: assets/emblem-dark.svg
+favicon: assets/icon.svg
+release-unit: wyrwood
 owner: wyrd-company/wyrwood
+docs-path: docs/user
+release:
+  version: 0.4.0
+  date: 2026-10-22T13:30:08.000Z
+  url: https://github.com/wyrd-company/wyrwood/releases/tag/0.4.0
+  notes: |+
+    ## Changelog
+    * 62a3051b34be156ff674b20639bcc3e2e390c0bd Manage binding token lifecycle through policy settings (#63)
+    * 1600df4193d9027a04287de8b87ac83fe222f683 Show container mount and environment setup for bindings (#61)
+    * 8c507997234b259499d8d8d8eb774539dc5167a1 chore(deps): adopt the Wyrd Renovate preset
+    * 9baa68be9d39988d538249eb7d96aa848f8200c0 chore(release): 0.4.0
+    * 831e4596db2f9011074ac9358178e00a064acc2f docs: reconcile stopped upgrades and publish setup asset
+    * ec68bdd949f2a9310d3143c5600f319f7c6fa5f4 feat(web): show all containers with filtering and sorting (#62)
+    * f2af3d8dac8167418b593d0c8f65c3b0434a67f4 fix(ci): pin the publisher action that accepts AUR service files (#56)
+    * e66c9531768405999d4d14931ab8f0ca1ff5a468 fix(docs): publish account menu and version screenshots (#58)
+

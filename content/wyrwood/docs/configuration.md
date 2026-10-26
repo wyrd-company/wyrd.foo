@@ -1,7 +1,7 @@
 ---
 title: Policies and contracts
-product: wyrwood
 order: 4
+product: wyrwood
 relationships:
   references:
     - policy

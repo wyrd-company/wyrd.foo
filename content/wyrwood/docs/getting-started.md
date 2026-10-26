@@ -1,7 +1,7 @@
 ---
 title: Getting started
-product: wyrwood
 order: 3
+product: wyrwood
 relationships:
   references:
     - command-line-interface
