@@ -4,7 +4,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import { stringify } from "yaml";
-import { validateRepo } from "../../publisher/index.ts";
+import { runLocal, validateRepo } from "../../publisher/index.ts";
 import { git, OWNER, Workspace } from "./fixture-repo.ts";
 import { ALPHA_TAGS, alphaFiles, gammaFiles } from "./fixtures.ts";
 
@@ -16,6 +16,71 @@ function cli(...args: string[]) {
   const env = { ...process.env, GITHUB_TOKEN: "", GH_TOKEN: "" };
   return spawnSync(process.execPath, [CLI, ...args], { encoding: "utf8", env });
 }
+
+describe("validate: a linked worktree", () => {
+  const ws = new Workspace();
+  after(() => ws.remove());
+
+  // The clone stays on main, which has no docs, so a read of the main
+  // checkout's HEAD in place of the worktree's fails the repo.
+  const clone = ws.repo("alpha", alphaFiles(), { tags: ALPHA_TAGS });
+  const linked = (name: string, ...options: string[]) => {
+    const dir = join(ws.root, name);
+    git(clone, "worktree", "add", "-q", ...options, "--detach", dir, "wyrd-foo-v2");
+    return dir;
+  };
+
+  for (const [label, options] of [
+    ["an absolute", []],
+    ["a relative", ["--relative-paths"]],
+  ] as const) {
+    it(`reads origin, refs, commits and tags through ${label} .git file and the common git dir`, async () => {
+      const dir = linked(`worktree-${options.length}`, ...options);
+      const head = git(dir, "rev-parse", "HEAD").trim();
+
+      const tree = await validateRepo({ dir });
+      assert.equal(tree.outcome, "passed", tree.findings.map((finding) => finding.message).join("\n"));
+      assert.equal(tree.ownerRepo, `${OWNER}/alpha`, "origin from the common config");
+
+      const commit = await validateRepo({ dir, ref: head.slice(0, 7) });
+      assert.equal(commit.outcome, "passed", commit.findings.map((finding) => finding.message).join("\n"));
+      assert.equal(commit.oid, head);
+
+      const own = await validateRepo({ dir, ref: "HEAD" });
+      assert.equal(own.oid, head, "HEAD is the worktree's HEAD, not the clone's");
+      assert.equal(own.outcome, "passed");
+
+      const tag = await validateRepo({ dir, ref: "alpha-cli@1.2.0" });
+      assert.equal(tag.oid, git(dir, "rev-parse", "alpha-cli@1.2.0^{commit}").trim());
+      assert.equal(tag.outcome, "passed");
+    });
+  }
+
+  it("lets --owner override origin", async () => {
+    const report = await validateRepo({ dir: linked("worktree-owner"), owner: "other-org/other" });
+    assert.equal(report.ownerRepo, "other-org/other");
+  });
+
+  it("local mode reads the branch, origin and tags of a worktree checkout", async () => {
+    const dir = linked("worktree-local");
+    const [report] = await runLocal({
+      config: { branch: "wyrd-foo-v2", repos: [{ name: "alpha", path: dir }] },
+      toolsDir: ws.toolsDir,
+      contentDir: ws.contentDir,
+    });
+    assert.equal(report.outcome, "published", report.findings.map((finding) => finding.message).join("\n"));
+    assert.equal(report.ownerRepo, `${OWNER}/alpha`);
+    assert.equal(report.ref, "refs/heads/wyrd-foo-v2");
+    assert.equal(ws.tool("alpha-app").release.date, "2026-02-03T04:05:06.000Z", "release data from the local tag");
+  });
+
+  it("runs from the command line without --owner", () => {
+    const dir = linked("worktree-cli");
+    const run = cli("validate", dir, "--ref", git(dir, "rev-parse", "--short", "HEAD").trim(), "--offline");
+    assert.equal(run.status, 0, run.stdout + run.stderr);
+    assert.match(run.stdout, new RegExp(`\\(${OWNER}/alpha\\) @ [0-9a-f]+ [0-9a-f]{12}: passed`));
+  });
+});
 
 describe("validate", () => {
   const ws = new Workspace();
