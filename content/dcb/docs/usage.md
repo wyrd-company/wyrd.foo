@@ -1,7 +1,7 @@
 ---
 title: Usage
-product: dcb
 order: 3
+product: dcb
 relationships:
   references: [ configuration ]
 ---

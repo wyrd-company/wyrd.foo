@@ -1,7 +1,7 @@
 ---
 title: Go libraries
-product: dcb
 order: 5
+product: dcb
 relationships:
   references: [ configuration ]
 ---
