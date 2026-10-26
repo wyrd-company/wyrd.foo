@@ -1,0 +1,19 @@
+kinds:
+  - kind: devcontainer-feature
+    ref: ghcr.io/wyrd-company/devcontainers/caddy:1
+source: src/features/caddy
+category: Dev Containers
+logo: logo.svg
+release-unit: caddy
+owner: wyrd-company/devcontainers
+release:
+  version: 1.0.1
+  date: 2026-10-26T07:41:08.000Z
+  notes: |-
+    ### Fixes
+
+    - Caddy installs from the official release package on GitHub. The old apt repository used an expired signing key, so the install failed.
+    - The installer checks the package against the release checksums and rejects a version that is not a semantic version.
+name: Caddy Reverse Proxy
+description: Installs Caddy with an s6-supervised config watcher for dynamically managed development reverse proxies.
+version: 1.0.1

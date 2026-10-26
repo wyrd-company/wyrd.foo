@@ -1,0 +1,20 @@
+kinds:
+  - kind: devcontainer-feature
+    ref: ghcr.io/wyrd-company/devcontainers/docker-outside-of-docker:1
+source: src/features/docker-outside-of-docker
+category: Dev Containers
+logo: logo.svg
+release-unit: docker-outside-of-docker
+owner: wyrd-company/devcontainers
+release:
+  version: 1.0.0
+  date: 2026-10-26T07:41:08.000Z
+  notes: |-
+    ### Features
+
+    - Uses the Docker socket of the host. An s6-overlay service runs the socket proxy when one is needed.
+    - Based on the Microsoft Docker-outside-of-Docker feature. This feature uses s6-overlay supervision instead of an entrypoint hook, so an image with s6-overlay as PID 1 works.
+    - Installs the Docker CE CLI by default. Option `moby` selects Microsoft-packaged Moby. The install fails if the Moby packages are not available.
+name: Docker (docker-outside-of-docker)
+description: Reuses the host Docker socket and supervises any required socket proxy with s6-overlay.
+version: 1.0.0

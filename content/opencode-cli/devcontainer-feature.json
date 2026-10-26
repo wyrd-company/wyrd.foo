@@ -1,0 +1,15 @@
+{
+  "id": "opencode-cli",
+  "version": "1.0.0",
+  "name": "OpenCode CLI",
+  "documentationURL": "https://github.com/wyrd-company/devcontainers/tree/main/src/features/opencode-cli",
+  "description": "Installs the OpenCode CLI for the Dev Container user using OpenCode's native installer and ensures `opencode` is on the PATH.",
+  "options": {
+    "version": {
+      "type": "string",
+      "default": "latest",
+      "description": "OpenCode CLI version to install. Use `latest` or a specific version like `1.18.25`."
+    }
+  },
+  "installsAfter": ["ghcr.io/devcontainers/features/common-utils"]
+}

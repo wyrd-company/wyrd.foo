@@ -1,0 +1,21 @@
+kinds:
+  - kind: devcontainer-feature
+    ref: ghcr.io/wyrd-company/devcontainers/grok-cli:1
+source: src/features/grok-cli
+category: Dev Containers
+logo: logo.svg
+release-unit: grok-cli
+owner: wyrd-company/devcontainers
+release:
+  version: 1.0.0
+  date: 2026-10-26T07:41:08.000Z
+  notes: |-
+    ### Features
+
+    - Installs the Grok CLI for the Dev Container user with xAI's native installer.
+    - Adds `grok` to the PATH. The executable and its state stay owned by the user, not root.
+    - The feature does not add the `agent` alias, so it does not replace another tool that provides `agent`.
+    - Option `version` selects the version to install.
+name: Grok CLI
+description: Installs the Grok CLI for the Dev Container user using xAI's native installer and ensures `grok` is on the PATH.
+version: 1.0.0

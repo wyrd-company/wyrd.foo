@@ -1,0 +1,39 @@
+{
+  "id": "dagu",
+  "version": "1.1.0",
+  "name": "Dagu",
+  "documentationURL": "https://github.com/wyrd-company/devcontainers/tree/main/src/features/dagu",
+  "description": "Installs Dagu and runs its all-in-one server as an s6-overlay service.",
+  "options": {
+    "version": {
+      "type": "string",
+      "default": "latest",
+      "description": "Dagu release version to install. `latest` installs the current release."
+    },
+    "host": {
+      "type": "string",
+      "default": "127.0.0.1",
+      "description": "Interface used by the Dagu server. `localhost` is normalized to `127.0.0.1`."
+    },
+    "port": {
+      "type": "string",
+      "default": "8080",
+      "description": "Port used by the Dagu server."
+    },
+    "serviceUser": {
+      "type": "string",
+      "default": "automatic",
+      "description": "User account that runs Dagu and its workflows. Automatic selection prefers the remote user, container user, `vscode`, then `root`."
+    },
+    "dnsName": {
+      "type": "string",
+      "default": "",
+      "description": "Optional fully qualified DNS name exposed through the Caddy Feature."
+    }
+  },
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils",
+    "ghcr.io/wyrd-company/devcontainers/caddy",
+    "ghcr.io/wyrd-company/devcontainers/openbao-agent"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "cursor-agent-cli",
+  "version": "1.0.0",
+  "name": "Cursor Agent CLI",
+  "documentationURL": "https://github.com/wyrd-company/devcontainers/tree/main/src/features/cursor-agent-cli",
+  "description": "Installs the Cursor Agent CLI for the Dev Container user using Cursor's native installer and ensures `agent` and `cursor-agent` are on the PATH.",
+  "installsAfter": ["ghcr.io/devcontainers/features/common-utils"]
+}

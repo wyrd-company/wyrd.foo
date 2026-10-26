@@ -1,0 +1,40 @@
+{
+  "id": "sshd",
+  "version": "1.1.0",
+  "name": "SSH server",
+  "documentationURL": "https://github.com/wyrd-company/devcontainers/tree/main/src/features/sshd",
+  "description": "Adds an SSH server supervised as a native s6-overlay service.",
+  "options": {
+    "version": {
+      "type": "string",
+      "proposals": ["latest"],
+      "default": "latest",
+      "description": "Currently unused."
+    },
+    "gatewayPorts": {
+      "type": "string",
+      "enum": ["no", "yes", "clientspecified"],
+      "default": "no",
+      "description": "Enable other hosts in the same network to connect to the forwarded ports"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "github.copilot.chat.codeGeneration.instructions": [
+          {
+            "text": "This dev container includes a key-only SSH server for external terminals, SFTP, and SSHFS. Mount an authorized_keys file into the remote user's .ssh directory and connect on port 2222. Root login and password authentication are disabled."
+          }
+        ]
+      }
+    }
+  },
+  "mounts": [
+    {
+      "source": "sshd-etc-ssh-host-keys-${devcontainerId}",
+      "target": "/etc/ssh/keys",
+      "type": "volume"
+    }
+  ],
+  "installsAfter": ["ghcr.io/devcontainers/features/common-utils"]
+}

@@ -1,0 +1,20 @@
+kinds:
+  - kind: devcontainer-feature
+    ref: ghcr.io/wyrd-company/devcontainers/cursor-agent-cli:1
+source: src/features/cursor-agent-cli
+category: Dev Containers
+logo: logo.svg
+release-unit: cursor-agent-cli
+owner: wyrd-company/devcontainers
+release:
+  version: 1.0.0
+  date: 2026-10-26T07:41:08.000Z
+  notes: |-
+    ### Features
+
+    - Installs the Cursor Agent CLI for the Dev Container user with Cursor's native installer.
+    - Adds `agent` and `cursor-agent` to the PATH.
+    - The installation and its state stay owned by the user, not root.
+name: Cursor Agent CLI
+description: Installs the Cursor Agent CLI for the Dev Container user using Cursor's native installer and ensures `agent` and `cursor-agent` are on the PATH.
+version: 1.0.0

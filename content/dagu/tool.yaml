@@ -1,0 +1,19 @@
+kinds:
+  - kind: devcontainer-feature
+    ref: ghcr.io/wyrd-company/devcontainers/dagu:1
+source: src/features/dagu
+category: Dev Containers
+logo: logo.svg
+release-unit: dagu
+owner: wyrd-company/devcontainers
+release:
+  version: 1.1.0
+  date: 2026-10-26T07:41:08.000Z
+  notes: |-
+    ### Features
+
+    - Dagu loads `NAME=value` lines from `/run/openbao/secrets/dagu.env` when the file exists. Workflows read them as environment variables.
+    - When the OpenBao Agent feature renders this file, Dagu waits for it before it starts.
+name: Dagu
+description: Installs Dagu and runs its all-in-one server as an s6-overlay service.
+version: 1.1.0

@@ -1,0 +1,21 @@
+kinds:
+  - kind: devcontainer-feature
+    ref: ghcr.io/wyrd-company/devcontainers/pi-coding-agent-cli:1
+source: src/features/pi-coding-agent-cli
+category: Dev Containers
+logo: logo.svg
+release-unit: pi-coding-agent-cli
+owner: wyrd-company/devcontainers
+release:
+  version: 1.0.0
+  date: 2026-10-26T07:41:08.000Z
+  notes: |-
+    ### Features
+
+    - Installs the Pi coding agent from npm for the Dev Container user.
+    - Installs Node.js 24 through the official Node feature.
+    - Adds `pi` to the PATH. The package and its state stay owned by the user, not root.
+    - Option `version` selects the version to install.
+name: Pi Coding Agent CLI
+description: Installs the Pi coding agent for the Dev Container user from npm and ensures `pi` is on the PATH.
+version: 1.0.0

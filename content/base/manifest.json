@@ -1,0 +1,6 @@
+{
+  "version": "1.0.0",
+  "variants": ["noble", "resolute"],
+  "architectures": ["linux/amd64", "linux/arm64"],
+  "s6OverlayVersion": "3.2.3.2"
+}

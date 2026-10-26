@@ -1,0 +1,18 @@
+kinds:
+  - kind: devcontainer-feature
+    ref: ghcr.io/wyrd-company/devcontainers/sshd:1
+source: src/features/sshd
+category: Dev Containers
+logo: logo.svg
+release-unit: sshd
+owner: wyrd-company/devcontainers
+release:
+  version: 1.1.0
+  date: 2026-10-26T07:41:08.000Z
+  notes: |-
+    ### Features
+
+    - The SSH host keys are stored in a named volume. The server fingerprint stays the same when you rebuild the container. To rotate the keys, remove the volume.
+name: SSH server
+description: Adds an SSH server supervised as a native s6-overlay service.
+version: 1.1.0

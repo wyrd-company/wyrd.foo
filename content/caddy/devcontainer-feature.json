@@ -1,0 +1,30 @@
+{
+  "id": "caddy",
+  "version": "1.0.1",
+  "name": "Caddy Reverse Proxy",
+  "documentationURL": "https://github.com/wyrd-company/devcontainers/tree/main/src/features/caddy",
+  "description": "Installs Caddy with an s6-supervised config watcher for dynamically managed development reverse proxies.",
+  "options": {
+    "version": {
+      "type": "string",
+      "default": "latest",
+      "description": "Caddy release version to install. `latest` installs the current stable release."
+    },
+    "acmeCa": {
+      "type": "string",
+      "default": "",
+      "description": "Optional ACME directory URL used by Caddy's automatic HTTPS issuer."
+    },
+    "acmeCaRoot": {
+      "type": "string",
+      "default": "",
+      "description": "Optional path inside the container to the public root certificate that protects the ACME endpoint."
+    },
+    "configUser": {
+      "type": "string",
+      "default": "automatic",
+      "description": "User allowed to manage Caddy fragments. Automatic selection prefers the remote user, container user, `vscode`, then `root`."
+    }
+  },
+  "installsAfter": ["ghcr.io/devcontainers/features/common-utils"]
+}

@@ -1,0 +1,20 @@
+kinds:
+  - kind: devcontainer-feature
+    ref: ghcr.io/wyrd-company/devcontainers/claude-code-cli:1
+source: src/features/claude-code-cli
+category: Dev Containers
+logo: logo.svg
+release-unit: claude-code-cli
+owner: wyrd-company/devcontainers
+release:
+  version: 1.0.0
+  date: 2026-10-26T07:41:08.000Z
+  notes: |-
+    ### Features
+
+    - Installs Claude Code for the Dev Container user with Anthropic's native installer.
+    - Adds `claude` to the PATH. The executable and its state stay owned by the user, not root.
+    - Option `version` selects the version to install.
+name: Claude Code CLI
+description: Installs Claude Code for the Dev Container user using Anthropic's native installer and ensures `claude` is on the PATH.
+version: 1.0.0

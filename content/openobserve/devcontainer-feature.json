@@ -1,0 +1,68 @@
+{
+  "id": "openobserve",
+  "version": "1.1.0",
+  "name": "OpenObserve",
+  "documentationURL": "https://github.com/wyrd-company/devcontainers/tree/main/src/features/openobserve",
+  "description": "Installs OpenObserve OSS single binary and runs it as an s6-overlay service.",
+  "options": {
+    "version": {
+      "type": "string",
+      "default": "latest",
+      "description": "OpenObserve release version to install. `latest` installs the current stable release."
+    },
+    "host": {
+      "type": "string",
+      "default": "127.0.0.1",
+      "description": "Interface used by OpenObserve HTTP server. `localhost` is normalized to `127.0.0.1`."
+    },
+    "port": {
+      "type": "string",
+      "default": "5080",
+      "description": "HTTP port used by OpenObserve."
+    },
+    "grpcPort": {
+      "type": "string",
+      "default": "5081",
+      "description": "gRPC port used by OpenObserve."
+    },
+    "serviceUser": {
+      "type": "string",
+      "default": "automatic",
+      "description": "User account that runs OpenObserve. Automatic selection prefers the remote user, container user, `vscode`, then `root`."
+    },
+    "dnsName": {
+      "type": "string",
+      "default": "",
+      "description": "Optional fully qualified DNS name exposed through the Caddy Feature."
+    },
+    "rootUserEmail": {
+      "type": "string",
+      "default": "root@example.com",
+      "description": "Initial administrator email address used to bootstrap the root user account."
+    },
+    "rootUserPassword": {
+      "type": "string",
+      "default": "Complexpass#123",
+      "description": "Initial administrator password used to bootstrap the root user account."
+    },
+    "telemetry": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable or disable anonymous usage telemetry sent to upstream."
+    },
+    "sha256": {
+      "type": "string",
+      "default": "",
+      "description": "Optional expected SHA256 checksum for the downloaded release archive."
+    },
+    "s3BucketPrefix": {
+      "type": "string",
+      "default": "",
+      "description": "Optional S3 object-key prefix unique to this container. Use when several containers share one bucket. Must start with a letter or digit, then letters, digits, '.', '_', '/', or '-'; no leading '/', empty segments, commas, or spaces. After trailing slashes are stripped and one '/' is appended, at most 256 characters. Leave empty to leave ZO_S3_BUCKET_PREFIX unset."
+    }
+  },
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils",
+    "ghcr.io/wyrd-company/devcontainers/caddy"
+  ]
+}

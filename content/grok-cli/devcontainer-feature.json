@@ -1,0 +1,15 @@
+{
+  "id": "grok-cli",
+  "version": "1.0.0",
+  "name": "Grok CLI",
+  "documentationURL": "https://github.com/wyrd-company/devcontainers/tree/main/src/features/grok-cli",
+  "description": "Installs the Grok CLI for the Dev Container user using xAI's native installer and ensures `grok` is on the PATH.",
+  "options": {
+    "version": {
+      "type": "string",
+      "default": "latest",
+      "description": "Grok CLI version to install. Use `latest` or a specific version like `1.0.12`."
+    }
+  },
+  "installsAfter": ["ghcr.io/devcontainers/features/common-utils"]
+}
