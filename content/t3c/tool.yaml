@@ -1,6 +1,6 @@
 name: t3c
-version: 0.1.0
-docs-version: 0.1.0
+version: 0.1.1
+docs-version: 0.2.0
 release-unit: t3code-cli
 tagline: Run T3 Code conversations from your terminal and automation.
 blurb: A Node command-line client and TypeScript library for stock T3 Code. Pair named servers, run or continue conversations, inspect threads, and preserve clear output and exit codes in automation.
@@ -50,37 +50,14 @@ nav:
 owner: wyrd-company/t3code-client
 docs-path: docs/user/t3c
 release:
-  version: 0.1.0
-  date: 2026-10-18T01:29:41.000Z
-  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-cli%400.1.0
-  notes: "## 0.1.0\r
+  version: 0.1.1
+  date: 2026-10-26T21:02:49.000Z
+  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-cli%400.1.1
+  notes: |+
+    ## 0.1.1
 
-    \r
+    ### Fixes
 
-    ### Features\r
+    - Publish the t3c docs from docs/user in the wyrd.foo format.
+    - Report stock T3 Code 0.1.2 as the target server and verify CLI compatibility.
 
-    \r
-
-    - Provide the t3c Node command-line client for stock T3 Code, with its command contract, commander composition, version reporting, structured output, shared error mapping, installable executable and isolated live acceptance recipe.\r
-
-    \  \r
-
-    \  Specify the t3c command surface, execution policies and Dagu harness contract.\r
-
-    \  \r
-
-    \  Pair named server profiles from links and stdin tokens, probe exact profile credentials and effective overrides, switch the current server and remove local credentials.\r
-
-    \  \r
-
-    \  Run prompts from arguments, files or stdin against selected projects, models and worktrees; start, send to, wait on, read, list, interrupt and answer threads; list and ensure projects; and report server providers and models. Waiting commands support run deadlines that detach or interrupt, signal interruption, pending-request policies, approval decisions, streaming and structured results.\r
-
-    \  Prepare tagged documentation, generated library reference, isolated recorded demo, registry shrinkwrap handoff and Homebrew distribution with local artifact validation.\r
-
-    \  \r
-
-    \  Preserve the tap formula when published bytes differ, protect existing Homebrew installations with preflight regression coverage, and record the unreleased CLI demo without a visible interim version frame.\r
-
-    \  \r
-
-    \  Record real stdin pairing to a fresh profile, start and wait on one linked thread and run, and list its selected project; preserve generic continuation and thread listing with verified outcomes.\r\n"
