@@ -99,8 +99,9 @@ template change is a conflict, with markers in the file. Resolve it, then
 commit the files and `.toha.json`.
 
 Keep your edits outside the managed regions (the lines between the
-`toha:region` markers). An update replaces an edit inside a region with the
-template's body, and does not report it.
+`toha:region` markers). Toha refuses an update over an edit inside a region
+and names the file and region, before it writes anything. To replace your edit
+with the template's body, run the same command with `--force`.
 
 ## Test
 
