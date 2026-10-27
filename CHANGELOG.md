@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.1.0
+
+### Features
+
+- Publish now waits for the GitHub Release of a product's code tag when it is not found yet, at most 10 minutes, with a log line on each wait. A docs tag pushed together with a code tag no longer fails while the code release is still running.
+- `task validate:repo -- <repo path> --strict` reports an unmet publishing requirement as an error, as publish does, so a repo that already publishes finds the failure before it pushes a tag. Without `--strict` it stays a warning.
+
+### Fixes
+
+- The publisher now reads a tool repo checked out as a linked git worktree: `task validate:repo` names the owner from `origin` without `--owner`, and `--ref` finds a commit there.
+- An unknown URL now answers with status 404 and a 404 page that links to the catalog, search and home, in place of the home page with status 200.
+
 ## 2.0.0
 
 ### Breaking
