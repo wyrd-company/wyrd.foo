@@ -494,6 +494,13 @@ proposed-design:
     - A plain push to `main` does not publish.
     - A `workflow_run` or tag trigger passes no feature inputs, so it features
       nothing.
+    - `workflows:` names the release workflow by its `name:`, written exactly.
+      A different name matches no workflow, and a release does not publish.
+    - The code tag and the docs tag can be on the same commit. The release
+      workflow builds the tag that started it, by name
+      (`RELEASE_TAG: ${{ inputs.tag || github.ref_name }}`): it checks out
+      `refs/tags/$RELEASE_TAG` and passes the tag to each tool that finds a
+      tag from the commit, such as `GORELEASER_CURRENT_TAG` for GoReleaser.
   reusable-workflow: |
     The reusable workflow's inputs:
 

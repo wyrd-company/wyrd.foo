@@ -81,6 +81,7 @@ interview:
   - id: release_workflow
     type: text
     prompt: Name of the workflow that creates the GitHub Release
+    description: The workflow's `name:`, written exactly as it is, in the same case. It must match for the docs to publish after a release.
     default: Release
     required: true
   - id: intentional
@@ -131,6 +132,9 @@ messages:
     - Commit, then run `intentional tag --baseline --version {{ key }}-docs=0.1.0`.
       Until that tag exists, `intentional check` reports missing-baseline.
     - Add a `patch` intent for {{ key }}-docs with the first docs change.
+    - The docs tag and the code tag can be on the same commit. Make the
+      "{{ release_workflow }}" workflow build the pushed tag by name, not a tag
+      it finds on the commit (see README.md, "Release workflow").
     {%- endif %}
     {%- if taskfile != 'none' %}
     - If {{ taskfile }} has a v1 docs:check that mirrors the v1 publish gate,
