@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
@@ -11,8 +17,11 @@ import { parse } from "yaml";
 // list of tags and records each call.
 
 const REPO = new URL("../../", import.meta.url).pathname;
-const workflow = parse(readFileSync(`${REPO}.github/workflows/major-tag.yml`, "utf8"));
-const steps: { uses?: string; run?: string; env?: Record<string, string> }[] = workflow.jobs.move.steps;
+const workflow = parse(
+  readFileSync(`${REPO}.github/workflows/major-tag.yml`, "utf8"),
+);
+const steps: { uses?: string; run?: string; env?: Record<string, string> }[] =
+  workflow.jobs.move.steps;
 const script = steps[0].run ?? "";
 
 const STUB = `#!/usr/bin/env bash
@@ -49,7 +58,12 @@ const run = (tag: string, tags: string[], majorExists: boolean) => {
     },
   });
   const calls = readFileSync(log, "utf8").split("\n").filter(Boolean);
-  return { status: result.status, stdout: result.stdout, calls, writes: calls.filter((call) => /git\/tags |git\/refs/.test(call)) };
+  return {
+    status: result.status,
+    stdout: result.stdout,
+    calls,
+    writes: calls.filter((call) => /git\/tags |git\/refs/.test(call)),
+  };
 };
 
 describe("the major-tag workflow", () => {
@@ -57,9 +71,14 @@ describe("the major-tag workflow", () => {
     assert.deepEqual(workflow.on, { push: { tags: ["[0-9]+.[0-9]+.[0-9]+"] } });
   });
 
-  it("can write contents only in its one job", () => {
+  it("moves the major tag only after release publication succeeds", () => {
     assert.deepEqual(workflow.permissions, {});
-    assert.deepEqual(Object.keys(workflow.jobs), ["move"]);
+    assert.deepEqual(Object.keys(workflow.jobs), ["release", "move"]);
+    assert.equal(workflow.jobs.move.needs, "release");
+    assert.equal(workflow.jobs.move.if, undefined);
+    assert.equal(workflow.jobs.release["continue-on-error"], undefined);
+    for (const step of workflow.jobs.release.steps)
+      assert.equal(step["continue-on-error"], undefined);
     assert.deepEqual(workflow.jobs.move.permissions, { contents: "write" });
   });
 
@@ -71,7 +90,10 @@ describe("the major-tag workflow", () => {
   });
 
   it("runs one move at a time, without cancelling one", () => {
-    assert.deepEqual(workflow.concurrency, { group: "major-tag", "cancel-in-progress": false });
+    assert.deepEqual(workflow.concurrency, {
+      group: "major-tag",
+      "cancel-in-progress": false,
+    });
   });
 
   it("creates vX at the release commit when vX does not exist", () => {
@@ -84,17 +106,31 @@ describe("the major-tag workflow", () => {
   });
 
   it("moves an existing vX to the highest X.y.z", () => {
-    const { status, writes } = run("2.10.0", ["2.0.0", "2.9.1", "2.10.0", "20.0.0", "2.11.0-beta.1"], true);
+    const { status, writes } = run(
+      "2.10.0",
+      ["2.0.0", "2.9.1", "2.10.0", "20.0.0", "2.11.0-beta.1"],
+      true,
+    );
     assert.equal(status, 0);
     assert.equal(writes.length, 2);
-    assert.equal(writes[1], "api -X PATCH repos/sample/site/git/refs/tags/v2 -f sha=tag-object -F force=true --silent");
+    assert.equal(
+      writes[1],
+      "api -X PATCH repos/sample/site/git/refs/tags/v2 -f sha=tag-object -F force=true --silent",
+    );
   });
 
   it("leaves vX where it is for a release that is not the highest X.y.z", () => {
-    const { status, stdout, writes } = run("2.0.1", ["2.0.0", "2.0.1", "2.1.0"], true);
+    const { status, stdout, writes } = run(
+      "2.0.1",
+      ["2.0.0", "2.0.1", "2.1.0"],
+      true,
+    );
     assert.equal(status, 0);
     assert.deepEqual(writes, []);
-    assert.match(stdout, /v2 stays: 2\.0\.1 is not the highest 2\.y\.z release \(2\.1\.0\)/);
+    assert.match(
+      stdout,
+      /v2 stays: 2\.0\.1 is not the highest 2\.y\.z release \(2\.1\.0\)/,
+    );
   });
 
   it("refuses a tag that is not a bare release version, before it calls the API", () => {
