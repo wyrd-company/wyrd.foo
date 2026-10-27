@@ -1,7 +1,7 @@
 ---
 title: Managing templates
+order: 10
 product: toha
-order: 9
 relationships:
   describes: toha
   references:

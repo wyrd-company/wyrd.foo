@@ -1,7 +1,7 @@
 ---
 title: Controlling the interview
-product: toha
 order: 5
+product: toha
 relationships:
   describes: toha
   references: template-format

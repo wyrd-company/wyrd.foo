@@ -1,7 +1,7 @@
 ---
 title: Toha
-product: toha
 order: 1
+product: toha
 relationships:
   describes: toha
 ---

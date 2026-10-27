@@ -1,7 +1,7 @@
 ---
 title: Generating files
-product: toha
 order: 7
+product: toha
 relationships:
   describes: toha
   references: template-format

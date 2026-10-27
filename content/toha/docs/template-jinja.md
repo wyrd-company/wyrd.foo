@@ -1,7 +1,7 @@
 ---
 title: Jinja and values
-product: toha
 order: 6
+product: toha
 relationships:
   describes: toha
   references: template-format
