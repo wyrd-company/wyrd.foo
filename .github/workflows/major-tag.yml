@@ -1,6 +1,7 @@
 name: Move the major tag
 
-# On a push of a release tag X.Y.Z, moves the tag vX that tool repos call
+# On a push of a release tag X.Y.Z, publishes its GitHub Release from the
+# tagged changelog, then moves the tag vX that tool repos call
 # (publish-docs.yml@vX) to the release, so that vX is always the highest
 # X.y.z. A release that is not the highest X.y.z leaves vX where it is. A tag
 # push runs this workflow as it is at the tagged commit, so a release tag on a
@@ -20,8 +21,57 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  release:
+    name: Publish the GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # read the tagged changelog and publish the release
+    steps:
+      - name: Publish from the tagged changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::$TAG is not a release tag X.Y.Z."
+            exit 1
+          fi
+          if RESPONSE="$(gh api --include "repos/$REPO/releases/tags/$TAG" --jq .draft)"; then
+            if [[ "$(tail -n 1 <<< "$RESPONSE")" != false ]]; then
+              echo "::error::The release for $TAG exists but is not published."
+              exit 1
+            fi
+            echo "::notice::The GitHub Release for $TAG is already published."
+            exit 0
+          elif ! grep -Eq '^HTTP/[0-9.]+ 404([[:space:]]|$)' <<< "$RESPONSE"; then
+            echo "::error::Could not check the GitHub Release for $TAG."
+            exit 1
+          fi
+          COMMIT="$(gh api "repos/$REPO/commits/$TAG" --jq .sha)"
+          if ! NOTES="$(gh api "repos/$REPO/contents/CHANGELOG.md?ref=$COMMIT" \
+            -H 'Accept: application/vnd.github.raw+json' | awk -v tag="$TAG" '
+              $0 == "## " tag { found = 1; next }
+              found && /^## / { finished = 1 }
+              found && !finished { print }
+              END { if (!found) exit 1 }
+            ')"; then
+            echo "::error::Could not read the changelog section for $TAG at $COMMIT."
+            exit 1
+          fi
+          if [[ ! "$NOTES" =~ [^[:space:]] ]]; then
+            echo "::error::The changelog section for $TAG has no release notes."
+            exit 1
+          fi
+          printf '%s\n' "$NOTES" > "$RUNNER_TEMP/release-notes.md"
+          gh release create "$TAG" --repo "$REPO" --verify-tag \
+            --title "$TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+
   move:
     name: Move the major tag
+    needs: release
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

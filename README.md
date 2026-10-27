@@ -188,8 +188,14 @@ To release:
 3. When the release commit is on `main`, check it out and run
    `intentional tag --plan release-plan.json`. This makes the `X.Y.Z` tag.
 4. Push the tag: `git push origin X.Y.Z`. The push runs
-   `.github/workflows/major-tag.yml`, which moves `vX` to the release when it
-   is the highest `X.y.z`.
+   `.github/workflows/major-tag.yml`, which publishes the GitHub Release
+   with that version's notes from the tagged `CHANGELOG.md`, then moves
+   `vX` to the release when it is the highest `X.y.z`.
+
+The workflow uses its own `contents: write` token. A rerun preserves an
+existing published GitHub Release and retries the major-tag move. A failure
+to publish prevents the major-tag move; fix the failure and rerun the
+workflow. An existing unpublished release requires operator attention.
 
 Release tags are bare versions, such as `2.0.0`. The major tag keeps its `v`,
 such as `v2`, because tool repos call `publish-docs.yml@v2`. Intentional does
