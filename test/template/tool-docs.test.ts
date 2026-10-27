@@ -396,8 +396,7 @@ describe("tool-docs update", () => {
     assert.match(git(dir, "status", "--porcelain"), /^UU docs\/user\/docs\.yml$/m);
   });
 
-  // README.md, "Update", says this; Toha 0.4.0 does not report it as drift.
-  it("replaces an edit inside a managed region with the template's body", () => {
+  it("refuses an update over an edit inside a managed region, and names the region", () => {
     git(templateRepo, "reset", "-q", "--hard", templateBase);
     const dir = appliedRepo("region-repo");
     const file = join(dir, "Taskfile.yml");
@@ -405,9 +404,16 @@ describe("tool-docs update", () => {
     git(dir, "commit", "-q", "-a", "-m", "operator edit in the region");
     changeTemplate("# The products this repo publishes to wyrd.foo, changed by the template. Made by the wyrd.foo");
     const result = apply(address, dir, answersFile(address, {}), "--update");
-    assert.equal(result.status, "applied", JSON.stringify(result));
-    assert.deepEqual(result.merge?.conflicted, []);
+    assert.equal(result.status, "error", JSON.stringify(result));
+    assert.equal(result.kind, "conflict");
+    assert.match(result.message ?? "", /region drift.*--force[\s\S]*Taskfile\.yml \(wyrd-foo-docs-validate\)/);
+    assert.match(readFileSync(file, "utf8"), /silent: true/);
+    assert.equal(git(dir, "status", "--porcelain"), "");
+
+    const forced = apply(address, dir, answersFile(address, {}), "--update", "--force");
+    assert.equal(forced.status, "applied", JSON.stringify(forced));
     assert.doesNotMatch(readFileSync(file, "utf8"), /silent: true/);
+    assert.match(readFileSync(join(dir, "docs/user/docs.yml"), "utf8"), /changed by the template/);
   });
 
   it("refuses to update from a folder path, which has no revision, and names --baseline", () => {
