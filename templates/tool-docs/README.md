@@ -65,6 +65,35 @@ Then:
 5. If the Taskfile has a v1 `docs:check` that mirrors the v1 publish gate,
    replace that block with `task: docs:validate`. Toha cannot remove a block
    it did not write.
+6. Make the release workflow build the pushed tag by name. See
+   [Release workflow](#release-workflow).
+
+## Release workflow
+
+When the code unit and the docs unit release together, `intentional tag` puts
+the code tag and `<key>-docs@<version>` on the same commit. A step that finds
+the tag from the commit can then pick the docs tag: GoReleaser without
+`GORELEASER_CURRENT_TAG`, or `git describe --tags --exact-match`. That release
+makes no GitHub Release, and the docs publish of the code tag fails.
+
+The release workflow builds the tag that started it, by name:
+
+```yaml
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+```
+
+- Check out `refs/tags/${{ env.RELEASE_TAG }}`.
+- Set `GORELEASER_CURRENT_TAG: ${{ env.RELEASE_TAG }}` for GoReleaser.
+- Pass `$RELEASE_TAG` to each script that needs the version.
+- Keep its tag filter to release tags, so that a docs tag does not start it.
+
+The answer to "Name of the workflow that creates the GitHub Release" is that
+workflow's `name:`, written exactly. The caller's `workflow_run` trigger
+matches it; a different name means that a release does not publish the docs.
+
+The reference is
+[wyrd-company/gitpr#16](https://github.com/wyrd-company/gitpr/pull/16).
 
 The caller uses the `v2` tag, which wyrd.foo moves to each `2.y.z` release, so
 the repo takes contract fixes without an edit. zizmor's default policy reports
@@ -76,6 +105,11 @@ installed. `WYRD_FOO_DIR` names it (default `../wyrd.foo`). Arguments after
 `--` go to the publisher, for example `task docs:validate -- --offline`.
 
 ## First publish
+
+When the code tag and the docs tag are pushed together, the docs tag run
+starts at once and waits, at most 10 minutes, for the code tag's GitHub
+Release. The release workflow's run then publishes the same commit again,
+which changes nothing.
 
 Check the feature guard by hand on the repo's first run:
 
