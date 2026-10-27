@@ -1,6 +1,6 @@
 name: menagerie
-version: 0.2.0
-docs-version: 0.1.0
+version: 0.3.0
+docs-version: 0.2.0
 tagline: Manage workspaces and fleets of development containers through a web UI.
 blurb: One container that creates workspaces from Toha templates through their interviews, shows every workspace with its devcontainer, starts, stops, rebuilds and upgrades them, and backs each one up to its own Git branch. Managers sign in through OpenID Connect; Wyrwood supplies its SSH key and registry credentials.
 status: preview
@@ -17,7 +17,7 @@ highlights:
   - Lists every workspace with the state of its devcontainer, and starts, stops and rebuilds it as a job with a live console.
   - Upgrades a workspace to a newer template version, asks only the new questions and keeps local edits.
   - Backs up each workspace to its own branch in one Git repository after every change.
-  - "Signs managers in through your OpenID Connect provider and holds no key or secret itself: Wyrwood supplies them."
+  - Signs managers in through your OpenID Connect provider. Git private keys stay in OpenBao and signing uses Wyrwood. Installation tokens stay in memory; the generated interview signing key stays in the data volume.
   - Runs as one container with no database; the workspace files stay the source of truth.
 media:
   - src: assets/demo.gif
@@ -32,24 +32,45 @@ media:
   - src: assets/upgrade-interview.png
     caption: An upgrade that asks one new question.
     alt: The upgrade form asking only the question the newer template added.
+nav:
+  - section: Guide
+    groups:
+      - group: Start
+        pages:
+          - overview
+          - install
+      - group: Operate
+        pages:
+          - configuration
+          - usage
+          - troubleshooting
 logo: assets/logo.svg
 social-image: assets/social-image.png
 release-unit: menagerie
 owner: wyrd-company/menagerie
 docs-path: docs/user
 release:
-  version: 0.2.0
-  date: 2026-10-25T19:06:18.000Z
-  url: https://github.com/wyrd-company/menagerie/releases/tag/0.2.0
-  notes: |
-    The web UI has a new look: a plain operations console with the Menagerie logo, and a dark theme that follows the operating system setting.
+  version: 0.3.0
+  date: 2026-10-27T23:31:30.000Z
+  url: https://github.com/wyrd-company/menagerie/releases/tag/0.3.0
+  notes: "## 0.3.0\r
 
-    ## Image
+    \r
 
-    ```sh
-    docker pull ghcr.io/wyrd-company/menagerie:0.2.0
-    ```
+    ### Features\r
 
-    Index digest: `sha256:e375441423239bb69a44ceb58730410df0ff101a9906bd54fdc2112c452090e2` (linux/amd64 `sha256:b82ff2ef…`, linux/arm64 `sha256:7f75c182…`).
+    \r
 
-    See the [install guide](https://github.com/wyrd-company/menagerie/blob/0.2.0/docs/install.md) and the [changelog](https://github.com/wyrd-company/menagerie/blob/0.2.0/CHANGELOG.md).
+    - Jobs can have configured time limits, per operation and per phase, that cancel a job as timed-out without counting time spent waiting for answers, and a webhook can be told about failed and long-running jobs.\r
+
+    - A devcontainer definition reads only the variables of Menagerie's environment that the new `local-env` setting lists, through `${localEnv:NAME}`, Compose interpolation and `initializeCommand`. Without `local-env` it reads none: a definition that used another variable now gets its default value, and the job log names the variable. Add the variables a definition needs to `local-env`.\r
+
+    - Template hooks and initializeCommand run in throwaway containers that mount only the workspace folder, so they cannot reach the Docker socket, the Wyrwood sockets or Menagerie's environment. Hooks run in a template's runner-image, initializeCommand in the global runner-image, and both default to Menagerie's own image; hook output the template does not capture now appears in the job console. A job cancelled at a time limit removes its running hook containers before it ends.\r
+
+    - Authenticate to GitHub with a GitHub App: backups push and private https templates fetch with short-lived installation tokens, minted through the App key held in OpenBao Transit, with no machine user and no SSH key. SSH stays for other hosts.\r
+
+    - The template service signs the interview session it hands to the browser. It refuses a session that was altered, is unsigned, or was issued for another workspace, template or flow, with the error `session-tampered`. The signing key is kept as `toha/session-key` in the `/var/lib/menagerie` volume, so interviews continue across a restart of the template service.\r
+
+    - Menagerie commits and backs up workspace changes as a new `commit` job: it records every change as `git add --all` would, leaving ignored files and nested repositories out, and pushes the workspace branch. With `auto-commit: {every: 1h}` it commits every idle workspace that has changes on a schedule. With `workspace-socket: {folder: ...}` each devcontainer gets a socket at `/run/menagerie/workspace.sock` and the client `/run/menagerie/bin/workspace-commit`, which commits and backs up its own workspace; a second commit within `min-interval` (1m by default) is refused. Existing devcontainers get the socket at their next rebuild.\r
+
+    - Apply branch brings a branch of the workspace repository, such as a reviewed pull request's head, into a workspace from its row in the workspace list or as the `apply-branch` job. Menagerie fetches only that branch, commits and backs up local changes, then fast-forwards the workspace or merges it file by file, backs up and rebuilds the devcontainer. A branch that would not apply cleanly (a file both sides changed, an untracked or ignored file in the way, a submodule) fails as `not-applicable` and lists the paths, with nothing applied. Propose changes to a workspace as a pull request whose base is its branch, do not merge it on the forge, and apply its head branch.\r\n"
