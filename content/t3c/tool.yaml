@@ -1,6 +1,6 @@
 name: t3c
-version: 0.1.1
-docs-version: 0.2.0
+version: 0.2.0
+docs-version: 0.3.0
 release-unit: t3code-cli
 tagline: Run T3 Code conversations from your terminal and automation.
 blurb: A Node command-line client and TypeScript library for stock T3 Code. Pair named servers, run or continue conversations, inspect threads, and preserve clear output and exit codes in automation.
@@ -44,20 +44,56 @@ nav:
           - commands
           - policy
           - dagu
+          - complementary-tools
+          - automation
+  - section: Developers
+    groups:
       - group: Library
         pages:
           - library-reference
+          - library-client
+          - library-authentication
+          - library-profiles
+          - library-errors
+          - library-types
+      - group: Workspace facades
+        pages:
+          - library-projects
+          - library-vcs
+          - library-terminal
+      - group: Threads
+        pages:
+          - library-threads
+          - library-thread-lifecycle
+          - library-thread-runs
+          - library-thread-state
+          - library-shell
+      - group: Server and automation
+        pages:
+          - library-server-summary
+          - library-server
+          - library-server-methods
+          - library-schedules
+logo: assets/logo.svg
+favicon: assets/logo.svg
 owner: wyrd-company/t3code-client
 docs-path: docs/user/t3c
 release:
-  version: 0.1.1
-  date: 2026-10-26T21:02:49.000Z
-  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-cli%400.1.1
+  version: 0.2.0
+  date: 2026-10-27T20:51:41.000Z
+  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-cli%400.2.0
   notes: |+
-    ## 0.1.1
+    ## 0.2.0
+
+    ### Features
+
+    - Add launch and continuation controls: repeatable --model-option key=value validated against the selected model's advertised options, --clear-model-options, --existing-worktree, --branch, and --start-from-origin/--no-start-from-origin for new worktrees. thread send accepts the model option controls.
+    - Add thread stop, thread queue resume and thread queue start commands; expose queued run IDs in text status for selection.
+    - Add thread status, requests, usage, diff and search commands with JSON envelopes and concise text.
+    - Add thread find with provider and native session inputs, returning a T3 Code thread ID or null.
+    - Add schedule management, webhook endpoint rotation and delivery inspection, exact provider status, and historical usage summaries with explicit date and time-zone bounds. Schedule input accepts JSON files or stdin and focused execution selection flags while preserving omitted update fields.
 
     ### Fixes
 
-    - Publish the t3c docs from docs/user in the wyrd.foo format.
-    - Report stock T3 Code 0.1.2 as the target server and verify CLI compatibility.
+    - Validate bound scheduled-task threads against their effective project before CLI creation or target changes. Expose explicit target validation with read scope while preserving native operate-only upserts and omitted update fields.
 
