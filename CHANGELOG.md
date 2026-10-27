@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.2.0
+
+### Features
+
+- A Toha template, `gh:wyrd-company/wyrd.foo@main#templates/tool-docs`, onboards a tool repo to wyrd.foo publishing: it writes the `docs/user/` starter, the workflow that calls `publish-docs.yml@v2` and the Intentional docs unit, and `toha apply --update` brings later template changes into the repo.
+
+### Fixes
+
+- Release tag pushes automatically publish a GitHub Release using the tagged changelog before moving the major tag. Reruns preserve an existing published Release.
+
 ## 2.1.0
 
 ### Features
