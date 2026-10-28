@@ -1,6 +1,6 @@
 name: gitpr
-version: 0.4.0
-docs-version: 0.1.0
+version: 0.4.1
+docs-version: 0.1.1
 tagline: Review worktree branches as local pull requests.
 blurb: A local Go CLI and TUI that turns worktree branches into lightweight pull requests against your local default branch — no server, no remote, no forge.
 status: stable
@@ -24,72 +24,19 @@ highlights:
 media:
   - src: assets/demo.gif
     caption: Creating, reviewing, commenting on, approving and merging a pull request in a local repository.
+logo: assets/logo.svg
+logo-dark: assets/logo-dark.svg
+favicon: assets/favicon.svg
+social-image: assets/social-image.png
 release-unit: gitpr
 owner: wyrd-company/gitpr
 docs-path: docs/user
 release:
-  version: 0.4.0
-  date: 2026-09-02T00:12:15.000Z
-  url: https://github.com/wyrd-company/gitpr/releases/tag/0.4.0
-  notes: |
-    ## Legacy records are refused: recreate, then remove
+  version: 0.4.1
+  date: 2026-10-28T17:01:38.000Z
+  url: https://github.com/wyrd-company/gitpr/releases/tag/0.4.1
+  notes: |+
+    ## Changelog
+    * e19609caba92455b1d5fc4316178714148fd7450 chore(release): gitpr 0.4.1, gitpr-docs 0.1.1 (#15)
+    * 9dd7d0aaea6c137513e10943ddb02122666a0dc7 docs(brand): add the gitpr logo, favicon and social images (#13)
 
-    This release removes the legacy snapshot record model. A record without a
-    `schema` field is a legacy snapshot from the prior model, and gitpr no longer
-    reads, lists, mutates, merges, exports, or deletes one: every command that takes
-    its ID refuses and carries the commands below, and `gitpr list` skips it with a
-    count.
-
-    There is no migration. **Recreate in-flight legacy pull requests under the
-    branch-based model with `gitpr create`, and remove the old records by hand.** A
-    legacy record is self-describing YAML behind plain Git refs, so no tool is
-    needed to retrieve it.
-
-    Enumerate the legacy records in a repository:
-
-    ```bash
-    for ref in $(git for-each-ref --format='%(refname)' 'refs/gitpr/pr/*/meta'); do
-      git show "$ref:pr.yaml" | grep -q '^schema:' || echo "$ref"
-    done
-    ```
-
-    Read one completely, and read how it reached its current state:
-
-    ```bash
-    git show refs/gitpr/pr/<id>/meta:pr.yaml
-    git log --patch refs/gitpr/pr/<id>/meta
-    ```
-
-    Export the record before removing it, if the evidence is not carried elsewhere:
-
-    ```bash
-    git show refs/gitpr/pr/<id>/meta:pr.yaml > <id>.pr.yaml
-    ```
-
-    Remove every ref belonging to one record. The first pattern is a prefix, not a
-    glob, so it also reaches nested event and anchor pins:
-
-    ```bash
-    git for-each-ref --format='%(refname)' \
-      refs/gitpr/pr/<id> 'refs/gitpr/index/*/<id>' |
-      while read -r ref; do git update-ref -d "$ref"; done
-    ```
-
-    Removal is irreversible, and the commits the record pinned become collectable by
-    Git.
-
-    ## Breaking
-
-    - Pull requests are branch-scoped records with immutable accepted or rejected review events, expected-head verdicts, ancestry-gated merges, closure reasons, and durable resolvable comment threads.
-    - Remove the legacy snapshot record model. Legacy records are refused with inlined raw-git retrieval and removal guidance. Remove the approved and rejected filters, refresh, and comment `--update` and `--commit` flags.
-
-    ## Features
-
-    - Write descriptions from a file with `create --description-file <path|->`, preserving bytes exactly and refusing a blank path. Add a new open-only `gitpr edit` command for correcting a title or description.
-
-    ## Fixes
-
-    - Re-record the demo for the branch-based pull request flow.
-    - The test task now fails the build when Go files are not gofmt-formatted.
-
-    Earlier releases: see git tags.
