@@ -155,7 +155,18 @@ describe("publisher core: checks", () => {
     assert.deepEqual(errors(result.findings), ["has no front matter"]);
   });
 
-  it("an intentional config that is not contract-1 fails the repo", async () => {
+  it("an intentional contract-2 config publishes like contract-1", async () => {
+    const files = alphaFiles();
+    const config = String(files[".intentional/config.yml"]);
+    assert.match(config, /contract: contract-1/);
+    const upgraded = { ...files, ".intentional/config.yml": config.replace("contract-1", "contract-2") };
+    const before = await computeRepo(input(files));
+    const after = await computeRepo(input(upgraded));
+    assert.equal(after.failed, false);
+    assert.deepEqual(errors(after.findings), errors(before.findings));
+  });
+
+  it("an intentional config that is not contract-1 or contract-2 fails the repo", async () => {
     const files = { ...alphaFiles(), ".intentional/config.yml": "contract: contract-0\nrelease-units: {}\n" };
     const result = await computeRepo(input(files));
     assert.equal(result.failed, true);

@@ -1,9 +1,10 @@
 import { parse } from "yaml";
 import { z } from "zod";
 
-// The part of `.intentional/config.yml` the publisher reads: contract-1
-// release units, each with its path, its primary tag template and its
-// projections. Generated workflows are never read.
+// The part of `.intentional/config.yml` the publisher reads: release units,
+// each with its path, its primary tag template and its projections. These
+// fields are the same in contract-1 and contract-2. Generated workflows are
+// never read.
 
 export const INTENTIONAL_CONFIG = ".intentional/config.yml";
 
@@ -18,7 +19,7 @@ const unitSchema = z.looseObject({
 });
 
 const configSchema = z.looseObject({
-  contract: z.literal("contract-1"),
+  contract: z.enum(["contract-1", "contract-2"]),
   "release-units": z.record(z.string(), unitSchema).default({}),
 });
 
@@ -41,7 +42,7 @@ export class IntentionalConfigError extends Error {
   }
 }
 
-/** Parse the config. Throws IntentionalConfigError when it is not a contract-1 config the publisher can read. */
+/** Parse the config. Throws IntentionalConfigError when it is not a contract-1 or contract-2 config the publisher can read. */
 export function parseIntentionalConfig(text: string): IntentionalConfig {
   let raw: unknown;
   try {

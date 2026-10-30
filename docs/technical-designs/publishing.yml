@@ -43,8 +43,9 @@ proposed-design:
     A repo that publishes to wyrd.foo meets all of these:
 
     - The repo uses intentional, at version 0.2.1 or later. Its
-      `.intentional/config.yml` declares `contract: contract-1`, and each
-      release unit has exactly one tag with `role: primary`.
+      `.intentional/config.yml` declares `contract: contract-1` or
+      `contract: contract-2`, and each release unit has exactly one tag with
+      `role: primary`.
     - Each product names one release unit in `release-unit:`. The default is
       the product key.
     - Each release of a code unit has a GitHub Release on the unit's primary
