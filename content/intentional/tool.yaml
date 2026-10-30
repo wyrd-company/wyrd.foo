@@ -1,6 +1,6 @@
 name: intentional
-version: 0.3.0
-docs-version: 0.1.1
+version: 0.4.1
+docs-version: 0.1.3
 tagline: Intent-driven polyglot releases.
 blurb: Declare release intent once, project versions across package ecosystems, and create verifiable annotated release records without handing publication or repository choreography to the versioning tool.
 status: stable
@@ -52,13 +52,13 @@ release-unit: intentional
 owner: wyrd-company/intentional
 docs-path: docs/user
 release:
-  version: 0.3.0
-  date: 2026-10-26T22:45:10.000Z
-  url: https://github.com/wyrd-company/intentional/releases/tag/0.3.0
+  version: 0.4.1
+  date: 2026-10-30T12:24:46.000Z
+  url: https://github.com/wyrd-company/intentional/releases/tag/0.4.1
   notes: |+
-    ## 0.3.0
+    ## 0.4.1
 
-    ### Breaking
+    ### Fixes
 
-    - `check` fails when a `committed` projection holds a version other than the tag-derived current version, naming the release unit, file, pointer, found version, and expected version. When a release unit has an applied release that waits for its tag, every `committed` projection of the unit must hold that release version, including a prerelease above the last stable tag, so the commit of a full apply passes and a partly applied release fails. An existing changelog whose leading heading is not plain SemVer supplies no applied release to `check`, which compares projections with the tag-derived version. `tag` retains strict release validation. `status` reports drift on `injected` projections without failing `check`; neither command reads `none` projections.
+    - `init` no longer fails on a `package.json` without a string `name`, such as a private manifest that only holds dependencies. Like a Cargo manifest without `[package]`, it describes no versioned project, so it is not a discovery candidate. A repository with such a manifest can now run `init`, including the `contract-1` upgrade.
 

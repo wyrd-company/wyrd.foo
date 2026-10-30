@@ -24,6 +24,8 @@ Package-manager workspace membership informs recommendations, dependency
 analysis, and Changesets parity; it never limits discovery. Version-control
 metadata, Intentional state, and ecosystem caches are skipped. Ordinary names
 such as `build`, `dist`, `bin`, and `vendor` are scanned unless ignored.
+A manifest that describes no versioned project is not a candidate: a Cargo
+manifest without `[package]`, or a `package.json` without a string `name`.
 
 The first run writes `.intentional/init-plan.yml` when candidates need input
 and exits with code `2`. This is a request for decisions, not an operational
@@ -231,8 +233,8 @@ intentional init --take-over
 
 Initialization exits with:
 
-- `0` for a complete ordinary initialization, a ready adoption plan, or a
-  completed takeover.
+- `0` for a complete ordinary initialization, a ready adoption or upgrade
+  plan, or a completed takeover.
 - `2` when the plan needs resolutions or verified repository edits.
 - `1` for invalid input or operational failure.
 
@@ -258,13 +260,14 @@ Changesets `ignore` entries become explicit `suspended`, `excluded`, or
 release that requires it, so it is the default recommendation unless repository
 evidence supports another disposition.
 
-Pending Changesets Markdown bodies and package bumps are converted losslessly.
+Pending Changesets Markdown bodies are kept, and their package bumps are
+translated by the plan's `bump-translation` field; see Bump translation below.
 Fixed and linked groups, npm dependency ranges and peer edges, internal
-dependency policy, and component-mapped pre-1.0 versions participate in the
-parity comparison. Private-package version and tag settings are recorded
-explicitly because Intentional separates version management from publication
-privacy and annotates every managed release. Unsupported or repository-specific
-behavior remains an explicit diagnostic.
+dependency policy, and the translated pending bumps participate in the parity
+comparison. Private-package version and tag settings are recorded explicitly
+because Intentional separates version management from publication privacy and
+annotates every managed release. Unsupported or repository-specific behavior
+remains an explicit diagnostic.
 Repository release metadata and release scripts are retained as external
 evidence; Intentional does not interpret their private schemas or infer package,
 tag, publication, or ordering semantics from them. Cross-projection identity is
@@ -282,7 +285,7 @@ are not authored as durable Intentional `depends-on` edges; adopting that
 contract is also explicit, and current divergence remains blocking.
 
 `--take-over` is the only authority handoff. It refuses unresolved, stale, or
-non-equivalent plans, then performs a rollback-capable transaction that writes
+blocked plans, then performs a rollback-capable transaction that writes
 canonical Intentional state, moves pending intents, removes recognized
 `.changeset/` state, applies explicitly authorized proxy-manifest removals, and
 consumes the one transient initialization plan.
@@ -312,3 +315,84 @@ intentional tag --baseline \
 
 `status` and `check` report the missing-baseline diagnostic and command until
 the configured primary baselines exist.
+
+## Bump translation
+
+Changesets, and a `contract-1` configuration with
+`pre-1-0-bump-mapping: component`, read a bump name as the version component
+to increment. Intentional reads it as the significance of the change. At
+`0.x`, the two readings release different versions, so adoption translates
+pending bumps one time. The init plan records the choice in its
+`bump-translation` field, and `init --bump-translation` sets it:
+
+| Pending bump at `0.4.1` | `parity` (default) | `significance` |
+| --- | --- | --- |
+| `major` | `major` with `graduate`: 1.0.0 | `major`: 0.5.0 |
+| `minor` | `major`: 0.5.0 | `minor`: 0.4.2 |
+| `patch` | `patch`: 0.4.2 | `patch`: 0.4.2 |
+
+- `parity` keeps the versions that the source tool would release. The parity
+  comparison must be `equivalent`, including releases that dependency
+  propagation causes. A rewrite cannot keep a dependency-derived version, for
+  example from an internal dependency policy of `minor` at `0.x`; such a
+  release blocks the plan. Choose `significance` or change the pending
+  changes.
+- `significance` keeps the bump names. Intentional's result must equal the
+  source tool's algorithm with bump names read as significance. The parity
+  comparison then shows each version that differs from the source tool with
+  `expected-difference: true`, and its status is `expected-difference`. Such a
+  plan can still be `ready`. Any other difference blocks the plan.
+
+At and after 1.0.0, and for release units without a version, bumps do not
+change. The version a bump applies to is the highest current version of the
+release unit's fixed or linked group, else its own current version.
+
+An intent whose bump name changes keeps its body and gets an HTML comment
+that states the original bump and the version it keeps, for example:
+
+```markdown
+---
+sample-library: major
+---
+
+Add a capability.
+
+<!-- bump translation: Changesets `minor` for `sample-library` at 0.4.1 is `major` here, so that the next version stays 0.5.0. -->
+```
+
+The comment is visible in review and hidden in the rendered changelog.
+
+A later `init` keeps the plan's `bump-translation` unless you pass the flag
+again.
+
+### Upgrade a `contract-1` configuration
+
+`intentional init` upgrades a `contract-1` configuration to `contract-2`. It
+keeps the comments in `.intentional/config.yml`. Release tags created under
+`contract-1` stay valid.
+
+```console
+intentional init
+```
+
+A configuration without `pre-1-0-bump-mapping: component`, or without pending
+intents whose release changes, upgrades at once, even when discovery
+candidates still need resolutions. A release changes when any next version
+differs, including versions from dependency propagation. A `component`
+configuration with such a release writes a plan with
+`source-kind: contract-1`, the default `bump-translation`, the intents it
+rewrites, and a parity comparison of the `contract-1` and `contract-2`
+versions. The plan is `ready` unless `parity` cannot keep a version; then it
+is `needs-input` with parity status `blocked`. Nothing else changes until you
+run `init` again:
+
+```console
+intentional init
+# review bump-translation and converted-intents in .intentional/init-plan.yml
+intentional init
+```
+
+`intentional init --bump-translation parity` or
+`intentional init --bump-translation significance` upgrades in one step.
+If the configuration or the pending intents change after the plan is
+written, the next `init` writes a new plan for review.
