@@ -28,10 +28,10 @@ jobs:
           persist-credentials: false
 
       - name: Check the release intents
-        uses: wyrd-company/intentional@6e11a4f43fd4241f7829f7e5b27b49642b19ee92 # 0.2.0
+        uses: wyrd-company/intentional@3c84bb6f4464287b60783e02bb35ea16b14ebbad # 0.4.0
         with:
           command: check
-          intentional-version: "0.2.0"
+          intentional-version: "0.4.0"
 
   build:
     runs-on: ubuntu-latest
