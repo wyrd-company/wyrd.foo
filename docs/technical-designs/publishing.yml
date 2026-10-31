@@ -194,7 +194,11 @@ proposed-design:
     One explicit `SPDX-License-Identifier: <expression>` in LICENSE is
     authoritative, including compound expressions with AND, OR and WITH.
     Without that declaration, complete MIT and Apache-2.0 texts are matched
-    against spdx-license-list, ignoring whitespace and copyright notice lines.
+    against spdx-license-list, ignoring whitespace and accepting numeric years
+    or year ranges only in the canonical year slot. All other source text,
+    including copyright notices, is preserved. Free-form copyright-holder
+    substitutions require an explicit SPDX declaration: they cannot be safely
+    distinguished from added conditions by text identification.
     Changed terms are not matched. Missing, unidentifiable, invalid or
     ambiguous licences produce a warning and no field, also in strict mode.
     Multiple different declarations are ambiguous. A LICENSES/ folder does
