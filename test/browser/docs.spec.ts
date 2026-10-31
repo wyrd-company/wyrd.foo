@@ -321,3 +321,22 @@ test.describe("Copy as Markdown", () => {
     await expect(button).toHaveText("Copy failed");
   });
 });
+
+test.describe("edit this page", () => {
+  for (const width of [1440, 1000, 390]) {
+    test(`offers the source edit link at ${width}px, including on the docs changelog`, async ({ page, baseURL }) => {
+      await page.setViewportSize({ width, height: 900 });
+      for (const [slug, source] of [["configuration", "guides/configuration.md"], ["changelog", "CHANGELOG.md"]]) {
+        await openDocs(page, baseURL, `/docs/gadget/${slug}`);
+        const link = page.locator(".docs-article-foot").getByRole("link", { name: "Edit this page" });
+        await link.scrollIntoViewIfNeeded();
+        await expect(link).toBeVisible();
+        await expect(link).toHaveAttribute("href", `https://github.dev/example-org/gadgets/blob/HEAD/docs/user/gadget/${source}`);
+        await expect(link).toHaveAttribute("target", "_blank");
+        await expect(link).toHaveAttribute("rel", "noopener");
+        await link.focus();
+        await expect(link).toBeFocused();
+      }
+    });
+  }
+});

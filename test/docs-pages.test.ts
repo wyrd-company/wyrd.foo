@@ -79,18 +79,18 @@ describe("relPathOf", () => {
 describe("editUrl", () => {
   it("joins owner, docs-path and the page path on the default branch", () => {
     expect(editUrl("example-org/things", "docs/user", "guides/setup.md")).toBe(
-      "https://github.com/example-org/things/edit/HEAD/docs/user/guides/setup.md",
+      "https://github.dev/example-org/things/blob/HEAD/docs/user/guides/setup.md",
     );
   });
 
   it("uses a per-product docs folder", () => {
     expect(editUrl("example-org/things", "docs/user/gadget", "setup.md")).toBe(
-      "https://github.com/example-org/things/edit/HEAD/docs/user/gadget/setup.md",
+      "https://github.dev/example-org/things/blob/HEAD/docs/user/gadget/setup.md",
     );
   });
 
   it("encodes each path segment", () => {
-    expect(editUrl("o/r", "docs/user", "a b/c#d.md")).toBe("https://github.com/o/r/edit/HEAD/docs/user/a%20b/c%23d.md");
+    expect(editUrl("o/r", "docs/user", "a b/c#d.md")).toBe("https://github.dev/o/r/blob/HEAD/docs/user/a%20b/c%23d.md");
   });
 });
 
