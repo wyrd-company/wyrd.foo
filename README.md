@@ -111,6 +111,10 @@ pnpm build      # static build to dist/
 pnpm preview
 ```
 
+The PR build installs Task before `pnpm test` so the `dev:v2` command tests
+run in hosted CI. With `CI=true`, missing Task fails those tests. Local runs
+without Task skip them with `task is not on PATH`.
+
 ## Dev server over the tool repos
 
 `task dev:v2` builds the content from each tool repo's `wyrd-foo-v2` branch,
