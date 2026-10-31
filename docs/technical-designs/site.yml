@@ -185,7 +185,11 @@ proposed-design:
     `Content-Type: text/markdown; charset=utf-8`, including feature entries.
     It includes all install methods and repository setup, media asset links,
     the docs map, the feature README and the latest changelog entry when present.
-    It uses the same published content as the HTML page.
+    It uses the same published content as the HTML page. Embedded README and
+    changelog Markdown retain their meaning and headings, with document-local
+    references (including images and footnotes). Each fragment closes its
+    EOF-scoped constructs before generated sections are appended. Published
+    source files are unchanged.
   media-tour: |
     Each tour item (not the first, full-width one) opens full size in a
     modal built on the native `<dialog>` element.

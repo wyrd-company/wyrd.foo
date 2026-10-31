@@ -16,6 +16,7 @@ import { KIND_LABELS } from "./kinds";
 import { formatReleaseDate, STATUS_LABELS } from "./product-facts";
 import { productAssetUrl } from "./product-assets";
 import { isVideo } from "./product-media";
+import { markdownFragment } from "./markdown-fragment";
 
 const text = (value: string) =>
   value
@@ -105,8 +106,8 @@ export function productMarkdown(
     parts.push("## What it does", product.highlights.map((highlight) => `- ${text(highlight)}`).join("\n"));
   }
   parts.push("## Install", ...tool.kinds.map(installMarkdown));
-  // Published README and release Markdown retain their source text and headings.
-  if (readme !== undefined) parts.push("## README", readme.trim());
+  // Normalize independent documents before joining so their syntax cannot cross sections.
+  if (readme !== undefined) parts.push("## README", markdownFragment(readme, "readme"));
   if (map.length > 0) {
     parts.push("## Documentation");
     for (const section of map) {
@@ -123,6 +124,6 @@ export function productMarkdown(
     if (tool.release.url) parts.push(link("Release notes on GitHub", tool.release.url));
   } else if (latest) parts.push(`Latest: ${text(latest.version)}`);
   else parts.push("No releases yet.");
-  if (latest) parts.push(latest.body.trim(), link("All releases", `/tools/${key}/releases`));
+  if (latest) parts.push(markdownFragment(latest.body, "changelog"), link("All releases", `/tools/${key}/releases`));
   return `${parts.join("\n\n")}\n`;
 }
