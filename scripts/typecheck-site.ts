@@ -1,12 +1,7 @@
-// Type-checks the site with `astro check`, and fails unless the check ran.
-//
-//   node scripts/typecheck-site.ts
-//
-// When `astro check` cannot load @astrojs/check it offers to install it and,
-// with no answer, exits 0 without checking anything. This runs it without a
-// terminal to answer (stdin closed, CI set, so it never waits on the prompt)
-// and passes only when it exits 0 and prints its "Result (N files)" line with
-// N greater than 0.
+// Sync Astro types, then run @astrojs/check with its own TypeScript 6.
+// Astro 7's CLI rejects the project's TypeScript 7 before loading the checker.
+// The schema check keeps TypeScript 7; .pnpmfile.cjs gives the checker its API.
+// A successful exit counts only when the checker reports checked files.
 
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -22,9 +17,8 @@ export function checkFailure(output: string, status: number | null): string | un
   return undefined;
 }
 
-async function main() {
-  const astro = join(import.meta.dirname, "../node_modules/.bin/astro");
-  const child = spawn(astro, ["check"], {
+async function run(command: string, args: string[]) {
+  const child = spawn(command, args, {
     stdio: ["ignore", "pipe", "pipe"],
     env: { ...process.env, CI: "true" },
   });
@@ -41,6 +35,18 @@ async function main() {
     child.on("error", reject);
     child.on("close", resolve);
   });
+  return { output, status };
+}
+
+async function main() {
+  const astro = join(import.meta.dirname, "../node_modules/.bin/astro");
+  const sync = await run(astro, ["sync"]);
+  if (sync.status !== 0) {
+    console.error(`typecheck:site: astro sync exited with ${sync.status ?? "a signal"}`);
+    process.exitCode = 1;
+    return;
+  }
+  const { output, status } = await run(process.execPath, [fileURLToPath(import.meta.url), "--check"]);
   const failure = checkFailure(output, status);
   if (failure !== undefined) {
     console.error(`typecheck:site: ${failure}`);
@@ -48,4 +54,11 @@ async function main() {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) await main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  if (process.argv[2] === "--check") {
+    const { check } = await import("@astrojs/check");
+    process.exitCode = (await check({ watch: false })) ? 1 : 0;
+  } else {
+    await main();
+  }
+}

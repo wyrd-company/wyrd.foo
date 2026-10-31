@@ -29,7 +29,10 @@ reusable publishing contract's compatibility and release rules still apply.
 
 - `@astrojs/check` runs on TypeScript 6 (`.pnpmfile.cjs`), because
   TypeScript 7 has no programmatic API yet. The rest of the project uses
-  TypeScript 7. Remove the hook when `@astrojs/check` supports TypeScript 7.
+  TypeScript 7. `scripts/typecheck-site.ts` syncs types and calls the checker
+  API directly; Astro 7's `astro check` command rejects project TypeScript 7
+  before it loads the checker. Remove the hook when `@astrojs/check` supports
+  TypeScript 7.
 
 ## Workflow lint
 

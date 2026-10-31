@@ -7,7 +7,7 @@ import { after, describe, it } from "node:test";
 import { checkFailure } from "../../scripts/typecheck-site.ts";
 import { COLOUR, plainText } from "./colour.ts";
 
-// `pnpm typecheck:site` fails closed: a run of `astro check` that did not check
+// `pnpm typecheck:site` fails closed: a checker run that did not check
 // the site fails, whatever its exit code.
 
 const REPO = new URL("../../", import.meta.url).pathname;
@@ -63,9 +63,10 @@ registerHooks({
       timeout: 120_000,
     });
 
-  it("control: astro check itself finds no checker and checks nothing", () => {
-    const control = run(join(REPO, "node_modules/.bin/astro"), ["check"]);
+  it("control: the checker cannot load when its package is missing", () => {
+    const control = run(process.execPath, [join(REPO, "scripts/typecheck-site.ts"), "--check"]);
     const output = plainText(`${control.stdout}${control.stderr}`);
+    assert.notEqual(control.status, 0, output);
     assert.match(output, /@astrojs\/check/);
     assert.doesNotMatch(output, /Result \(\d+ files?\)/);
   });
@@ -74,6 +75,6 @@ registerHooks({
     const wrapped = run(process.execPath, [join(REPO, "scripts/typecheck-site.ts")]);
     const output = plainText(`${wrapped.stdout}${wrapped.stderr}`);
     assert.equal(wrapped.status, 1, output);
-    assert.match(output, /typecheck:site: astro check printed no "Result \(N files\)" line/);
+    assert.match(output, /typecheck:site: astro check exited with 1/);
   });
 });
