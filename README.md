@@ -70,6 +70,10 @@ To onboard a tool repo, apply the Toha template in
 `docs/user/` starter, the calling workflow and the Intentional docs unit, and
 `toha apply --update` brings later template changes into the repo.
 
+For terminal screenshots and typed sessions, use the shared
+[terminal media recipe](docs/guides/terminal-media.md). It captures real
+output from generic fixtures and explains the manifest checks.
+
 The JSON Schema for `docs/user/docs.yml` is served at
 `https://wyrd.foo/schemas/docs/v1.json`.
 

@@ -1,0 +1,17 @@
+File: /tmp/media-smoke.tape
+Output .gif /tmp/media-smoke.gif
+Set Shell bash
+Set Width 800
+Set Height 240
+Set FontSize 18
+Set TypingSpeed 1ms
+Hide 
+Type export PS1='demo$ '; clear
+Enter 1
+Sleep 500ms
+Show 
+Type printf 'Ready\\n'
+Enter 1
+Wait 2s Line demo\$ $
+failed to execute command: timeout waiting for "Line demo\\$ $" to match demo\$ $; last value was: Ready\ndemo$
+recording failed
