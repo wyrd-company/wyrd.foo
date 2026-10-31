@@ -161,7 +161,8 @@ This is an existence check, not full GitHub Actions validation. Exclusion
 filters do not need to match a workflow. Filters containing unescaped `?`,
 `+`, or `**` are left unchecked: GitHub's semantics differ from the matching
 library. Names with dot path segments and patterns beyond the library's size
-limit are also left unchecked. These forms remain valid inputs to the
+limit are also left unchecked. Glob filters are left unchecked when a workflow
+name ends in `/`; literal names still use exact string matching. These forms remain valid inputs to the
 publisher, including with `--strict`. This check does not evaluate whether
 ordered exclusions leave any workflow enabled. See
 [GitHub's workflow filter contract](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onworkflow_runworkflows).

@@ -716,6 +716,9 @@ proposed-design:
     Filters with these unescaped forms are left unchecked to avoid false
     errors from shell-glob semantics. Names containing dot path segments and
     patterns exceeding the library's size limit are also left unchecked.
+    Glob filters are left unchecked when a workflow name ends in `/`, where
+    the library applies filesystem directory semantics. Literal names use
+    exact string matching after escaped characters are decoded.
     No unsupported filter is rejected, including in strict mode. This check
     verifies existence where supported; it does not establish full Actions
     validity. The platform contract is documented at
