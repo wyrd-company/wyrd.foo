@@ -1000,3 +1000,13 @@ test.describe("/releases clamp without script", () => {
     expect(await body.evaluate((el) => el.scrollHeight - el.clientHeight)).toBe(0);
   });
 });
+
+test("product Markdown URLs serve plain Markdown for products and feature entries", async ({ request, baseURL }) => {
+  for (const key of PRODUCTS) {
+    const response = await request.get(`${baseURL}/tools/${key}.md`);
+    expect(response.status()).toBe(200);
+    expect(response.headers()["content-type"]).toMatch(/^text\/markdown(?:;|$)/);
+    expect(await response.text()).toMatch(/^# /);
+  }
+  expect((await request.get(`${baseURL}/tools/unknown-product.md`)).status()).toBe(404);
+});
