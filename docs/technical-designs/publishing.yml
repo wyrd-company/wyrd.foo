@@ -701,12 +701,29 @@ proposed-design:
     it refuses `--offline` and exits 2.
 
     Validate also reads the top-level `.yml` and `.yaml` files in
-    `.github/workflows/` from the selected tree. Each name in a
-    `workflow_run.workflows` list must match a workflow `name:` exactly.
-    A missing match is a warning, or an error with `--strict`, naming the
-    caller file and the unmatched name. A workflow file that is not valid
-    YAML is reported at the same severity. Repos with no `workflow_run`
-    trigger need no such match.
+    `.github/workflows/` from the selected tree. A workflow's effective name
+    is its `name:` value, or its repository-relative path if omitted.
+    `workflow_run.workflows` accepts a scalar string or an array. Inclusion
+    filters are checked case-sensitively with minimatch, with braces and
+    extglobs disabled and dot names enabled. Compatible forms include `*`,
+    alphanumeric bracket classes and escaped special characters. An unmatched
+    inclusion is a warning, or an error with `--strict`, naming the caller
+    file and filter. Exclusion filters need not match an existing name.
+    This check does not evaluate the final set after ordered exclusions.
+
+    GitHub's filter contract defines `?` and `+` as repetition of the
+    preceding character, and `**` can cross slashes inside a segment.
+    Filters with these unescaped forms are left unchecked to avoid false
+    errors from shell-glob semantics. Names containing dot path segments and
+    patterns exceeding the library's size limit are also left unchecked.
+    No unsupported filter is rejected, including in strict mode. This check
+    verifies existence where supported; it does not establish full Actions
+    validity. The platform contract is documented at
+    https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onworkflow_runworkflows
+    and scalar/array forms at
+    https://github.com/actions/languageservices/blob/main/workflow-parser/src/workflow-v1.0.json.
+    A workflow file that is not valid YAML is reported at the same severity.
+    Repos with no `workflow_run` trigger need no such match.
 
     A checkout can be a plain clone or a linked worktree, in local mode,
     validate and publish mode alike. The publisher finds the git dirs the way
