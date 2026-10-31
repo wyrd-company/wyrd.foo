@@ -148,11 +148,23 @@ finding. For a repo that already publishes, add `--strict`: it uses publish's
 severities, so the run fails before the tag push, not after it. `--strict`
 reads GitHub Releases, so it does not go with `--offline`.
 
-`validate:repo` also checks `workflow_run.workflows` in `.github/workflows/`
-against the workflow `name:` values in that tree. A name with no exact match
-is a warning, or an error with `--strict`. This catches a caller that names
-`Release` when the release workflow is named `release`. Both `.yml` and
-`.yaml` files are read; `--ref` checks the workflows at that ref.
+`validate:repo` also checks scalar and array `workflow_run.workflows` filters
+in `.github/workflows/`. It uses each workflow's `name:`, or its
+repository-relative file path when `name:` is omitted. Matching is
+case-sensitive and supports `*`, alphanumeric bracket classes, and escaped
+special characters. An unmatched inclusion filter is a warning, or an error
+with `--strict`. For example, `Release*` matches `Release package`, while
+`Release` does not match `release`. Both `.yml` and `.yaml` files are read;
+`--ref` checks the workflows at that ref.
+
+This is an existence check, not full GitHub Actions validation. Exclusion
+filters do not need to match a workflow. Filters containing unescaped `?`,
+`+`, or `**` are left unchecked: GitHub's semantics differ from the matching
+library. Names with dot path segments and patterns beyond the library's size
+limit are also left unchecked. These forms remain valid inputs to the
+publisher, including with `--strict`. This check does not evaluate whether
+ordered exclusions leave any workflow enabled. See
+[GitHub's workflow filter contract](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onworkflow_runworkflows).
 
 ## Browser tests
 
