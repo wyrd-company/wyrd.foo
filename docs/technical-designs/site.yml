@@ -230,7 +230,13 @@ proposed-design:
     - **Dev container feature**: a `devcontainer.json` snippet that adds the
       feature.
     - **Dev container image**: the image reference and a `devcontainer.json`
-      snippet, then a tags table of the image's registry tags.
+      snippet selected by default. Install method tabs also offer Docker Compose
+      and Kubernetes. Compose shows a minimal `compose.yaml` service and
+      `docker compose up -d`; Kubernetes shows a minimal Pod in `pod.yaml`
+      and `kubectl apply -f pod.yaml`. Each snippet uses the image reference
+      unchanged and has Copy. These are starting configurations; product docs
+      describe required ports, volumes, environment and commands. The tags
+      table follows the install methods.
   feature-entry-page: |
     A feature entry has an abbreviated page at `/tools/<key>`: the hero, the
     `devcontainer.json` snippet, the feature's `README.md` as it is, then the
