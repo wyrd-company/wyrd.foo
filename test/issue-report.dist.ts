@@ -26,7 +26,7 @@ describe("built page issue context", () => {
     expect(links).toHaveLength(2);
     expect(links[0].pathname).toBe(`/${owner}/issues/new`);
     expect(links[0].searchParams.get("body")).toContain(`Source: https://github.com/${owner}/blob/HEAD/${source}`);
-    expect(links[0].searchParams.get("body")).toContain(`Page: https://wyrd.foo/${path.replace("/index.html", "")}\n`);
+    expect(links[0].searchParams.get("body")).toContain(`Page: https://wyrd.foo/${path.replace("index.html", "")}\n`);
     expect(links[1].pathname).toBe("/wyrd-company/wyrd.foo/issues/new");
   });
 
