@@ -1,17 +1,19 @@
 ---
 /*
  * The install block of a dev container feature (a devcontainer.json snippet
- * that adds it) or a dev container image (its reference and a snippet that
- * uses it, then the tags table of its registry tags).
+ * that adds it) or a dev container image (its reference and install method
+ * tabs, then the tags table of its registry tags).
  */
 import CodeBlock from "./CodeBlock.astro";
-import { devcontainerFeatureSnippet, devcontainerImageSnippet } from "../../lib/install-blocks";
+import { devcontainerFeatureSnippet } from "../../lib/install-blocks";
+import { containerImageOptions } from "../../lib/container-install";
 import type { KindBlock } from "../../schema/index";
 
 interface Props {
   block: Extract<KindBlock, { kind: "devcontainer-feature" | "devcontainer-image" }>;
 }
 const { block } = Astro.props;
+const imageOptions = block.kind === "devcontainer-image" ? containerImageOptions(block.ref) : [];
 ---
 
 <div class="install-card" data-install-block={block.kind}>
@@ -23,15 +25,38 @@ const { block } = Astro.props;
       </div>
     ) : (
       <>
-        <div class="install-body image-refs">
+        <div class="install-body">
           <div>
             <p class="install-label">Image</p>
             <CodeBlock code={block.ref} label="Image reference" />
           </div>
-          <div>
-            <p class="install-label">Use in devcontainer.json</p>
-            <CodeBlock code={devcontainerImageSnippet(block.ref)} label="devcontainer.json image" />
+          <div class="install-pills" role="tablist" aria-label="Image install method">
+            {imageOptions.map((option, index) => (
+              <button
+                type="button"
+                role="tab"
+                class="install-pill"
+                id={`install-image-${option.id}-tab`}
+                aria-controls={`install-image-${option.id}`}
+                aria-selected={index === 0 ? "true" : "false"}
+                tabindex={index === 0 ? 0 : -1}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
+          {imageOptions.map((option, index) => (
+            <div
+              role="tabpanel"
+              id={`install-image-${option.id}`}
+              aria-labelledby={`install-image-${option.id}-tab`}
+              hidden={index !== 0}
+            >
+              <p class="install-label">{option.instruction}</p>
+              <CodeBlock code={option.code} label={option.label} />
+              {option.command && <CodeBlock code={option.command} prompt label={`${option.label} command`} />}
+            </div>
+          ))}
         </div>
         {block.tags && (
           <div class="install-body image-tags">
@@ -60,10 +85,12 @@ const { block } = Astro.props;
 </div>
 
 <style>
-  .image-refs {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
+  [role="tablist"],
+  [role="tabpanel"] {
+    margin-top: 20px;
+  }
+  [role="tabpanel"] :global(.code-block + .code-block) {
+    margin-top: 12px;
   }
   .image-tags {
     border-top: 1px solid var(--divider);

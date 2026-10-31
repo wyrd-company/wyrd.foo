@@ -178,6 +178,10 @@ proposed-design:
     | `devcontainer-feature` | `ref`: the feature's OCI reference. |
     | `devcontainer-image` | `ref`: the image reference. `tags`: optional, the tags table as `{ tag, base, architectures }` entries, for an image whose tags the publisher cannot read from the image build config. |
 
+    For an image, the site generates dev container, Docker Compose and
+    Kubernetes snippets from `ref`. No extra install fields are required.
+    Product docs describe required runtime settings, such as ports and volumes.
+
     A product lists each kind once. The first kind is the primary kind: its
     badge and its "get it" command show in the catalog row, and its default
     install command shows in the hero.

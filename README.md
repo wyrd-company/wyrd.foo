@@ -10,6 +10,11 @@ releases page and, when it ships pages, a docs site. `/releases` lists every
 product's latest release, and Pagefind indexes the product, releases and docs
 pages.
 
+Image product pages include dev container, Docker Compose and Kubernetes
+install options generated from the image reference. Compose and Kubernetes
+snippets are starting configurations; product docs describe required ports,
+volumes, environment and commands.
+
 ## Design
 
 - [`docs/concepts/wyrd-foo.yml`](docs/concepts/wyrd-foo.yml): the concept:

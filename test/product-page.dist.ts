@@ -346,12 +346,44 @@ describe("install block: dev container feature and image", () => {
   });
 
   it("shows an image's reference, devcontainer.json line and tags table", () => {
-    const block = productPage("harbor").querySelector('[data-install-block="devcontainer-image"]')!;
-    expect(block.querySelectorAll("pre").map((pre) => pre.textContent)).toEqual([
+    const block = productPage("harbor").querySelector(
+      '[data-install-block="devcontainer-image"]',
+    )!;
+    expect(block.querySelector("pre")?.textContent).toBe(
       "ghcr.io/example-org/harbor:0",
-      '"image": "ghcr.io/example-org/harbor:0"',
+    );
+    expect(tabs(block, "Image install method")).toEqual([
+      "Dev container",
+      "Docker Compose",
+      "Kubernetes",
     ]);
-    expect(block.querySelectorAll("tbody tr").map((row) => row.querySelectorAll("td").map((td) => text(td)))).toEqual([
+    const panels = block.querySelectorAll('[role="tabpanel"]');
+    expect(panels.map((panel) => panel.hasAttribute("hidden"))).toEqual([
+      false,
+      true,
+      true,
+    ]);
+    expect(panels[0].querySelector("pre")?.textContent).toBe(
+      '"image": "ghcr.io/example-org/harbor:0"',
+    );
+    expect(
+      panels[1].querySelectorAll("pre").map((pre) => pre.textContent),
+    ).toEqual([
+      'services:\n  app:\n    image: "ghcr.io/example-org/harbor:0"',
+      "docker compose up -d",
+    ]);
+    expect(
+      panels[2].querySelectorAll("pre").map((pre) => pre.textContent),
+    ).toEqual([
+      'apiVersion: v1\nkind: Pod\nmetadata:\n  name: app\nspec:\n  containers:\n    - name: app\n      image: "ghcr.io/example-org/harbor:0"',
+      "kubectl apply -f pod.yaml",
+    ]);
+    expect(block.querySelectorAll("[data-copy]")).toHaveLength(6);
+    expect(
+      block
+        .querySelectorAll("tbody tr")
+        .map((row) => row.querySelectorAll("td").map((td) => text(td))),
+    ).toEqual([
       ["0", "debian-bookworm", "amd64, arm64"],
       ["0.9", "debian-bookworm", "amd64, arm64"],
       ["0.9.0", "debian-bookworm", "amd64, arm64"],
