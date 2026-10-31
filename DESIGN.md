@@ -56,7 +56,7 @@ typography:
   page-title:
     fontFamily: Geist
     fontSize: 40px
-    fontWeight: 700
+    fontWeight: 400
     lineHeight: 1.12
     letterSpacing: -0.03em
   tagline:
@@ -290,7 +290,7 @@ letter. Prose and UI labels are Geist.
 | --- | --- |
 | `display` | The home page headline. It scales with the viewport down to 36px. |
 | `product-name` | The product hero name. It scales down to 40px. |
-| `page-title` | The h1 of `/releases`, the docs index, docs pages (down to 30px) and the catalog heading. |
+| `page-title` | The h1 of `/releases`, the docs index and the 404 page, at weight 400. Docs article titles (down to 30px) and the catalog heading use this size at weight 700. |
 | `tagline` | The product hero tagline. It scales down to 22px. |
 | `section-title` | The section headings of the product page. |
 | `heading-2`, `heading-3` | Headings inside docs prose. |
