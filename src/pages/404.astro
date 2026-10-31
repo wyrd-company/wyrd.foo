@@ -33,7 +33,8 @@ import SiteLayout from "../layouts/SiteLayout.astro";
   // The host serves this one file for every missing path.
   const report = document.querySelector<HTMLAnchorElement>("[data-site-report]");
   if (report) {
-    const page = new URL(location.pathname, report.dataset.reportPage!);
+    const page = new URL(report.dataset.reportPage!);
+    page.pathname = location.pathname;
     report.href = issueReportUrl(page.href, document.title);
   }
 
