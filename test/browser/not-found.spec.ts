@@ -72,3 +72,16 @@ test("search does not find the 404 page", async ({ page }) => {
   });
   expect(urls.filter((u: string) => /404/.test(u))).toEqual([]);
 });
+
+// relationships: { implements: site }
+test("the issue draft names the missing page without its query or fragment", async ({ page }) => {
+  await openMissing(page);
+  await page.goto(`${MISSING}?private=value#details`);
+  const report = page.getByRole("link", { name: "Report a site problem" });
+  await expect(report).toHaveAttribute("href", /definitely-not-a-page/);
+  const url = new URL((await report.getAttribute("href"))!);
+  expect(url.pathname).toBe("/wyrd-company/wyrd.foo/issues/new");
+  expect(url.searchParams.get("body")).toContain(`Page: https://wyrd.foo${MISSING}\n`);
+  expect(url.searchParams.get("body")).not.toContain("private=value");
+  expect(url.searchParams.get("body")).not.toContain("#details");
+});

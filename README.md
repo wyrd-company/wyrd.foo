@@ -10,6 +10,11 @@ releases page and, when it ships pages, a docs site. `/releases` lists every
 product's latest release, and Pagefind indexes the product, releases and docs
 pages.
 
+Every page has a footer link to report a site problem in this repo. Product
+and docs pages also link to an issue draft in the product's owning repo, with
+page, version and source-file details where available. Visitors review and
+submit the draft on GitHub.
+
 ## Design
 
 - [`docs/concepts/wyrd-foo.yml`](docs/concepts/wyrd-foo.yml): the concept:

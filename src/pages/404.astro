@@ -28,6 +28,16 @@ import SiteLayout from "../layouts/SiteLayout.astro";
 </SiteLayout>
 
 <script>
+  import { issueReportUrl } from "../lib/issue-report";
+
+  // The host serves this one file for every missing path.
+  const report = document.querySelector<HTMLAnchorElement>("[data-site-report]");
+  if (report) {
+    const page = new URL(report.dataset.reportPage!);
+    page.pathname = location.pathname;
+    report.href = issueReportUrl(page.href, document.title);
+  }
+
   // Show the path that has no page, so a mistyped address is easy to spot.
   const line = document.querySelector<HTMLElement>("[data-not-found-path]");
   if (line) {

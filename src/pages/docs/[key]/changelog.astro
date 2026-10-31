@@ -26,7 +26,7 @@ const { Content } = await render(product.changelog!);
 const section = product.map[0];
 ---
 
-<DocsShell title="Docs changelog" product={product} products={products} section={null}>
+<DocsShell title="Docs changelog" product={product} products={products} section={null} sourcePath={`${product.data["docs-path"]}/CHANGELOG.md`}>
   <DocsSidebar slot="sidebar" section={section} current="" />
   <div data-pagefind-body>
     <SearchIndexMeta product={product.key} productName={product.name} kinds={product.kinds} />
