@@ -606,3 +606,21 @@ describe("links outside docs/user/", () => {
     );
   });
 });
+
+
+describe("publisher licence ingestion", () => {
+  it("writes the repo licence into every product and feature entry", async () => {
+    const result = await computeRepo(input({ ...betaFiles(), LICENSE: "SPDX-License-Identifier: MIT OR Apache-2.0" }));
+    assert.equal(result.failed, false);
+    assert.equal(result.products.length, 2);
+    for (const product of result.products) assert.equal(product.tool.licence, "MIT OR Apache-2.0");
+  });
+  it("omits the field and reports a missing licence once per repo", async () => {
+    const files = alphaFiles();
+    delete files.LICENSE;
+    const result = await computeRepo(input(files));
+    assert.equal(result.failed, false);
+    for (const product of result.products) assert.equal(Object.hasOwn(product.tool, "licence"), false);
+    assert.equal(result.findings.filter((finding) => finding.file === "LICENSE").length, 1);
+  });
+});

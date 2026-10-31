@@ -40,6 +40,7 @@ import {
   type IntentionalConfig,
   type ReleaseUnit,
 } from "./intentional.ts";
+import { repoLicence } from "./licence.ts";
 import { linksOutside } from "./links.ts";
 import { squareProblem } from "./logo.ts";
 import { releaseFromTag, ReleaseLookupError, type ReleaseData, type ReleaseLookup } from "./releases.ts";
@@ -89,6 +90,7 @@ interface Context extends RepoInput {
   config?: IntentionalConfig;
   /** Every file of the repo, listed once per run on first use. */
   allFiles?: Promise<string[]>;
+  licence?: string;
 }
 
 type Entry = ProductEntry | FeatureEntry;
@@ -108,6 +110,7 @@ export async function computeRepo(input: RepoInput): Promise<RepoResult> {
   const tree = await readTree(ctx);
   if (tree === undefined) return result([]);
   ctx.config = await readConfig(ctx);
+  ctx.licence = await repoLicence(ctx.files, findings);
 
   const products: ProductOutput[] = [];
   for (const [key, entry] of Object.entries(tree.docs.products) as [string, Entry][]) {
@@ -262,6 +265,7 @@ async function productOutput(ctx: Context, tree: Tree, key: string, entry: Produ
     kinds,
     "release-unit": unitId,
     owner: ctx.ownerRepo,
+    ...(ctx.licence === undefined ? {} : { licence: ctx.licence }),
     "docs-path": docsPathOf(folder),
     ...(release === undefined ? {} : { release: releaseYaml(release) }),
   };
@@ -409,6 +413,7 @@ async function featureOutput(ctx: Context, tree: Tree, key: string, entry: Featu
     kinds: [{ kind: "devcontainer-feature", ref: authored ?? featureRef(ctx.ownerRepo, feature) }],
     "release-unit": unitId,
     owner: ctx.ownerRepo,
+    ...(ctx.licence === undefined ? {} : { licence: ctx.licence }),
     ...(release === undefined ? {} : { release: releaseYaml(release) }),
     name: feature.name,
     description: feature.description,

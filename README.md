@@ -35,7 +35,7 @@ self-contained folder under `content/<key>/`, in the layout the publisher
 ```text
 content/<key>/
 ├── tool.yaml        # catalog metadata: name, tagline, category, status, kinds,
-│                    # highlights, media, version, owner, release, featured
+│                    # highlights, media, version, owner, release, licence, featured
 ├── README.md        # feature entries only: the page body
 ├── CHANGELOG.md     # the code changelog
 ├── manifest.json    # dev container image products only: the image manifest
@@ -49,6 +49,11 @@ pages, a docs section at `/docs/<key>`. No page code changes are required.
 The docs contract in `src/schema/` validates `tool.yaml` and page front matter,
 and the Astro content collections (`src/content.config.ts`) read the folders
 through it, so a product that breaks the contract fails the build.
+
+The product facts show a Licence row when the publisher identifies the repo-root
+`LICENSE`. The ingest-owned `licence` is an SPDX expression linked to that file
+on GitHub. Missing or unknown licences produce a publisher warning and no row.
+The detection and multi-licence rules are in the publishing design.
 
 The collections read `content/` unless `WYRD_CONTENT_DIR` names another
 folder, such as the dev content folder or a test fixture.
