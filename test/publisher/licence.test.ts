@@ -16,13 +16,52 @@ async function detect(source?: string) {
 }
 
 describe("repository licence", () => {
-  it("matches complete MIT and Apache texts with wrapped lines and variable copyright", async () => {
+  it("matches complete MIT and Apache texts with wrapping and numeric year variations", async () => {
     for (const [id, text] of [["MIT", mit.licenseText], ["Apache-2.0", apache.licenseText]]) {
-      const result = await detect(text.replace(/^Copyright[^\n]*/gm, "Copyright (c) 2026 Example contributors").replaceAll("\n", "\r\n"));
-      assert.equal(result.licence, id);
-      assert.deepEqual(result.findings, []);
+      for (const year of [undefined, "2026", "2020-2026", "2020–2026", "2020, 2022-2026"]) {
+        const source = year === undefined ? text : text.replace(id === "MIT" ? "<year>" : "[yyyy]", year);
+        for (const wrapped of [source, source.replaceAll("\n", "\r\n"), source.replace(/\s+/g, " ")]) {
+          const result = await detect(wrapped);
+          assert.equal(result.licence, id);
+          assert.deepEqual(result.findings, []);
+        }
+      }
     }
   });
+  for (const [id, text] of [["MIT", mit.licenseText], ["Apache-2.0", apache.licenseText]]) {
+    it(`preserves added conditions at every boundary in ${id}`, async () => {
+      const restriction = "Copyright holders prohibit commercial use of this software.";
+      const notice = text.match(/^Copyright[^\n]*/m)![0];
+      const variants = [
+        `${text}\n${restriction}\n`, // reviewer's first reproducer
+        text.replace(notice, `${notice} Commercial use is prohibited.`), // second reproducer
+        `${restriction}\n${text}`,
+        text.replace(notice, `${restriction}\n${notice}`),
+        text.replace(notice, `${notice}\n${restriction}`),
+        text.replace(notice, `${notice}\nCopyright (c) 2026 Commercial use is prohibited`),
+        text.replace(notice, `${notice} Commercial use is prohibited`),
+        text.replace(notice, `${notice} No Commercial Use`),
+        text.replace(notice, "Copyright (c) 2026 Example contributors Commercial use is prohibited."),
+        text.replace(notice, "Copyright (c) 2026 Example contributors"),
+        text.replace("Copyright", "Copyright holders prohibit commercial use. Copyright"),
+        text.replace(notice, ""),
+        text.replace(/software/i, "$& subject to additional conditions"),
+        text + "\n" + text,
+      ];
+      // Probe each line boundary, including inside the body and appendix.
+      const lines = text.split("\n");
+      for (let index = 0; index <= lines.length; index++) {
+        variants.push([...lines.slice(0, index), restriction, ...lines.slice(index)].join("\n"));
+      }
+      for (const source of variants) {
+        const result = await detect(source);
+        assert.equal(result.licence, undefined, source);
+        assert.equal(result.findings.length, 1);
+        assert.equal(result.findings[0].severity, "warning");
+        assert.equal(result.findings[0].file, "LICENSE");
+      }
+    });
+  }
   it("uses an explicit compound expression without inferring AND or OR from LICENSES", async () => {
     assert.equal((await detect("SPDX-License-Identifier: MIT OR Apache-2.0\nSee LICENSES/ for texts.")).licence, "MIT OR Apache-2.0");
     assert.equal((await detect("SPDX-License-Identifier: GPL-2.0-only WITH Classpath-exception-2.0")).licence, "GPL-2.0-only WITH Classpath-exception-2.0");

@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { parse, stringify } from "yaml";
+import mit from "spdx-license-list/licenses/MIT.json" with { type: "json" };
 import {
   applyRepo,
   computeRepo,
@@ -614,6 +615,16 @@ describe("publisher licence ingestion", () => {
     assert.equal(result.failed, false);
     assert.equal(result.products.length, 2);
     for (const product of result.products) assert.equal(product.tool.licence, "MIT OR Apache-2.0");
+  });
+  it("warns once and omits modified licence text from every product and feature entry", async () => {
+    const result = await computeRepo(input({ ...betaFiles(), LICENSE: mit.licenseText + "\nCopyright holders prohibit commercial use of this software.\n" }));
+    assert.equal(result.failed, false);
+    assert.equal(result.products.length, 2);
+    for (const product of result.products) assert.equal(Object.hasOwn(product.tool, "licence"), false);
+    const warnings = result.findings.filter((finding) => finding.file === "LICENSE");
+    assert.equal(warnings.length, 1);
+    assert.equal(warnings[0].severity, "warning");
+    assert.match(warnings[0].message, /unidentifiable or ambiguous/);
   });
   it("omits the field and reports a missing licence once per repo", async () => {
     const files = alphaFiles();
