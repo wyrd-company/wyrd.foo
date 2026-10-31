@@ -6,6 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   site: "https://wyrd.foo",
+  compressHTML: true,
   image: { service: passthroughImageService() },
   vite: { plugins: [tailwindcss()] },
 });
