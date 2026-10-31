@@ -11,6 +11,8 @@ import { inSitemap } from "./src/lib/sitemap.ts";
 // https://astro.build/config
 export default defineConfig({
   site: "https://wyrd.foo",
+  // Preserve HTML-aware whitespace between inline elements on Astro 7.
+  compressHTML: true,
   image: {
     service: passthroughImageService(),
   },

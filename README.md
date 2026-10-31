@@ -103,6 +103,9 @@ templates/tool-docs/         # the Toha template that onboards a tool repo
 Use Node.js 22.23.4 or later and the pnpm version declared in `package.json`.
 The Markdown renderer requires this Node minimum. The devcontainer installs
 Node's current LTS version; the publishing action provisions Node 24.
+The site uses Astro 7 with Vite 8 and the Tailwind Vite plugin. Its explicit
+Unified Markdown processor keeps the heading plugin active;
+`compressHTML: true` preserves HTML-aware whitespace handling.
 
 ```sh
 pnpm install
@@ -174,6 +177,15 @@ name ends in `/`; literal names still use exact string matching. These forms rem
 publisher, including with `--strict`. This check does not evaluate whether
 ordered exclusions leave any workflow enabled. See
 [GitHub's workflow filter contract](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onworkflow_runworkflows).
+
+## Dependency updates
+
+`renovate.json` uses the [shared Renovate preset](https://github.com/wyrd-company/.github/blob/main/renovate-config.json).
+It limits updates to three concurrent PRs and two new PRs per hour. Check
+the [Dependency Dashboard](https://github.com/wyrd-company/wyrd.foo/issues/5)
+for detected updates under **Rate-Limited** before treating a missing PR as
+a detection failure. The shared throughput policy is tracked in
+[the Renovate follow-up](https://github.com/wyrd-company/.github/issues/6).
 
 ## Browser tests
 
