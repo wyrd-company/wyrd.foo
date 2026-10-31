@@ -39,6 +39,7 @@ describe("/llms.txt built from the product fixture content", () => {
       `- [widget](${SITE}/tools/widget): Turn sample inputs into sample outputs.`,
       `- [gizmo](${SITE}/tools/gizmo): A sample board that runs on your machine or in a dev container.`,
       expect.stringMatching(new RegExp(`^- \\[Beacon\\]\\(${SITE}/tools/beacon\\): .+`)),
+      `- [Compass](${SITE}/tools/compass): Sample instructions for an agent.`,
       `- [gadget](${SITE}/tools/gadget): A small sample console that you run.`,
       `- [harbor](${SITE}/tools/harbor): A sample base image for dev containers.`,
       expect.stringMatching(new RegExp(`^- \\[Lantern\\]\\(${SITE}/tools/lantern\\): .+`)),
@@ -62,7 +63,7 @@ describe("/llms.txt built from the product fixture content", () => {
 
   it("has a docs section for each product with docs, and for none without", () => {
     const headings = llms().split("\n").filter((line) => line.startsWith("## "));
-    expect(headings).toEqual(["## Tools", "## widget docs", "## gizmo docs", "## harbor docs", "## sprocket docs"]);
+    expect(headings).toEqual(["## Tools", "## widget docs", "## gizmo docs", "## Compass docs", "## harbor docs", "## sprocket docs"]);
   });
 
   it("links only to Markdown endpoints that exist in the build", () => {
