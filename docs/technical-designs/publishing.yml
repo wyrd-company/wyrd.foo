@@ -907,7 +907,7 @@ proposed-design:
     `docs-path` is the repo folder that holds the product's pages:
     `docs/user`, or `docs/user/<key>` in a repo with one docs unit per
     product. The default is `docs/user`. The site builds each page's "Edit on
-    GitHub" link from `owner`, `docs-path` and the page's path under
+    GitHub.dev" link from `owner`, `docs-path` and the page's path under
     `content/<key>/docs/`.
 
     The site reads `tool.yaml` and the pages with the same module's schemas.

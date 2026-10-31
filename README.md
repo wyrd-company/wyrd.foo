@@ -69,6 +69,11 @@ substitutions. An SPDX declaration cannot override changed or conflicting terms.
 Unusual notices can warn and omit; detection is conservative.
 The detection and multi-licence rules are in the publishing design.
 
+Each docs page has an "Edit this page" link that opens its source file in
+GitHub.dev on the tool repository’s default branch. The link uses `owner`,
+`docs-path` and the page’s source path, including nested folders. It is also
+available in the page footer on narrow screens and on the docs changelog.
+
 The collections read `content/` unless `WYRD_CONTENT_DIR` names another
 folder, such as the dev content folder or a test fixture.
 

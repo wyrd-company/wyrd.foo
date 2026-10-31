@@ -12,10 +12,11 @@ interface Props {
   product: DocsProduct;
   title: string;
   section: string | null;
+  editUrl: string;
   prev?: DocsPage;
   next?: DocsPage;
 }
-const { product, title, section, prev, next } = Astro.props;
+const { product, title, section, editUrl, prev, next } = Astro.props;
 ---
 
 <article class="docs-article">
@@ -58,6 +59,7 @@ const { product, title, section, prev, next } = Astro.props;
     )
   }
   <footer class="docs-article-foot">
+    <a class="docs-edit-link" href={editUrl} rel="noopener" target="_blank" data-pagefind-ignore>Edit this page on GitHub.dev ↗</a>
     <DocsVersionFooter product={product} />
   </footer>
 </article>
@@ -117,7 +119,16 @@ const { product, title, section, prev, next } = Astro.props;
   .docs-pager-next {
     text-align: right;
   }
+  .docs-edit-link {
+    font-family: var(--font-code);
+    font-size: 12.5px;
+  }
   .docs-article-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
     margin-top: 40px;
     padding-top: 16px;
     border-top: 1px solid var(--divider);

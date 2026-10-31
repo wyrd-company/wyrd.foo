@@ -8,6 +8,7 @@ import SearchIndexMeta from "../../../components/SearchIndexMeta.astro";
 import DocsArticle from "../../../components/docs/DocsArticle.astro";
 import DocsShell from "../../../components/docs/DocsShell.astro";
 import DocsSidebar from "../../../components/docs/DocsSidebar.astro";
+import { editUrl } from "../../../lib/docs-pages";
 import { getDocsProducts, type DocsProduct } from "../../../lib/docs";
 
 export async function getStaticPaths() {
@@ -30,7 +31,7 @@ const section = product.map[0];
   <DocsSidebar slot="sidebar" section={section} current="" />
   <div data-pagefind-body>
     <SearchIndexMeta product={product.key} productName={product.name} kinds={product.kinds} />
-    <DocsArticle product={product} title="Docs changelog" section={null}>
+    <DocsArticle product={product} title="Docs changelog" section={null} editUrl={editUrl(product.data.owner, product.data["docs-path"], "CHANGELOG.md")}>
       <Content />
     </DocsArticle>
   </div>

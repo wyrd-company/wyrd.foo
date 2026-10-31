@@ -40,13 +40,31 @@ describe("docs built from the fixture content", () => {
     const root = page("docs/gadget/configuration");
     expect(root.querySelector("h1")?.text).toBe("Configuration");
     const edit = root.querySelectorAll(".docs-toc-actions a").at(-1)?.getAttribute("href");
-    expect(edit).toBe("https://github.com/example-org/gadgets/edit/HEAD/docs/user/gadget/guides/configuration.md");
+    expect(edit).toBe("https://github.dev/example-org/gadgets/blob/HEAD/docs/user/gadget/guides/configuration.md");
     expect(existsSync(join(DIST, "docs/gadget/guides"))).toBe(false);
   });
 
   it("edits a page of a repo with one docs unit under docs/user", () => {
     const edit = page("docs/sprocket/tools").querySelectorAll(".docs-toc-actions a").at(-1)?.getAttribute("href");
-    expect(edit).toBe("https://github.com/example-org/sprocket/edit/HEAD/docs/user/tools.md");
+    expect(edit).toBe("https://github.dev/example-org/sprocket/blob/HEAD/docs/user/tools.md");
+  });
+
+  it("links every docs article footer to its source in GitHub.dev, including the changelog", () => {
+    const sources = {
+      "gadget/getting-started": "gadgets/blob/HEAD/docs/user/gadget/getting-started.md",
+      "gadget/install": "gadgets/blob/HEAD/docs/user/gadget/install.md",
+      "gadget/configuration": "gadgets/blob/HEAD/docs/user/gadget/guides/configuration.md",
+      "gadget/troubleshooting": "gadgets/blob/HEAD/docs/user/gadget/guides/troubleshooting.md",
+      "gadget/changelog": "gadgets/blob/HEAD/docs/user/gadget/CHANGELOG.md",
+      "gizmo/getting-started": "gadgets/blob/HEAD/docs/user/gizmo/getting-started.md",
+      "gizmo/usage": "gadgets/blob/HEAD/docs/user/gizmo/usage.md",
+      "sprocket/tools": "sprocket/blob/HEAD/docs/user/tools.md",
+    };
+    for (const [route, source] of Object.entries(sources)) {
+      const link = page(`docs/${route}`).querySelector(".docs-article-foot .docs-edit-link");
+      expect(link?.text, route).toContain("Edit this page");
+      expect(link?.getAttribute("href"), route).toBe(`https://github.dev/example-org/${source}`);
+    }
   });
 
   it("sets the theme before any stylesheet on every docs page, the redirects too", () => {
