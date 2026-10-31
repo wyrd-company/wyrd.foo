@@ -1,11 +1,20 @@
 ---
-/* The site footer. */
+/* The site footer, including issue drafts (implements: site). */
+import { issueReportUrl, type IssueReportProduct } from "../lib/issue-report";
+interface Props {
+  title?: string;
+  pageUrl?: string;
+  reportProduct?: IssueReportProduct;
+}
+const { title = "Wyrd Tools", pageUrl = Astro.url.href, reportProduct } = Astro.props;
 ---
 
 <footer class="site-footer">
   <div class="site-footer-inner site-width">
     <span class="site-footer-name">Wyrd Company</span>
     <a href="https://wyrd.company">wyrd.company</a>
+    {reportProduct && <a href={issueReportUrl(pageUrl, title, reportProduct)}>Report a problem with {reportProduct.name}</a>}
+    <a href={issueReportUrl(pageUrl, title)}>Report a site problem</a>
     <span class="site-footer-note">Tools released under open-source licenses.</span>
   </div>
 </footer>

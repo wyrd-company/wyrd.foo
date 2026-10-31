@@ -4,6 +4,7 @@
  * content and the footer. A page can replace the header with its own through
  * the "header" slot (the docs pages have a two-row header).
  */
+import type { IssueReportProduct } from "../lib/issue-report";
 import SiteFooter from "../components/SiteFooter.astro";
 import SiteHead from "../components/SiteHead.astro";
 import SiteHeader from "../components/SiteHeader.astro";
@@ -12,6 +13,7 @@ import type { NavItem } from "../lib/site";
 
 interface Props {
   title: string;
+  reportProduct?: IssueReportProduct;
   description?: string;
   /** The product this page belongs to: its favicon and social image, and
    * search ranks its results first. */
@@ -21,7 +23,7 @@ interface Props {
   /** The page is served at URLs that are not its own (the 404 page). */
   noindex?: boolean;
 }
-const { title, description, product, nav, noindex } = Astro.props;
+const { title, description, product, nav, noindex, reportProduct } = Astro.props;
 ---
 
 <!doctype html>
@@ -36,6 +38,6 @@ const { title, description, product, nav, noindex } = Astro.props;
     <main class="site-main">
       <slot />
     </main>
-    <SiteFooter />
+    <SiteFooter title={title} pageUrl={new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).href} reportProduct={reportProduct} />
   </body>
 </html>

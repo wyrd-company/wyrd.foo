@@ -66,6 +66,8 @@ const media = product ? product.media.map((item) => ({ ...item, src: productAsse
   title={product ? `${tool.name} — ${product.tagline}` : `${tool.name} — Wyrd Tools`}
   description={product ? product.tagline : feature!.description}
   product={head}
+  reportProduct={{ owner: tool.owner, name: tool.name, key, version: tool.version,
+    docsVersion: product?.["docs-version"], sourcePath: feature ? `${feature.source}/README.md` : "docs/user/docs.yml" }}
 >
   <article class="product site-width" data-product={key} data-page={product ? "product" : "feature"} data-pagefind-body>
     <SearchIndexMeta product={key} productName={tool.name} kinds={kinds} />

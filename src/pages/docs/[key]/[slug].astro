@@ -32,7 +32,7 @@ const { prev, next } = neighbours(product.map, page.slug);
 const editLink = editUrl(product.data.owner, product.data["docs-path"], page.rel);
 ---
 
-<DocsShell title={page.title} product={product} products={products} section={section.section}>
+<DocsShell title={page.title} product={product} products={products} section={section.section} sourcePath={`${product.data["docs-path"]}/${page.rel}`}>
   <DocsSidebar slot="sidebar" section={section} current={page.slug} />
   <div data-pagefind-body>
     <SearchIndexMeta product={product.key} productName={product.name} kinds={product.kinds} />
