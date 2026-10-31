@@ -8,7 +8,8 @@ The site is a static build with no backend. The front page holds the featured
 product, recent releases and the catalog. Each product has a product page, a
 releases page and, when it ships pages, a docs site. `/releases` lists every
 product's latest release, and Pagefind indexes the product, releases and docs
-pages.
+pages. Each product page also has a Markdown form at `/tools/<key>.md`,
+including feature entries, all install methods and the latest release.
 
 ## Design
 
