@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parse } from "yaml";
 import { z } from "zod";
+import { workflowTriggerFindings } from "./workflow-triggers.ts";
 import { computeRepo } from "./compute.ts";
 import { applyRepo } from "./content.ts";
 import { fetchBranch } from "./fetch.ts";
@@ -152,8 +153,9 @@ export async function validateRepo(options: ValidateOptions): Promise<RepoReport
     }
     const result = await compute(report, dir, options.owner, files, options.releases, options.strict ?? false);
     if (result === undefined) return report;
-    report.findings.push(...result.findings);
-    report.outcome = result.failed ? "failed" : "passed";
+    const triggers = await workflowTriggerFindings(files, options.strict ?? false);
+    report.findings.push(...result.findings, ...triggers.list);
+    report.outcome = result.failed || triggers.failed ? "failed" : "passed";
     report.products = result.products.map((product) => product.key).sort();
   } catch (error) {
     report.findings.push({ severity: "error", message: `failed: ${(error as Error).message}` });

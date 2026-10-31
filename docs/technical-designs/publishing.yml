@@ -700,6 +700,14 @@ proposed-design:
     it pushes a tag. `--strict` reads GitHub Releases, as publish mode does;
     it refuses `--offline` and exits 2.
 
+    Validate also reads the top-level `.yml` and `.yaml` files in
+    `.github/workflows/` from the selected tree. Each name in a
+    `workflow_run.workflows` list must match a workflow `name:` exactly.
+    A missing match is a warning, or an error with `--strict`, naming the
+    caller file and the unmatched name. A workflow file that is not valid
+    YAML is reported at the same severity. Repos with no `workflow_run`
+    trigger need no such match.
+
     A checkout can be a plain clone or a linked worktree, in local mode,
     validate and publish mode alike. The publisher finds the git dirs the way
     git does: a `.git` file names the worktree's own git dir, and that dir's
