@@ -232,7 +232,9 @@ test.describe("install tabs", () => {
           "-y",
           "@example-org/sprocket",
         ]);
-      await panel.getByRole("button", { name: /Copy/ }).click();
+      const copy = panel.locator("[data-copy]");
+      await copy.click();
+      await expect(copy).toHaveText("Copied");
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
         code,
       );
