@@ -29,7 +29,8 @@ async function freePort(): Promise<number> {
 
 /** Starts `astro dev` on `root` (content/ when undefined), fetches PAGE, and stops the server. */
 async function devRun(port: number, root: string | undefined) {
-  const env = { ...process.env };
+  // Keep Astro in the child so this test owns its lifetime and shutdown.
+  const env: NodeJS.ProcessEnv = { ...process.env, ASTRO_DEV_BACKGROUND: "0" };
   delete env.WYRD_CONTENT_DIR;
   if (root !== undefined) env.WYRD_CONTENT_DIR = root;
   const child = spawn(process.execPath, [ASTRO, "dev", "--port", String(port)], { cwd: REPO, env, stdio: ["ignore", "pipe", "pipe"] });

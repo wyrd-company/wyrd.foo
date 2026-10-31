@@ -100,6 +100,11 @@ templates/tool-docs/         # the Toha template that onboards a tool repo
 
 ## Develop
 
+Use Node.js 22.23.4 or later and the pnpm version in `package.json`.
+The site uses Astro 7 with Vite 8 and the Tailwind Vite plugin. Its explicit
+Unified Markdown processor keeps the heading plugin active;
+`compressHTML: true` preserves HTML-aware whitespace handling.
+
 ```sh
 pnpm install
 pnpm dev        # or: task dev  (binds 0.0.0.0 for the devcontainer)
@@ -148,6 +153,15 @@ finding. For a repo that already publishes, add `--strict`: it uses publish's
 severities, so the run fails before the tag push, not after it. `--strict`
 reads GitHub Releases, so it does not go with `--offline`.
 
+## Dependency updates
+
+`renovate.json` uses the [shared Renovate preset](https://github.com/wyrd-company/.github/blob/main/renovate-config.json).
+It limits updates to three concurrent PRs and two new PRs per hour. Check
+the [Dependency Dashboard](https://github.com/wyrd-company/wyrd.foo/issues/5)
+for detected updates under **Rate-Limited** before treating a missing PR as
+a detection failure. The shared throughput policy is tracked in
+[the Renovate follow-up](https://github.com/wyrd-company/.github/issues/6).
+
 ## Browser tests
 
 Behaviour that only a real browser shows (the theme before the first paint, the
@@ -157,7 +171,9 @@ theme, the docs pages' sticky header and "On this page", and the 404 status
 and links of an unknown URL) is checked with
 [Playwright Test](https://playwright.dev/docs/test-intro) in `test/browser/`.
 The suite serves the built site (`dist/`) with `astro preview` on a free port,
-and stops the server when the run ends, however it ends. The home, docs and
+and stops the server when the run ends, however it ends. The harness uses
+`astro preview --ignore-lock` so Playwright owns each foreground server and
+the fixture servers can run together. The home, docs and
 product page specs each run against a server of their own on a fixture build
 (`dist-fixtures/home`, `dist-fixtures/docs` and `dist-fixtures/products`, built
 from `test/fixtures/*-content` by `pnpm test:browser`, so the suite has no build

@@ -107,12 +107,14 @@ export function harnessConfig(options: HarnessOptions): PlaywrightTestConfig {
         use: { browserName: "chromium" as const, baseURL: fixtureOrigin(fixture) },
       })),
     ],
+    // Each fixture has its own foreground server; Playwright owns their cleanup.
+    // Astro 7's per-checkout preview lock would allow only one of them.
     webServer: [
-      server(options.command ?? `pnpm exec astro preview --host 127.0.0.1 --port ${port}`, origin),
+      server(options.command ?? `pnpm exec astro preview --ignore-lock --host 127.0.0.1 --port ${port}`, origin),
       ...served.map((fixture) =>
         server(
           fixture.command ??
-            `pnpm exec astro preview --outDir ${fixture.outDir} --host 127.0.0.1 --port ${fixture.port}`,
+            `pnpm exec astro preview --ignore-lock --outDir ${fixture.outDir} --host 127.0.0.1 --port ${fixture.port}`,
           fixtureOrigin(fixture),
         ),
       ),
