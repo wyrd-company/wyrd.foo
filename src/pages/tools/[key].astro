@@ -102,7 +102,7 @@ const media = product ? product.media.map((item) => ({ ...item, src: productAsse
       )
     }
     <ProductSection id="install" title="Install">
-      <ProductInstall kinds={tool.kinds} />
+      <ProductInstall kinds={tool.kinds} productKey={entry.id} />
     </ProductSection>
     {
       Readme && (

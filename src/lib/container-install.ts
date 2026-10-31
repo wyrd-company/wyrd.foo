@@ -1,34 +1,41 @@
-/*
- * relationships:
- *   implements: site
- * Image install methods use the published reference, without product-specific
- * ports, volumes or command overrides. Product docs own those settings.
- */
+/* relationships: { implements: site, references: publishing } */
 import { devcontainerImageSnippet } from "./install-blocks";
+import type { KindBlock } from "../schema/index";
 
-export function containerImageOptions(ref: string) {
-  // JSON strings are also YAML quoted scalars, including refs with a tag or digest.
-  const image = JSON.stringify(ref);
-  return [
+/** Read published tool-authored YAML; never derive runtime settings from the image ref. */
+export function containerImageOptions(
+  block: Extract<KindBlock, { kind: "devcontainer-image" }>,
+  read: (path: string) => string,
+) {
+  const options: {
+    id: string;
+    label: string;
+    instruction: string;
+    code: string;
+    command?: string;
+  }[] = [
     {
       id: "devcontainer",
       label: "Dev container",
       instruction: "Use in devcontainer.json",
-      code: devcontainerImageSnippet(ref),
-    },
-    {
-      id: "compose",
-      label: "Docker Compose",
-      instruction: "Save as compose.yaml; add any settings required by the product docs",
-      code: `services:\n  app:\n    image: ${image}`,
-      command: "docker compose up -d",
-    },
-    {
-      id: "kubernetes",
-      label: "Kubernetes",
-      instruction: "Save as pod.yaml; add any settings required by the product docs",
-      code: `apiVersion: v1\nkind: Pod\nmetadata:\n  name: app\nspec:\n  containers:\n    - name: app\n      image: ${image}`,
-      command: "kubectl apply -f pod.yaml",
+      code: devcontainerImageSnippet(block.ref),
     },
   ];
+  for (const method of ["compose", "kubernetes"] as const) {
+    const path = block[method];
+    if (path === undefined) continue;
+    // Quote the authored path as one shell argument, including spaces and metacharacters.
+    const argument = "'" + path.replaceAll("'", "'\"'\"'") + "'";
+    options.push({
+      id: method,
+      label: method === "compose" ? "Docker Compose" : "Kubernetes",
+      instruction: `Save as ${path}`,
+      code: read(path),
+      command:
+        method === "compose"
+          ? `docker compose -f ${argument} up -d`
+          : `kubectl apply -f ${argument}`,
+    });
+  }
+  return options;
 }

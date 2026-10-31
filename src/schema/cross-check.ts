@@ -1,3 +1,4 @@
+import { isMap, parseAllDocuments } from "yaml";
 import { isFeatureEntry, type DocsFile, type FeatureEntry, type ProductEntry } from "./docs-file.ts";
 import { productDocsFolder } from "./docs-folder.ts";
 import { readImageHeader, type ImageType } from "./image-header.ts";
@@ -139,6 +140,35 @@ function checkAssets({ docsFile, docs, files, sources }: DocsTree): ContractIssu
             : `${ref.path} is docs/user/${path}, which is not listed in assets as ${path}`;
         issues.push({ file: docsFile, field, message });
       }
+      if (["compose", "kubernetes"].includes(String(ref.field.at(-1)))) {
+        const bytes = files.get(path);
+        if (bytes === undefined)
+          issues.push({
+            file: docsFile,
+            field,
+            message: `${path} does not exist under the product docs folder`,
+          });
+        else {
+          try {
+            const documents = parseAllDocuments(
+              new TextDecoder("utf-8", { fatal: true }).decode(bytes),
+            );
+            if (
+              documents.length === 0 ||
+              documents.some(
+                (doc) => doc.errors.length > 0 || !isMap(doc.contents),
+              )
+            )
+              throw new Error("empty or invalid YAML");
+          } catch {
+            issues.push({
+              file: docsFile,
+              field,
+              message: `${path} must contain non-empty UTF-8 YAML`,
+            });
+          }
+        }
+      }
       const problem = imageProblem(ref, files.get(path));
       if (problem !== undefined) issues.push({ file: docsFile, field, message: problem });
     }
@@ -168,6 +198,13 @@ function assetRefs(key: string, entry: ProductEntry): AssetRef[] {
   if (entry["social-image"] !== undefined) {
     refs.push({ field: at("social-image"), path: entry["social-image"], types: ["png", "jpeg"], size: SOCIAL_IMAGE_SIZE });
   }
+  entry.kinds.forEach((block, index) => {
+    if (block.kind !== "devcontainer-image") return;
+    for (const method of ["compose", "kubernetes"] as const) {
+      if (block[method] !== undefined)
+        refs.push({ field: at("kinds", index, method), path: block[method] });
+    }
+  });
   entry.media.forEach((item, index) => refs.push({ field: at("media", index, "src"), path: item.src }));
   return refs;
 }

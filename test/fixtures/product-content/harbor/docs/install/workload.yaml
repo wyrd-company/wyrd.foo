@@ -1,0 +1,10 @@
+# Tool-authored workload.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: workspace
+spec:
+  containers:
+    - name: workspace
+      image: busybox:1
+      command: [sleep, "3600"]

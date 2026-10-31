@@ -12,7 +12,7 @@ import type { ToolFile } from "../schema/index.ts";
 export function namedAssetPaths(data: ToolFile): string[] {
   const paths = [data.logo];
   if (!("source" in data)) {
-    paths.push(data["logo-dark"], data.favicon, data["social-image"], ...data.media.map((item) => item.src));
+    paths.push(data["logo-dark"], data.favicon, data["social-image"], ...data.media.map((item) => item.src), ...data.kinds.flatMap((block) => block.kind === "devcontainer-image" ? [block.compose, block.kubernetes] : []));
   }
   return [...new Set(paths.filter((path): path is string => path !== undefined))];
 }

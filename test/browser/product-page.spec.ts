@@ -164,15 +164,18 @@ test.describe("install tabs", () => {
     const compose = block.getByRole("tabpanel");
     await expect(compose).toHaveCount(1);
     await expect(compose.locator("pre").first()).toHaveText(
-      'services:\n  app:\n    image: "ghcr.io/example-org/harbor:0"',
+      "# Tool-authored service settings.\nservices:\n  workspace:\n    image: alpine:3\n    command: [sleep, infinity]\n    environment:\n      MODE: demo\n",
     );
     await compose
       .getByRole("button", { name: "Copy", exact: true })
       .first()
       .click();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-      'services:\n  app:\n    image: "ghcr.io/example-org/harbor:0"',
+      "# Tool-authored service settings.\nservices:\n  workspace:\n    image: alpine:3\n    command: [sleep, infinity]\n    environment:\n      MODE: demo\n",
     );
+    await compose.getByRole("button", { name: "Copy", exact: true }).last().click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("docker compose -f 'install/compose.yaml' up -d");
+    await block.screenshot({ path: "/tmp/pr47-compose.png" });
     await block
       .getByRole("tab", { name: "Docker Compose" })
       .press("ArrowRight");
@@ -190,8 +193,9 @@ test.describe("install tabs", () => {
       .last()
       .click();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-      "kubectl apply -f pod.yaml",
+      "kubectl apply -f 'install/workload.yaml'",
     );
+    await block.screenshot({ path: "/tmp/pr47-kubernetes.png" });
     await block
       .getByRole("tab", { name: "Kubernetes", exact: true })
       .press("Home");

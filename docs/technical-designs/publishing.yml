@@ -178,8 +178,9 @@ proposed-design:
     | `devcontainer-feature` | `ref`: the feature's OCI reference. |
     | `devcontainer-image` | `ref`: the image reference. `tags`: optional, the tags table as `{ tag, base, architectures }` entries, for an image whose tags the publisher cannot read from the image build config. |
 
-    For an image, the site generates dev container, Docker Compose and
-    Kubernetes snippets from `ref`. No extra install fields are required.
+    For an image, the site generates the dev container snippet from `ref`.
+    Optional `compose` and `kubernetes` fields name tool-authored YAML files;
+    see `container-manifests`.
     Product docs describe required runtime settings, such as ports and volumes.
 
     A product lists each kind once. The first kind is the primary kind: its
@@ -412,6 +413,44 @@ proposed-design:
     (`feature_caddy_1.0.1`) is a side effect and is not read. An image's date
     build tags (for example `20261018.123-noble`) are registry tags for the
     image's tags table, not release versions.
+  container-manifests: |
+    A `devcontainer-image` kind block may declare `compose` and `kubernetes`:
+
+    ```yaml
+    kinds:
+      - kind: devcontainer-image
+        ref: ghcr.io/example-org/workspace:1
+        compose: install/compose.yaml
+        kubernetes: install/workload.yaml
+    ```
+
+    Both paths are optional. Each is relative to the product's docs folder,
+    like `media[].src`. List the resolved paths in top-level `assets`, relative
+    to `docs/user/`. For a product in `docs/user/workspace/`, for example, list
+    `workspace/install/compose.yaml` and `workspace/install/workload.yaml`.
+    No manifest is inferred from a filename or from the image reference.
+
+    The publisher requires each declared file to exist within the product's
+    docs folder, be listed in `assets`, and contain non-empty UTF-8 YAML
+    mapping documents. Absolute paths, backslashes and `.` or `..` path
+    segments are rejected by the path schema. It copies the original bytes
+    into `content/<key>/docs/<path>`; it does not serialize the parsed YAML.
+    The site renders and copies that content verbatim and serves it through
+    the product assets endpoint. Comments, multi-document YAML, image
+    references, environment, mounts, commands and ports remain tool-authored.
+    Platform semantics and any companion files remain the tool's responsibility;
+    the tool's docs explain preparation and relative file dependencies.
+    The publisher does not execute manifests or deploy workloads.
+
+    Prefer `compose.yaml`, the Docker Compose convention:
+    https://docs.docker.com/compose/intro/compose-application-model/.
+    Kubernetes has no required basename; use a descriptive `.yaml` name for
+    the authored resource or resources (for example `workload.yaml`):
+    https://kubernetes.io/docs/concepts/configuration/overview/.
+    Explicit paths follow the media convention so that tool repos can keep
+    existing filenames and any directory structure. The fields are additive
+    within schemaVersion 1 and publish-docs v2; existing entries need no edit.
+    This is a minor contract release.
   generated-data: |
     Data produced at build time is a file in the tool repo's workspace when
     the publisher runs, not a release asset:

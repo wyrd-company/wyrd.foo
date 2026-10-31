@@ -606,3 +606,80 @@ describe("links outside docs/user/", () => {
     );
   });
 });
+
+// relationships: { implements: publishing }
+describe("authored image manifests", () => {
+  function manifests(methods = ["compose", "kubernetes"]) {
+    const files = betaFiles();
+    const docs = parse(files["docs/user/docs.yml"] as string);
+    const kind = docs.products["sample-image"].kinds[0];
+    for (const method of methods) {
+      kind[method] = `install/${method}.yaml`;
+      docs.assets.push(`install/${method}.yaml`);
+      files[`docs/user/install/${method}.yaml`] =
+        `# Authored ${method}\r\nservices: { worker: { image: 'alpine:3', command: [sleep, infinity] } }\r\n`;
+    }
+    files["docs/user/docs.yml"] = stringify(docs);
+    return files;
+  }
+  for (const methods of [
+    [],
+    ["compose"],
+    ["kubernetes"],
+    ["compose", "kubernetes"],
+  ]) {
+    it(`publishes exact bytes for ${methods.join(", ") || "no manifests"}`, async () => {
+      const files = manifests(methods);
+      const result = await computeRepo(input(files));
+      assert.equal(result.failed, false, JSON.stringify(result.findings));
+      const output = result.products.find(
+        (product) => product.key === "sample-image",
+      )!;
+      for (const method of methods)
+        assert.equal(
+          new TextDecoder().decode(
+            output.files.get(`docs/install/${method}.yaml`),
+          ),
+          files[`docs/user/install/${method}.yaml`],
+        );
+    });
+  }
+  for (const problem of [
+    "missing",
+    "unlisted",
+    "syntax",
+    "empty",
+    "scalar",
+    "utf8",
+    "escape",
+    "absolute",
+    "backslash",
+    "other-product",
+  ]) {
+    it(`rejects ${problem} with a field diagnostic and no output`, async () => {
+      const files = manifests();
+      const docs = parse(files["docs/user/docs.yml"] as string);
+      const kind = docs.products["sample-image"].kinds[0];
+      const path = "docs/user/install/compose.yaml";
+      if (problem === "missing") delete files[path];
+      if (problem === "unlisted")
+        docs.assets = ["assets/demo.svg", "install/kubernetes.yaml"];
+      if (problem === "syntax") files[path] = "services: [";
+      if (problem === "empty") files[path] = "# only a comment\n";
+      if (problem === "scalar") files[path] = "not a manifest";
+      if (problem === "utf8") files[path] = new Uint8Array([255]);
+      if (problem === "escape") kind.compose = "../private.yaml";
+      if (problem === "absolute") kind.compose = "/private.yaml";
+      if (problem === "backslash") kind.compose = "..\\private.yaml";
+      if (problem === "other-product") {
+        files["docs/user/sample-image/marker.yaml"] = "marker: true";
+        // The product folder takes precedence; the shared file must not be read.
+      }
+      files["docs/user/docs.yml"] = stringify(docs);
+      const result = await computeRepo(input(files));
+      assert.equal(result.failed, true);
+      assert.deepEqual(result.products, []);
+      assert.match(JSON.stringify(result.findings), /kinds.*compose/);
+    });
+  }
+});

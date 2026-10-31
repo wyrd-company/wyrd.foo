@@ -369,14 +369,14 @@ describe("install block: dev container feature and image", () => {
     expect(
       panels[1].querySelectorAll("pre").map((pre) => pre.textContent),
     ).toEqual([
-      'services:\n  app:\n    image: "ghcr.io/example-org/harbor:0"',
-      "docker compose up -d",
+      "# Tool-authored service settings.\nservices:\n  workspace:\n    image: alpine:3\n    command: [sleep, infinity]\n    environment:\n      MODE: demo\n",
+      "docker compose -f 'install/compose.yaml' up -d",
     ]);
     expect(
       panels[2].querySelectorAll("pre").map((pre) => pre.textContent),
     ).toEqual([
-      'apiVersion: v1\nkind: Pod\nmetadata:\n  name: app\nspec:\n  containers:\n    - name: app\n      image: "ghcr.io/example-org/harbor:0"',
-      "kubectl apply -f pod.yaml",
+      "# Tool-authored workload.\napiVersion: v1\nkind: Pod\nmetadata:\n  name: workspace\nspec:\n  containers:\n    - name: workspace\n      image: busybox:1\n      command: [sleep, \"3600\"]\n",
+      "kubectl apply -f 'install/workload.yaml'",
     ]);
     expect(block.querySelectorAll("[data-copy]")).toHaveLength(6);
     expect(

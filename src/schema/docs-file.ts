@@ -121,6 +121,8 @@ export const devcontainerFeatureKind = z.strictObject({
 export const devcontainerImageKind = z.strictObject({
   kind: z.literal("devcontainer-image"),
   ref: ociRef,
+  compose: assetPath.optional().describe("Authored Compose YAML, relative to the product docs folder; listed in assets."),
+  kubernetes: assetPath.optional().describe("Authored Kubernetes YAML, relative to the product docs folder; listed in assets."),
   tags: z
     .array(imageTag)
     .min(1)

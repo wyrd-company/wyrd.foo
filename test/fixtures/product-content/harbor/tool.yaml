@@ -17,6 +17,8 @@ media:
 kinds:
   - kind: devcontainer-image
     ref: ghcr.io/example-org/harbor:0
+    compose: install/compose.yaml
+    kubernetes: install/workload.yaml
     tags:
       - { tag: "0", base: debian-bookworm, architectures: [amd64, arm64] }
       - { tag: "0.9", base: debian-bookworm, architectures: [amd64, arm64] }

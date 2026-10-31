@@ -10,10 +10,14 @@ releases page and, when it ships pages, a docs site. `/releases` lists every
 product's latest release, and Pagefind indexes the product, releases and docs
 pages.
 
-Image product pages include dev container, Docker Compose and Kubernetes
-install options generated from the image reference. Compose and Kubernetes
-snippets are starting configurations; product docs describe required ports,
-volumes, environment and commands.
+Image product pages show a dev container snippet and optional Docker Compose
+and Kubernetes tabs. Tool repos author those YAML files under `docs/user/`,
+list them in `assets`, and declare `compose` and `kubernetes` paths in their
+`devcontainer-image` kind block. Paths are relative to the product's docs
+folder, like media paths. The publisher preserves the files' bytes; the site
+shows and copies their content with commands that name the authored files.
+See the [publishing contract](docs/technical-designs/publishing.yml),
+`container-manifests`, for examples and validation.
 
 ## Design
 

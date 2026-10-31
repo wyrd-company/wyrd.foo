@@ -229,14 +229,15 @@ proposed-design:
       their side effects. The media is an animated GIF of an agent session.
     - **Dev container feature**: a `devcontainer.json` snippet that adds the
       feature.
-    - **Dev container image**: the image reference and a `devcontainer.json`
-      snippet selected by default. Install method tabs also offer Docker Compose
-      and Kubernetes. Compose shows a minimal `compose.yaml` service and
-      `docker compose up -d`; Kubernetes shows a minimal Pod in `pod.yaml`
-      and `kubectl apply -f pod.yaml`. Each snippet uses the image reference
-      unchanged and has Copy. These are starting configurations; product docs
-      describe required ports, volumes, environment and commands. The tags
-      table follows the install methods.
+    - **Dev container image**: the image reference and a Dev container tab
+      with a `devcontainer.json` snippet. A Docker Compose tab appears only
+      when the image kind declares `compose`; a Kubernetes tab appears only
+      when it declares `kubernetes`. Each reads the published tool-authored
+      YAML file, shows its path in "Save as <path>", and copies its full text.
+      The command uses the same quoted path: `docker compose -f '<path>' up -d`
+      or `kubectl apply -f '<path>'`. The site does not generate runtime
+      settings. The image's registry tags table follows the install tabs.
+
   feature-entry-page: |
     A feature entry has an abbreviated page at `/tools/<key>`: the hero, the
     `devcontainer.json` snippet, the feature's `README.md` as it is, then the

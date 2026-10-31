@@ -1,0 +1,7 @@
+# Tool-authored service settings.
+services:
+  workspace:
+    image: alpine:3
+    command: [sleep, infinity]
+    environment:
+      MODE: demo
