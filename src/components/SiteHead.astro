@@ -7,6 +7,8 @@
 import "../styles/global.css";
 import { resolveFavicon, resolveSocialImage, type HeadProduct } from "../lib/head";
 
+import { RELEASES_RSS_HREF } from "../lib/site";
+
 interface Props {
   title: string;
   description?: string;
@@ -45,6 +47,7 @@ const socialImage = new URL(resolveSocialImage(product), site).href;
 <title>{title}</title>
 {description && <meta name="description" content={description} />}
 {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
+<link rel="alternate" type="application/rss+xml" title="Wyrd Tools releases" href={new URL(RELEASES_RSS_HREF, site).href} />
 <link rel="sitemap" href="/sitemap-index.xml" />
 <link rel="icon" type={favicon.type} href={favicon.href} />
 {!product && <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />}

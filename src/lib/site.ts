@@ -8,6 +8,9 @@ export type NavItem = "catalog" | "docs" | "releases";
 /** Every product's latest release (docs/technical-designs/site.yml, releases). */
 export const RELEASES_HREF = "/releases";
 
+/** The RSS feed of the releases list. */
+export const RELEASES_RSS_HREF = "/releases.xml";
+
 /** One product's releases page: its full changelog. */
 export const productReleasesHref = (key: string) => `/tools/${key}/releases`;
 

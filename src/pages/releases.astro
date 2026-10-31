@@ -12,7 +12,7 @@ import ReleaseEntry from "../components/product/ReleaseEntry.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
 import { formatDate, KIND_LABEL, type HomeEntry } from "../lib/home";
 import { releaseListings } from "../lib/releases";
-import { productReleasesHref } from "../lib/site";
+import { RELEASES_RSS_HREF, productReleasesHref } from "../lib/site";
 
 const [products, latestEntries] = await Promise.all([getCollection("products"), getCollection("latestReleaseEntries")]);
 const entries: HomeEntry[] = products.map((product) => ({ key: product.id, data: product.data, hasDocs: false }));
@@ -28,7 +28,7 @@ const listings = await Promise.all(
 <SiteLayout title="Releases — Wyrd Tools" description="The latest release of every Wyrd tool." nav="releases">
   <section class="releases site-width" data-pagefind-body>
     <h1>Releases</h1>
-    <p class="releases-deck">The latest release of each tool, newest first.</p>
+    <p class="releases-deck">The latest release of each tool, newest first. <a href={RELEASES_RSS_HREF}>Subscribe via RSS</a></p>
     {
       listings.length === 0 ? (
         <p class="releases-empty">No releases yet.</p>
