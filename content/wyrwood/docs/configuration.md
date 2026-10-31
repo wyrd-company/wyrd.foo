@@ -12,6 +12,20 @@ Policy lives on the controller. Agents receive the policies that match their
 containers and cache resolved assignments. A controller outage can be tolerated
 while the current tokens remain valid.
 
+## Controller settings
+
+Open **Settings** in the web admin navigation to inspect the controller settings
+loaded at startup. The page shows listen addresses, session lifetime, state
+directory, the enabled or disabled `local-agent.enabled` flag, OpenBao
+namespace and mounts, operator admission groups, and update check settings.
+It uses the same operator sign-in requirement as other admin
+pages. Agent configuration remains on each agent host.
+
+This view is read-only. Edit the controller YAML configuration and restart the
+controller to apply changes. Credentials, AppRole RoleID, and credential-file
+paths are omitted from the page data. Endpoint origins show only scheme and
+host; URL userinfo, paths, queries, and fragments are omitted.
+
 ## Policy document
 
 ```yaml
@@ -85,6 +99,25 @@ Environment requirements use name/value rows. TTL fields use an amount and a
 unit: minutes or hours on a binding, seconds/minutes/hours for SSH role creation.
 
 ## Access group
+
+The binding form offers groups reported by the running host agent, with numeric
+GIDs and host names when available. Numeric GIDs are authoritative. The choices
+include the effective primary group and supplementary groups, plus owner-only
+access. An agent with effective Linux `CAP_CHOWN` can also assign another numeric
+GID. The server rejects groups excluded by the current agent report, including
+stale form posts.
+
+For offline or older agents, the form marks capability information unavailable
+or stale and preserves the existing group as unverified. It does not replace an
+invalid saved choice. Select a reported group or owner-only access to correct it.
+Add the host agent user to another group and restart the agent, then reload to
+see its new report. Account changes alone do not change a running process.
+
+The container application must retain the selected numeric group as a primary
+or supplementary group; its primary GID need not match. An entrypoint such as
+`s6-setuidgid` can rebuild groups from the container account database and discard
+groups supplied only through Compose `group_add`. Check the application process,
+not only PID 1. The host dropdown does not prove container application access.
 
 The binding's `settings.access-group` is effectively required for non-root
 containers whose
@@ -398,3 +431,12 @@ above. Entries of type `other` do not get KV LIST grants or appear in the
 picker. The controller does not read KV metadata or data values, write KV
 data, or list `sys/mounts` for the editor. A denied or unavailable list shows
 a warning without blocking manual editing.
+
+## Controller local agent
+
+Set `local-agent.enabled: true` in the controller document to run the shared
+agent runtime inside `controller serve`. It defaults to false. Agent settings
+remain in `/etc/wyrwood/agent.yml`; enrollment and local commands retain the
+standard agent state and runtime paths. Follow
+[Controller with a local agent](install.md#controller-with-a-local-agent)
+for the Linux service setup and approval steps.

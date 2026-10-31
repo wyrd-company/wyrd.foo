@@ -13,6 +13,13 @@ Wyrwood delivers OpenBao-backed secrets and signing to containers through a
 per-container directory of Unix sockets. A container holds no token, no key,
 and no secret file.
 
+The controller's **web interface is the primary interface**. Sign in through
+your identity provider to approve agents, manage policies, bind containers,
+and inspect events. The CLI enrolls and operates each host's agent and
+provides diagnostics for automation. Start with the illustrated
+[Getting started](getting-started.md) guide, then use
+[Operations and command reference](operations.md) for both interfaces.
+
 ![Wyrwood web interface and command-line demo](assets/demo.gif)
 
 Wyrwood has two parts:
@@ -22,7 +29,9 @@ Wyrwood has two parts:
   policies and AppRoles.
 - The **agent** runs on each Linux host with Docker Engine. It enrolls with the
   controller over SSH, reports every container, and publishes each bound
-  container's sockets.
+  container's sockets. The controller can also run this agent in its own
+  process on a Linux host; see
+  [Controller with a local agent](install.md#controller-with-a-local-agent).
 
 A **policy** pairs an OpenBao policy with a container contract. The OpenBao
 policy names the secrets a container may read and the keys it may sign with.

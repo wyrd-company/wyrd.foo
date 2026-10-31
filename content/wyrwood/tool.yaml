@@ -1,6 +1,6 @@
 name: wyrwood
-version: 0.4.0
-docs-version: 0.1.0
+version: 0.4.1
+docs-version: 0.1.1
 tagline: OpenBao-backed secrets and signing for containers, with nothing stored inside.
 blurb: "A controller that owns policy and an agent on each Docker host that gives every bound container a directory of sockets: an OpenBao endpoint carrying the container's own token and an SSH agent whose keys live in OpenBao."
 status: preview
@@ -53,9 +53,15 @@ media:
   - src: assets/web-account-menu.png
     caption: Account menu with Security and Sign out.
     alt: The account menu open to show Security and Sign out.
+  - src: assets/web-security.png
+    caption: Operator security and identity-provider details.
+    alt: The Security page showing the operator and identity-provider details.
   - src: assets/web-versions.png
     caption: Controller and agent versions with update status.
-    alt: The versions page showing controller and agent versions and their update status.
+    alt: The Agents page showing controller and agent versions and their update status.
+  - src: assets/web-settings.png
+    caption: Effective controller settings loaded at startup.
+    alt: The read-only Settings page with controller, OpenBao, sign-in and update settings.
 logo: assets/emblem-light.svg
 logo-dark: assets/emblem-dark.svg
 favicon: assets/icon.svg
@@ -63,17 +69,49 @@ release-unit: wyrwood
 owner: wyrd-company/wyrwood
 docs-path: docs/user
 release:
-  version: 0.4.0
-  date: 2026-10-22T13:30:08.000Z
-  url: https://github.com/wyrd-company/wyrwood/releases/tag/0.4.0
+  version: 0.4.1
+  date: 2026-10-31T21:06:21.000Z
+  url: https://github.com/wyrd-company/wyrwood/releases/tag/0.4.1
   notes: |+
     ## Changelog
-    * 62a3051b34be156ff674b20639bcc3e2e390c0bd Manage binding token lifecycle through policy settings (#63)
-    * 1600df4193d9027a04287de8b87ac83fe222f683 Show container mount and environment setup for bindings (#61)
-    * 8c507997234b259499d8d8d8eb774539dc5167a1 chore(deps): adopt the Wyrd Renovate preset
-    * 9baa68be9d39988d538249eb7d96aa848f8200c0 chore(release): 0.4.0
-    * 831e4596db2f9011074ac9358178e00a064acc2f docs: reconcile stopped upgrades and publish setup asset
-    * ec68bdd949f2a9310d3143c5600f319f7c6fa5f4 feat(web): show all containers with filtering and sorting (#62)
-    * f2af3d8dac8167418b593d0c8f65c3b0434a67f4 fix(ci): pin the publisher action that accepts AUR service files (#56)
-    * e66c9531768405999d4d14931ab8f0ca1ff5a468 fix(docs): publish account menu and version screenshots (#58)
+    * 6aa09b278fe365745b23b70ee2c75cfdab1316ea chore(deps): update GoReleaser and align the release toolchain
+    * 707934573023d1ea6808f7e02793c8973eb6babc chore(deps): update Node type definitions to 26.6.6
+    * 50cf78c01a5f7bd5b6b6b7a3210c578754c48b62 chore(deps): update actions/checkout action to v7
+    * 04a864da53f6b0e74e72366c3375e2b56017ce9d chore(deps): update actions/setup-go action to v7
+    * 10566924f6bc61a7055a32fbe119d2ea281b737a chore(deps): update actions/setup-node action to v7
+    * de22d577abb40806b8692dff3c9495887005e213 chore(deps): update dependency node to v26
+    * bb89f2caa20dd1e0f6a3748925ac50ae4596aa74 chore(deps): update dependency openbao/openbao to v2.7.2
+    * 63add0743fd204ba16f7a8afeef90f3349ad3178 chore(deps): update dependency rumdl to v0.3.2
+    * 952a98241a1ad18722f55efcf1abbf8aa7a35021 chore(deps): update dependency ryl to v0.27.0
+    * 2b759956cda67360abc766afccdb9af3cfae55c1 chore(deps): update dependency vite to v8.3.5
+    * 938de353ee44b55fd67872ababac251470770282 chore(deps): update github artifact actions
+    * e010de27b370b52664db8278555211349b10fb8f chore(deps): update golang docker tag to v1.27.3
+    * ff2b3bb86bce526462af73b582ed9b8784dba29e chore(deps): update goreleaser/goreleaser-action digest to a4f02ab
+    * b229af3090d0aeb0593e2437e74205888f6b1e42 chore(deps): update pnpm to v11.28.10
+    * cbb6e281a14e0c145059a39d3997403351608a38 chore(deps): update pnpm to v12
+    * 3120e1f276a067f3b41a5d99588d36467a4165a8 chore(deps): update wyrd-company/wyrd.foo action to v2.2.1
+    * aaa4e8cd6b3b96f967466424f616919dbe29dff1 chore(release): prepare Wyrwood 0.4.1 and docs 0.1.1 (#85)
+    * 9fd5656f7a61a5d4ee0a560294043d12714c00df chore(release): upgrade intentional config to contract-2 (#67)
+    * d0f418b40194aa7f255fab189cfe7e98cb01b33c docs: capture Settings and refresh the combined UI receipt
+    * 74ea7b852062ded1f7e5e5ca04c197d1ed66d786 docs: converge host workflows and real access group screenshots
+    * 2048c9a9b94b71304aa72dcfc1ddaaef5aaa8644 docs: cover Settings in the screenshot workflow and operator guide
+    * 8f464537dcf6a2a54638e50314d0f2563cfbf8d6 docs: lead with web workflows and maintain real UI screenshots
+    * f2a1cc435eaddee24f7bb2ba9425445bbac5cb7c docs: refresh real screenshots on the integration base
+    * 796d282de4bd758ee24d2b2dfb8eeb9c9b9fc014 docs: refresh screenshots for the updated frontend lockfile
+    * ac357dd097edc9ba02def8e5919de506f6d7713c docs: wrap controller settings guidance
+    * fdc46cf3ef2d286f0a579f62c09d6f7d0404cd84 feat(bindings): choose access groups from running agent capabilities (#69)
+    * 6cef576a8e1e1c12a66eee019e8f54056ca107e8 feat(controller): run the shared local agent runtime (#72)
+    * ebc6cf367a8a482c8d5a4efe6a772424d95c2446 feat(web): display effective local agent setting with fresh screenshots
+    * 8c5a10b406bd1a768bd7fa0c6f0f0c6d7a46e2dd feat(web): show safe effective controller settings
+    * da13097c89fec60d6737f612362db76a39b326d5 fix(build): install Corepack for Node 26 toolchains
+    * c0defae21d456a0a102273fed0d67725b043e098 fix(build): preserve pnpm 12 lockfile format and refresh UI media
+    * 72cd227f87572312a658fe77b74fd010f10fe12e fix(deps): retain the OpenBao HCL 1 policy dialect
+    * 52c2b8a0cc3536e26ef864ed21c984cc472e8a68 fix(deps): update coordinated Charm SSH and Wish modules
+    * 108fddb85ac5b9c7b167bad2629c640987192e72 fix(deps): update module github.com/go-jose/go-jose/v4 to v4.1.7
+    * 8399378242639de47e437c2ae83a52d2a5a597c5 fix(deps): update module github.com/hashicorp/hcl to v2
+    * b68b8ad58c5f1e581091a24c559b388be72e3de2 fix(deps): update module modernc.org/sqlite to v1.61.1
+    * ea1cd0464905951bd6d17349d2f90c00a6aa63b0 fix(docs): exclude test entry points from screenshot freshness
+    * dfdad58cdb4521a7773217b1c7845610858a334f fix(docs): exempt generated documentation changelog wrapping (#86)
+    * b4ad2fc0f033a9feb3fdb6a3e33dffdd13733452 fix(release): build the pushed tag by name (#66)
+    * 28a901ef62c52b6278ee77df2e3d9b303ff878fa fix(renovate): preserve Vault-tagged HCL 1 updates
 
