@@ -33,7 +33,7 @@ describe("built page issue context", () => {
   it("keeps product ownership on releases pages", () => {
     const [product, site] = reports("products", "tools/widget/releases/index.html");
     expect(product.pathname).toBe("/example-org/widget/issues/new");
-    expect(product.searchParams.get("body")).toContain("Version: 1.4.0\nDocs version: 1.4.2\n");
+    expect(product.searchParams.get("body")?.split("\n")).toEqual(expect.arrayContaining(["Version: 1.4.0", "Docs version: 1.4.2"]));
     expect(site.pathname).toBe("/wyrd-company/wyrd.foo/issues/new");
   });
 
