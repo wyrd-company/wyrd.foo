@@ -39,6 +39,7 @@ export function alphaFiles(options: { withApp?: boolean } = {}): Files {
     "alpha-app-docs": { path: "docs/user/alpha-app", template: "{id}@{version}" },
   };
   return {
+    LICENSE: "SPDX-License-Identifier: MIT",
     "docs/user/docs.yml": yaml({
       schemaVersion: 1,
       assets: [
@@ -83,6 +84,7 @@ export const ALPHA_CLI_RELEASE = {
 /** A feature entry and a dev container image. */
 export function betaFiles(): Files {
   return {
+    LICENSE: "SPDX-License-Identifier: MIT",
     "docs/user/docs.yml": yaml({
       schemaVersion: 1,
       assets: ["assets/demo.svg"],
@@ -138,6 +140,7 @@ export const BETA_TAGS: TagSpec[] = [
 /** A repo without intentional. */
 export function gammaFiles(): Files {
   return {
+    LICENSE: "SPDX-License-Identifier: MIT",
     "docs/user/docs.yml": yaml({
       schemaVersion: 1,
       assets: ["assets/demo.svg"],
@@ -151,6 +154,7 @@ export function gammaFiles(): Files {
 /** A repo whose docs.yml fails the schema. */
 export function brokenFiles(): Files {
   return {
+    LICENSE: "SPDX-License-Identifier: MIT",
     "docs/user/docs.yml": yaml({ schemaVersion: 2, products: { "broken-tool": product("broken-tool", [cliKind]) } }),
   };
 }

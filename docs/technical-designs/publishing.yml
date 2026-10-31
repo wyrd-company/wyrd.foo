@@ -161,7 +161,7 @@ proposed-design:
     | `favicon` | no | SVG or PNG, relative to the product's docs folder and listed in `assets`. |
     | `social-image` | no | PNG or JPEG, 1200×630, relative to the product's docs folder and listed in `assets`. |
 
-    `owner`, `docs-path`, `release` and `featured` are written by the
+    `owner`, `docs-path`, `release`, `licence` and `featured` are written by the
     publisher; `docs.yml` does not set them. `docs.yml` has no `repo` field:
     the site builds the GitHub link from `owner`. Every other field is
     rejected.
@@ -185,6 +185,23 @@ proposed-design:
           - harness: Another harness
             command: Follow the plugin setup guide for this harness.
     ```
+  licence: |
+    The publisher reads the repo-root `LICENSE` at the input ref once for
+    all products and feature entries. `tool.yaml` carries an optional,
+    ingest-owned `licence` containing an SPDX expression with listed licence
+    and exception identifiers. `docs.yml` does not declare it.
+
+    One explicit `SPDX-License-Identifier: <expression>` in LICENSE is
+    authoritative, including compound expressions with AND, OR and WITH.
+    Without that declaration, complete MIT and Apache-2.0 texts are matched
+    against spdx-license-list, ignoring whitespace and copyright notice lines.
+    Changed terms are not matched. Missing, unidentifiable, invalid or
+    ambiguous licences produce a warning and no field, also in strict mode.
+    Multiple different declarations are ambiguous. A LICENSES/ folder does
+    not establish the repo's expression; the publisher never infers AND or OR
+    from its contents. Other licences can use the explicit SPDX declaration.
+    Detection is local and uses no network service. Republishing fills the
+    field for existing products.
   kinds: |
     `kinds` is an array of kind blocks. `kind` is one of `cli`, `mcp-server`,
     `app`, `coding-harness-plugin`, `devcontainer-feature` and `devcontainer-image`. `app` means a

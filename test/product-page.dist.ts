@@ -109,6 +109,14 @@ describe("product pages from the fixture content", () => {
 });
 
 describe("hero and facts", () => {
+  it("links the SPDX expression to the repo LICENSE, and omits an absent licence", () => {
+    const root = productPage("widget");
+    expect(fact(root, "licence")).toBe("MIT OR Apache-2.0");
+    expect(root.querySelector('[data-fact="licence"] a')?.getAttribute("href")).toBe("https://github.com/example-org/widget/blob/HEAD/LICENSE");
+    expect(text(root.querySelector('[data-fact="licence"]')?.parentNode.querySelector("dt"))).toBe("Licence");
+    expect(productPage("gadget").querySelector('[data-fact="licence"]')).toBeNull();
+  });
+
   it("shows the primary kind's default command and every fact", () => {
     const root = productPage("widget");
     expect(text(root.querySelector(".hero-install-label"))).toBe("Install with Homebrew (macOS, Linux)");

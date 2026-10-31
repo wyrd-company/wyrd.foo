@@ -140,3 +140,16 @@ describe("withClosestIssues(toolFileSchema), the site's products schema", () => 
     assert.deepEqual(raw({ ...ingestedProduct(), colour: "red" }), [{ path: "colour", message: "is not an allowed field" }]);
   });
 });
+
+
+describe("ingest-owned licence", () => {
+  it("accepts present and absent SPDX expressions for products and features", () => {
+    for (const input of [ingestedProduct(), ingestedFeature()]) {
+      assert.deepEqual(issues(input), []);
+      for (const licence of ["MIT", "MIT OR Apache-2.0", "GPL-2.0-only WITH Classpath-exception-2.0"])
+        assert.deepEqual(issues({ ...input, licence }), []);
+      for (const licence of ["", "Unknown", "MIT OR", "LicenseRef-custom", "DocumentRef-other:LicenseRef-custom"])
+        assertIssue(issues({ ...input, licence }), "licence", /SPDX|Too small/);
+    }
+  });
+});

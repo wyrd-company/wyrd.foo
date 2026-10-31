@@ -157,7 +157,9 @@ proposed-design:
        GitHub" and an "Other install methods ↓" link. A short facts list on
        the right: all kinds, status, latest version and date, category,
        repository. The latest version and date link to the page's Releases
-       section (`#releases`).
+       section (`#releases`). The optional Licence row displays the ingested
+       SPDX expression and links to `https://github.com/<owner>/blob/HEAD/LICENSE`.
+       The row is absent when no licence was identified in the repo LICENSE.
     2. **Media**: the first media item on its own full-width row, with its
        caption; the other items follow as a numbered tour (see
        `media-tour`). An MP4 or WebM file shows as a muted, looping video
