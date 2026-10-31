@@ -188,8 +188,11 @@ proposed-design:
     It uses the same published content as the HTML page. Embedded README and
     changelog Markdown retain their meaning and headings, with document-local
     references (including images and footnotes). Each fragment closes its
-    EOF-scoped constructs before generated sections are appended. Published
-    source files are unchanged.
+    EOF-scoped constructs before generated sections are appended. HTML state
+    is inspected across the complete fragment, including nested raw-text
+    elements and inline pairs; complete raw HTML is retained. Inspection does
+    not convert the Markdown response to HTML. Published source files are
+    unchanged.
   media-tour: |
     Each tour item (not the first, full-width one) opens full size in a
     modal built on the native `<dialog>` element.
