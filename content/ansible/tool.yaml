@@ -1,14 +1,20 @@
 kinds:
   - kind: devcontainer-feature
-    ref: ghcr.io/wyrd-company/devcontainers/ansible:0
+    ref: ghcr.io/wyrd-company/devcontainers/ansible:1
 source: src/features/ansible
 category: Dev Containers
 logo: logo.svg
 release-unit: ansible
 owner: wyrd-company/devcontainers
 release:
-  version: 0.0.0
-  date: 2026-10-30T16:51:15.000Z
+  version: 1.0.0
+  date: 2026-10-31T00:00:29.000Z
+  notes: |-
+    Graduates from `0.x` to `1.0.0`.
+
+    ### Breaking
+
+    - Adds the Ansible Feature. It installs Ansible, applies a playbook at container startup through the ansible-setup s6 oneshot, and provides the ansible-sync command to update the playbook source and apply the playbook again. The optional `sudoUser` option lets one user run `sudo ansible-sync` and nothing else.
 name: Ansible
 description: Installs Ansible and converges the container with a playbook through an s6-overlay oneshot at startup and the ansible-sync command.
-version: 0.0.0
+version: 1.0.0
