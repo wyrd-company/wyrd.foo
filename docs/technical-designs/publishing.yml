@@ -191,19 +191,31 @@ proposed-design:
     ingest-owned `licence` containing an SPDX expression with listed licence
     and exception identifiers. `docs.yml` does not declare it.
 
-    One explicit `SPDX-License-Identifier: <expression>` in LICENSE is
-    authoritative, including compound expressions with AND, OR and WITH.
-    Without that declaration, complete MIT and Apache-2.0 texts are matched
-    against spdx-license-list, ignoring whitespace and accepting numeric years
-    or year ranges only in the canonical year slot. All other source text,
-    including copyright notices, is preserved. Free-form copyright-holder
-    substitutions require an explicit SPDX declaration: they cannot be safely
-    distinguished from added conditions by text identification.
-    Changed terms are not matched. Missing, unidentifiable, invalid or
-    ambiguous licences produce a warning and no field, also in strict mode.
-    Multiple different declarations are ambiguous. A LICENSES/ folder does
-    not establish the repo's expression; the publisher never infers AND or OR
-    from its contents. Other licences can use the explicit SPDX declaration.
+    One explicit `SPDX-License-Identifier: <expression>` in LICENSE states
+    the expression, including AND, OR and WITH. A declaration alone, or with
+    exactly `See LICENSES/ for texts.`, is accepted. Any other accompanying
+    content must match one complete supported canonical text and the declaration
+    must be its simple SPDX identifier. A declaration cannot override modified
+    or contradictory terms. Compound declarations with accompanying full texts
+    warn and omit: the publisher cannot establish their relationship or exceptions.
+
+    Complete MIT and Apache-2.0 texts are matched against spdx-license-list.
+    Whitespace can vary. Numeric years, ranges and comma-separated years can
+    replace the canonical year slot. The holder slot accepts a single line of
+    capitalized name words (Unicode letters, apostrophes and hyphens), with
+    `contributors`, `and`, `of`, `the` and `&` as connecting or suffix words.
+    Words indicating terms, such as `No`, `Commercial`, `Use` and `Prohibited`,
+    are excluded. Literal template placeholders are also accepted. This is
+    conservative name matching, not general licence recognition or legal analysis;
+    unusual names, punctuation and free-form notices can warn and omit.
+    No copyright line or substantive permission, condition or restriction text
+    is discarded. A declaration does not relax these matching boundaries.
+
+    Missing, unidentifiable, invalid or ambiguous licences produce a warning
+    and no field, also in strict mode. Multiple different declarations are
+    ambiguous. A LICENSES/ folder does not establish the repo's expression;
+    the publisher never infers AND or OR from its contents. Other licences
+    can use a declaration alone or the supported reference form.
     Detection is local and uses no network service. Republishing fills the
     field for existing products.
   kinds: |

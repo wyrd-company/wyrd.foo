@@ -64,8 +64,9 @@ through it, so a product that breaks the contract fails the build.
 The product facts show a Licence row when the publisher identifies the repo-root
 `LICENSE`. The ingest-owned `licence` is an SPDX expression linked to that file
 on GitHub. Missing or unknown licences produce a publisher warning and no row.
-Text matching preserves copyright notices; noncanonical holder text needs an
-explicit `SPDX-License-Identifier` declaration in `LICENSE` to be identified.
+Text matching accepts canonical MIT/Apache terms with bounded year and holder
+substitutions. An SPDX declaration cannot override changed or conflicting terms.
+Unusual notices can warn and omit; detection is conservative.
 The detection and multi-licence rules are in the publishing design.
 
 The collections read `content/` unless `WYRD_CONTENT_DIR` names another

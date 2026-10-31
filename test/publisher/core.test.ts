@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { parse, stringify } from "yaml";
+import apache from "spdx-license-list/licenses/Apache-2.0.json" with { type: "json" };
 import mit from "spdx-license-list/licenses/MIT.json" with { type: "json" };
 import {
   applyRepo,
@@ -706,6 +707,34 @@ describe("publisher licence ingestion", () => {
     assert.equal(warnings.length, 1);
     assert.equal(warnings[0].severity, "warning");
     assert.match(warnings[0].message, /unidentifiable or ambiguous/);
+  });
+  it("rejects declared restricted and contradictory terms for products and features", async () => {
+    for (const LICENSE of [
+      `SPDX-License-Identifier: MIT\n${mit.licenseText}\nCommercial use is prohibited.`,
+      `SPDX-License-Identifier: Apache-2.0\n${apache.licenseText}\nCommercial use is prohibited.`,
+      `SPDX-License-Identifier: Apache-2.0\n${mit.licenseText}`,
+    ]) {
+      const result = await computeRepo(input({ ...betaFiles(), LICENSE }));
+      assert.equal(result.failed, false);
+      assert.equal(result.products.length, 2);
+      for (const product of result.products) assert.equal(Object.hasOwn(product.tool, "licence"), false);
+      const warnings = result.findings.filter((finding) => finding.file === "LICENSE");
+      assert.equal(warnings.length, 1);
+      assert.equal(warnings[0].severity, "warning");
+    }
+  });
+  it("publishes completed canonical notices into products and features", async () => {
+    for (const [id, text, year, holder] of [
+      ["MIT", mit.licenseText, "<year>", "<copyright holders>"],
+      ["Apache-2.0", apache.licenseText, "[yyyy]", "[name of copyright owner]"],
+    ]) {
+      const LICENSE = text.replace(year, "2026").replace(holder, "Example contributors");
+      const result = await computeRepo(input({ ...betaFiles(), LICENSE }));
+      assert.equal(result.failed, false);
+      assert.equal(result.products.length, 2);
+      for (const product of result.products) assert.equal(product.tool.licence, id);
+      assert.equal(result.findings.filter((finding) => finding.file === "LICENSE").length, 0);
+    }
   });
   it("omits the field and reports a missing licence once per repo", async () => {
     const files = alphaFiles();

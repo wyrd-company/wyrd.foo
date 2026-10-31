@@ -8,19 +8,26 @@ import { licenceSchema } from "../src/schema/licence.ts";
 import type { RepoFiles } from "./repo-files.ts";
 import type { Findings } from "./report.ts";
 
-// Never erase source text: a copyright-prefixed line can contain conditions.
-// Only the canonical template's year slot varies; free-form holder text cannot
-// safely be distinguished from terms. Such files need an explicit declaration.
+// Only the two canonical placeholder slots vary. In particular, never delete
+// copyright lines: a notice can carry an added condition on the same line.
 const normalize = (text: string) => text.replace(/\s+/g, " ").trim();
+const literal = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+const year = String.raw`\d{4}(?:[-–]\d{4})?(?:, \d{4}(?:[-–]\d{4})?)*`;
+// Conservatively accept name tokens, plus common connecting/suffix words.
+// These are identifiers, not a free-form sentence slot. Unusual notices warn.
+const nameToken = String.raw`(?:[\p{Lu}][\p{L}\p{M}'’–-]*|contributors|and|of|the|&)`;
+const holderName = new RegExp(`^${nameToken}(?:[ \t]+${nameToken})*$`, "u");
+const terms = /\b(?:no|not|only|use|commercial|noncommercial|prohibit\w*|restrict\w*|permission\w*|condition\w*|licen[cs]\w*|must|shall|may|require\w*|except\w*|subject|allow\w*|permit\w*|forbid\w*)\b/i;
 const matches = (source: string, canonical: string): boolean => {
-  const text = normalize(source);
-  const template = normalize(canonical);
-  if (text === template) return true;
   const yearSlot = canonical === mit.licenseText ? "<year>" : "[yyyy]";
-  const [before, after] = template.split(yearSlot);
-  if (!text.startsWith(before) || !text.endsWith(after)) return false;
-  const year = text.slice(before.length, text.length - after.length);
-  return /^\d{4}(?:[-–]\d{4})?(?:, \d{4}(?:[-–]\d{4})?)*$/.test(year);
+  const holderSlot = canonical === mit.licenseText ? "<copyright holders>" : "[name of copyright owner]";
+  const [before, rest] = canonical.split(yearSlot);
+  const [between, after] = rest.split(holderSlot);
+  const pattern = new RegExp(`^${literal(before)}(?:${literal(yearSlot)}|${year})${literal(between)}(${literal(holderSlot)}|[^\\r\\n]+?)${literal(after)}$`, "u");
+  const match = pattern.exec(source.trim());
+  if (match === null) return false;
+  const holder = match[1];
+  return holder === holderSlot || (holderName.test(holder) && !terms.test(holder));
 };
 const known = [["MIT", mit.licenseText], ["Apache-2.0", apache.licenseText]] as const;
 
@@ -32,14 +39,28 @@ export async function repoLicence(files: RepoFiles, findings: Findings): Promise
     return undefined;
   }
   const source = new TextDecoder().decode(bytes);
-  const declarations = [...source.matchAll(/^\s*SPDX-License-Identifier:\s*(.+)$/gm)].map((match) => match[1].trim());
+  // Parse one physical line at a time so an empty declaration cannot consume
+  // the first line of accompanying terms. All other content remains checked.
+  const lines = source.split(/\r?\n/);
+  const declarationLine = /^[ \t]*SPDX-License-Identifier:[ \t]*(.*)$/;
+  const declarations = lines.flatMap((line) => {
+    const match = declarationLine.exec(line);
+    return match ? [match[1].trim()] : [];
+  });
+  const body = lines.filter((line) => !declarationLine.test(line)).join("\n");
   if (declarations.length > 0) {
     const unique = [...new Set(declarations)];
-    if (unique.length === 1 && licenceSchema.safeParse(unique[0]).success) return unique[0];
+    if (unique.length === 1 && licenceSchema.safeParse(unique[0]).success) {
+      // A declaration-only expression states the relationship without guessing.
+      // A body must be one complete supported text with the same simple ID;
+      // we cannot establish compound/exception semantics from partial texts.
+      if (["", "See LICENSES/ for texts."].includes(normalize(body))) return unique[0];
+      if (known.some(([id, text]) => id === unique[0] && matches(body, text))) return unique[0];
+    }
   } else {
     const match = known.find(([, text]) => matches(source, text));
     if (match !== undefined) return match[0];
   }
-  findings.warning({ file: "LICENSE", message: "licence is unidentifiable or ambiguous; use one SPDX-License-Identifier expression in LICENSE; no licence recorded" });
+  findings.warning({ file: "LICENSE", message: "licence is unidentifiable or ambiguous; declaration and any accompanying terms must agree with a supported canonical text; no licence recorded" });
   return undefined;
 }
