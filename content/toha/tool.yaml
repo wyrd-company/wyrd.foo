@@ -1,6 +1,6 @@
 name: toha
-version: 0.4.0
-docs-version: 0.1.0
+version: 0.4.1
+docs-version: 0.1.1
 tagline: Generate projects and files from templates.
 blurb: Toha uses one interview for terminal users, scripts, agents, and Rust callers.
 status: preview
@@ -121,6 +121,8 @@ nav:
         pages:
           - updating-projects
           - generating-into-subpaths
+  - section: Library
+    groups:
       - group: Library
         pages:
           - using-toha-from-rust
@@ -132,20 +134,19 @@ release-unit: toha
 owner: wyrd-company/toha
 docs-path: docs/user
 release:
-  version: 0.4.0
-  date: 2026-10-26T22:51:54.000Z
-  url: https://github.com/wyrd-company/toha/releases/tag/0.4.0
+  version: 0.4.1
+  date: 2026-10-31T20:50:18.000Z
+  url: https://github.com/wyrd-company/toha/releases/tag/0.4.1
   notes: |-
     ## What's Changed
-    * docs: drop the release summary intent step by @mmenm-claude[bot] in https://github.com/wyrd-company/toha/pull/22
-    * docs: add the Toha logo, favicons, and social images by @mmenm-claude[bot] in https://github.com/wyrd-company/toha/pull/28
-    * Document questions, committed .toha.json record, and template parts by @mmenm-claude[bot] in https://github.com/wyrd-company/toha/pull/27
-    * docs: move the public docs to wyrd.foo v2 (docs/user) by @mmenm-claude[bot] in https://github.com/wyrd-company/toha/pull/29
-    * feat(source): resolve HTTPS Git credentials per operation by @mmenm-claude[bot] in https://github.com/wyrd-company/toha/pull/34
-    * Protect managed-region edits during template updates by @mmenm-codex[bot] in https://github.com/wyrd-company/toha/pull/33
-    * chore(release): prepare Toha 0.4.0 by @mmenm-codex[bot] in https://github.com/wyrd-company/toha/pull/30
-    * fix(source): keep Basic credential encodings out of library errors by @mmenm-claude[bot] in https://github.com/wyrd-company/toha/pull/37
-    * chore(release): regenerate 0.4.0 with credential fix by @mmenm-codex[bot] in https://github.com/wyrd-company/toha/pull/38
+    * ci(cd): publish crates through Trusted Publishing and recover the 0.4.0 crate by @mmenm-claude[bot] in https://github.com/wyrd-company/toha/pull/40
+    * ci(cd): remove the 0.4.0 crate recovery path by @mmenm-claude[bot] in https://github.com/wyrd-company/toha/pull/41
+    * chore(deps): update taiki-e/install-action digest to 68a389c by @renovate[bot] in https://github.com/wyrd-company/toha/pull/23
+    * chore(release): upgrade intentional config to contract-2 by @mmenm-codex[bot] in https://github.com/wyrd-company/toha/pull/44
+    * chore(deps): update rust crate jiff to v0.2.38 by @renovate[bot] in https://github.com/wyrd-company/toha/pull/54
+    * chore(release): prepare Toha 0.4.1 and docs 0.1.1 by @mmenm-codex[bot] in https://github.com/wyrd-company/toha/pull/63
 
+    ## New Contributors
+    * @renovate[bot] made their first contribution in https://github.com/wyrd-company/toha/pull/23
 
-    **Full Changelog**: https://github.com/wyrd-company/toha/compare/0.3.0...0.4.0
+    **Full Changelog**: https://github.com/wyrd-company/toha/compare/0.4.0...0.4.1
