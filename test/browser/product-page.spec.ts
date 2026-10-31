@@ -194,6 +194,51 @@ test.describe("install tabs", () => {
     );
   });
 
+  test("MCP harness tabs show and copy their own configuration", async ({
+    context,
+    page,
+    baseURL,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openProduct(page, baseURL, "sprocket");
+    const block = page.locator('[data-install-block="mcp-server"]');
+    for (const name of [
+      "Claude Code",
+      "Claude Desktop",
+      "Codex",
+      "Cursor",
+      "OpenCode",
+      "Pi",
+      "Antigravity",
+    ]) {
+      await block.getByRole("tab", { name, exact: true }).click();
+      const panel = block.locator('[role="tabpanel"]:visible');
+      await expect(
+        panel.getByRole("link", { name: "Client documentation" }),
+      ).toBeVisible();
+      const code = await panel.locator("pre").innerText();
+      if (name === "Claude Code")
+        expect(code).toContain("claude mcp add sprocket");
+      else if (name === "Codex")
+        expect(code).toContain("[mcp_servers.sprocket]");
+      else if (name === "OpenCode")
+        expect(JSON.parse(code).mcp.sprocket.command).toEqual([
+          "npx",
+          "-y",
+          "@example-org/sprocket",
+        ]);
+      else
+        expect(JSON.parse(code).mcpServers.sprocket.args).toEqual([
+          "-y",
+          "@example-org/sprocket",
+        ]);
+      await panel.getByRole("button", { name: /Copy/ }).click();
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+        code,
+      );
+    }
+  });
+
   test("an MCP server's marketplace tab shows its command", async ({ page, baseURL }) => {
     await openProduct(page, baseURL, "sprocket");
     await page.locator('[data-install-block="mcp-server"]').getByRole("tab", { name: /Codex marketplace/ }).click();

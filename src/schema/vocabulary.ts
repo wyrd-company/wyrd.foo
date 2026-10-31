@@ -71,7 +71,11 @@ export const OS_FREE_METHODS = ["docker"] as const satisfies readonly InstallMet
 export const MCP_INSTALL_METHODS = [
   "claude-code",
   "claude-desktop",
+  "codex",
   "cursor",
+  "opencode",
+  "pi",
+  "antigravity",
   "vscode",
   "json",
   "plugin",

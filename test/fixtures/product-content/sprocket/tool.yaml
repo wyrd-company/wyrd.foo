@@ -29,11 +29,57 @@ kinds:
               "sprocket": { "command": "npx", "args": ["-y", "@example-org/sprocket"] }
             }
           }
+      - method: codex
+        command: |-
+          [mcp_servers.sprocket]
+          command = "npx"
+          args = ["-y", "@example-org/sprocket"]
       - method: cursor
         command: |-
           {
             "mcpServers": {
               "sprocket": { "command": "npx", "args": ["-y", "@example-org/sprocket"] }
+            }
+          }
+      - method: opencode
+        command: |-
+          {
+            "mcp": {
+              "sprocket": {
+                "type": "local",
+                "command": [
+                  "npx",
+                  "-y",
+                  "@example-org/sprocket"
+                ],
+                "enabled": true
+              }
+            }
+          }
+      - method: pi
+        command: |-
+          {
+            "mcpServers": {
+              "sprocket": {
+                "command": "npx",
+                "args": [
+                  "-y",
+                  "@example-org/sprocket"
+                ]
+              }
+            }
+          }
+      - method: antigravity
+        command: |-
+          {
+            "mcpServers": {
+              "sprocket": {
+                "command": "npx",
+                "args": [
+                  "-y",
+                  "@example-org/sprocket"
+                ]
+              }
             }
           }
       - method: vscode

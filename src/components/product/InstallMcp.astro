@@ -41,7 +41,8 @@ const panelId = (index: number) => `${id}-${index}`;
     {
       tabs.map((tab, index) => (
         <div role="tabpanel" id={panelId(index)} aria-labelledby={`${panelId(index)}-tab`} hidden={!tab.selected}>
-          <CodeBlock code={tab.command} prompt={tab.prompt} label={`${tab.label} command`} />
+          {tab.guide && <p class="client-guide">{tab.guide.text} <a href={tab.guide.url}>Client documentation</a></p>}
+          <CodeBlock code={tab.command} prompt={tab.prompt} label={`${tab.label} command or configuration`} />
         </div>
       ))
     }
@@ -70,6 +71,10 @@ const panelId = (index: number) => `${id}-${index}`;
 </div>
 
 <style>
+  .client-guide {
+    color: var(--text-2);
+    margin-block: 1rem;
+  }
   .mcp-tools {
     border-top: 1px solid var(--divider);
   }
