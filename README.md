@@ -148,6 +148,12 @@ finding. For a repo that already publishes, add `--strict`: it uses publish's
 severities, so the run fails before the tag push, not after it. `--strict`
 reads GitHub Releases, so it does not go with `--offline`.
 
+`validate:repo` also checks `workflow_run.workflows` in `.github/workflows/`
+against the workflow `name:` values in that tree. A name with no exact match
+is a warning, or an error with `--strict`. This catches a caller that names
+`Release` when the release workflow is named `release`. Both `.yml` and
+`.yaml` files are read; `--ref` checks the workflows at that ref.
+
 ## Browser tests
 
 Behaviour that only a real browser shows (the theme before the first paint, the

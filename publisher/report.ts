@@ -25,7 +25,8 @@ export type Requirement =
   | "GitHub Release"
   | "release tag"
   | "changelog"
-  | "generated data";
+  | "generated data"
+  | "workflow trigger";
 
 export class Findings {
   readonly list: Finding[] = [];
