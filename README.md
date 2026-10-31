@@ -196,7 +196,9 @@ theme, the docs pages' sticky header and "On this page", and the 404 status
 and links of an unknown URL) is checked with
 [Playwright Test](https://playwright.dev/docs/test-intro) in `test/browser/`.
 The suite serves the built site (`dist/`) with `astro preview` on a free port,
-and stops the server when the run ends, however it ends. The home, docs and
+and stops the server when the run ends, however it ends. The harness uses
+`astro preview --ignore-lock` so Playwright owns each foreground server and
+the fixture servers can run together. The home, docs and
 product page specs each run against a server of their own on a fixture build
 (`dist-fixtures/home`, `dist-fixtures/docs` and `dist-fixtures/products`, built
 from `test/fixtures/*-content` by `pnpm test:browser`, so the suite has no build
