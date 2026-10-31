@@ -7,13 +7,12 @@ logo: logo.svg
 release-unit: caddy
 owner: wyrd-company/devcontainers
 release:
-  version: 1.0.1
-  date: 2026-10-26T07:41:08.000Z
+  version: 1.1.0
+  date: 2026-10-31T20:38:08.000Z
   notes: |-
-    ### Fixes
+    ### Features
 
-    - Caddy installs from the official release package on GitHub. The old apt repository used an expired signing key, so the install failed.
-    - The installer checks the package against the release checksums and rejects a version that is not a semantic version.
+    - When the Ansible Feature is installed, the services of this Feature start after its `ansible-setup` oneshot succeeds. Without Ansible, startup does not change. The Feature adds the Ansible Feature to `installsAfter`.
 name: Caddy Reverse Proxy
 description: Installs Caddy with an s6-supervised config watcher for dynamically managed development reverse proxies.
-version: 1.0.1
+version: 1.1.0

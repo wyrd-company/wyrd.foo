@@ -7,14 +7,12 @@ logo: logo.svg
 release-unit: t3code-server
 owner: wyrd-company/devcontainers
 release:
-  version: 2.1.0
-  date: 2026-10-26T07:41:08.000Z
+  version: 2.2.0
+  date: 2026-10-31T20:38:08.000Z
   notes: |-
     ### Features
 
-    - The service runs the native update launcher of T3 Code. Connected clients can update the server in place without sudo. A failed update restores the database and the previous server.
-    - `t3code-server-update` can queue a runtime for the next start (`--no-restart`) and force a fresh install (`--force`). It leaves a stopped service stopped.
-    - `t3code-server-update --status` shows the active, queued and installed versions.
+    - When the Ansible Feature is installed, the services of this Feature start after its `ansible-setup` oneshot succeeds. Without Ansible, startup does not change. The Feature adds the Ansible Feature to `installsAfter`.
 name: T3 Code Server
 description: Installs upstream T3 Code, runs its native update launcher under s6-overlay, and supports client-driven updates plus local maintenance with t3code-server-update.
-version: 2.1.0
+version: 2.2.0

@@ -7,13 +7,12 @@ logo: logo.svg
 release-unit: opentelemetry-collector
 owner: wyrd-company/devcontainers
 release:
-  version: 1.1.0
-  date: 2026-10-26T07:41:08.000Z
+  version: 1.2.0
+  date: 2026-10-31T20:38:08.000Z
   notes: |-
     ### Features
 
-    - The Collector loads `NAME=value` lines from `/run/openbao/secrets/opentelemetry-collector.env` when the file exists. Use `${env:NAME}` in the configuration, so the file holds no credential.
-    - When the OpenBao Agent feature renders this file, the Collector waits for it before it starts.
+    - When the Ansible Feature is installed, the services of this Feature start after its `ansible-setup` oneshot succeeds. Without Ansible, startup does not change. The Feature adds the Ansible Feature to `installsAfter`.
 name: OpenTelemetry Collector
 description: Installs the OpenTelemetry Collector core or contrib distribution and runs it as an s6-overlay service.
-version: 1.1.0
+version: 1.2.0

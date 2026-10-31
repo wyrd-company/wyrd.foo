@@ -7,20 +7,12 @@ logo: logo.svg
 release-unit: codex-cli
 owner: wyrd-company/devcontainers
 release:
-  version: 2.0.0
-  date: 2026-10-26T07:41:08.000Z
+  version: 2.1.0
+  date: 2026-10-31T20:38:08.000Z
   notes: |-
-    ### Breaking changes
-
-    - The feature now starts a shared Codex app-server as an s6-overlay service by default. The feature needs an s6-overlay 3 image for this. To install only the CLI, set `startAppServer` to `false` and keep `execServer` at `"false"`.
-
     ### Features
 
-    - The shared app-server uses the service user's `CODEX_HOME`. The TUI and `async-codex-mcp` connect to the same server.
-    - Option `remoteControl` turns on remote control for the shared app-server.
-    - Option `execServer` runs an optional Codex exec-server as a second service. Option `execServerPort` sets its port.
-    - Option `serviceUser` selects the user that owns the CLI and both services.
-    - Options `dnsName` and `appServerPort` publish the app-server and the exec-server through the Caddy feature.
+    - When the Ansible Feature is installed, the services of this Feature start after its `ansible-setup` oneshot succeeds. Without Ansible, startup does not change. The Feature adds the Ansible Feature to `installsAfter`.
 name: Codex CLI
 description: Installs Codex CLI for the Dev Container user and runs a shared app-server under s6-overlay.
-version: 2.0.0
+version: 2.1.0

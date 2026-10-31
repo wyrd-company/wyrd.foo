@@ -1,6 +1,6 @@
 {
   "id": "openobserve",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "name": "OpenObserve",
   "documentationURL": "https://github.com/wyrd-company/devcontainers/tree/main/src/features/openobserve",
   "description": "Installs OpenObserve OSS single binary and runs it as an s6-overlay service.",
@@ -63,6 +63,7 @@
   },
   "installsAfter": [
     "ghcr.io/devcontainers/features/common-utils",
+    "ghcr.io/wyrd-company/devcontainers/ansible",
     "ghcr.io/wyrd-company/devcontainers/caddy"
   ]
 }
