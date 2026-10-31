@@ -17,6 +17,14 @@ skills (front-end design, astro, tailwind, favicon, etc.).
   `test/schema/design-examples.test.ts` validates its `docs.yml` examples
   against the schema.
 
+## Runtime and build-tool minimums
+
+Wyrd Company is the sole deployer of this website. Raising its supported
+runtime and build-tool minimum versions is pre-approved. Make the matching
+documentation, configuration and validation changes without another approval
+request. This authorization is scoped to this website's deployment; the
+reusable publishing contract's compatibility and release rules still apply.
+
 ## Dependency exceptions
 
 - `@astrojs/check` runs on TypeScript 6 (`.pnpmfile.cjs`), because
