@@ -57,6 +57,22 @@ proposed-design:
       nav (Catalog, Docs, Releases), search, theme toggle, GitHub. Releases
       goes to `/releases` on every page, and is the current item on
       `/releases` and on `/tools/<key>/releases`.
+  issue-reporting: |
+    Every page has a footer link, "Report a site problem", to a new issue in
+    `wyrd-company/wyrd.foo`. Product, feature, product releases and docs pages
+    also have "Report a problem with <name>", to a new issue in the product's
+    `owner` repo. Both links work without JavaScript and open a GitHub draft;
+    the visitor reviews and submits it on GitHub.
+
+    The draft title names the page. Its body includes the page URL and title,
+    and space to describe the problem and expected behaviour. Product reports
+    also name the product key, product version and, when present, docs version.
+    Docs reports link the source file on `HEAD`, using `docs-path` and the
+    original relative file path (including nested folders); the docs changelog
+    links `CHANGELOG.md` under `docs-path`. Feature reports link the README
+    under `source`. Full product pages link `docs/user/docs.yml`. Releases
+    reports identify the page and product without guessing a changelog path.
+    Page URLs use the site origin and pathname, without queries or fragments.
   product-marks: |
     Every product shows a square mark in catalog rows, the featured card,
     Recent releases entries, `/releases` entries, the product page hero, the

@@ -11,11 +11,12 @@ import type { DocsProduct } from "../../lib/docs";
 
 interface Props {
   title: string;
+  sourcePath?: string;
   product: DocsProduct;
   products: DocsProduct[];
   section: string | null;
 }
-const { title, product, products, section } = Astro.props;
+const { title, product, products, section, sourcePath } = Astro.props;
 const head = {
   key: product.key,
   name: product.name,
@@ -25,7 +26,9 @@ const head = {
 };
 ---
 
-<SiteLayout title={`${title} · ${product.name} docs — Wyrd Tools`} description={product.data.tagline} product={head} nav="docs">
+<SiteLayout title={`${title} · ${product.name} docs — Wyrd Tools`} description={product.data.tagline} product={head} nav="docs"
+  reportProduct={{ owner: product.data.owner, name: product.name, key: product.key, version: product.data.version,
+    docsVersion: product.data["docs-version"], sourcePath }}>
   <DocsHeader slot="header" product={product} products={products} section={section} />
   <div class="docs-shell site-width" id="top">
     <div class="docs-side"><slot name="sidebar" /></div>
