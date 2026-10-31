@@ -149,6 +149,59 @@ test.describe("sections for each kind", () => {
 });
 
 test.describe("install tabs", () => {
+  test("image install tabs switch by mouse and keyboard and copy YAML and commands", async ({
+    context,
+    page,
+    baseURL,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openProduct(page, baseURL, "harbor");
+    const block = page.locator('[data-install-block="devcontainer-image"]');
+    await expect(
+      block.getByRole("tab", { name: "Dev container", exact: true }),
+    ).toHaveAttribute("aria-selected", "true");
+    await block.getByRole("tab", { name: "Docker Compose" }).click();
+    const compose = block.getByRole("tabpanel");
+    await expect(compose).toHaveCount(1);
+    await expect(compose.locator("pre").first()).toHaveText(
+      'services:\n  app:\n    image: "ghcr.io/example-org/harbor:0"',
+    );
+    await compose
+      .getByRole("button", { name: "Copy", exact: true })
+      .first()
+      .click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      'services:\n  app:\n    image: "ghcr.io/example-org/harbor:0"',
+    );
+    await block
+      .getByRole("tab", { name: "Docker Compose" })
+      .press("ArrowRight");
+    const kubernetes = block.getByRole("tabpanel");
+    await expect(kubernetes).toHaveAttribute("id", "install-image-kubernetes");
+    await kubernetes
+      .getByRole("button", { name: "Copy", exact: true })
+      .first()
+      .click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      await kubernetes.locator("pre").first().textContent(),
+    );
+    await kubernetes
+      .getByRole("button", { name: "Copy", exact: true })
+      .last()
+      .click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      "kubectl apply -f pod.yaml",
+    );
+    await block
+      .getByRole("tab", { name: "Kubernetes", exact: true })
+      .press("Home");
+    await expect(block.getByRole("tabpanel")).toHaveAttribute(
+      "id",
+      "install-image-devcontainer",
+    );
+    await expect(block.locator("table")).toBeVisible();
+  });
+
   test("a platform tab shows its methods, and a method pill shows its command", async ({ page, baseURL }) => {
     await openProduct(page, baseURL, "widget");
     await expect(page.locator("#install-cli-macos")).toBeVisible();
