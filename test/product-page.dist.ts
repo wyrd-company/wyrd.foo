@@ -111,7 +111,7 @@ describe("hero and facts", () => {
     const root = productPage("widget");
     expect(fact(root, "licence")).toBe("MIT OR Apache-2.0");
     expect(root.querySelector('[data-fact="licence"] a')?.getAttribute("href")).toBe("https://github.com/example-org/widget/blob/HEAD/LICENSE");
-    expect(text(root.querySelector('[data-fact="licence"]')?.parentNode.querySelector("dt"))).toBe("Licence");
+    expect(text(root.querySelector('[data-fact="licence"]')?.parentNode?.querySelector("dt"))).toBe("Licence");
     expect(productPage("gadget").querySelector('[data-fact="licence"]')).toBeNull();
   });
 
