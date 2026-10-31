@@ -2,10 +2,11 @@
 // relationships:
 //   verifies: site
 // ---
+import { createMarkdownProcessor } from "@astrojs/markdown-remark";
 import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 
-it("builds a Markdown file for every fixture product and feature entry", () => {
+it("builds a Markdown file for every fixture product and feature entry", async () => {
   for (const key of ["widget", "gadget", "sprocket", "gizmo", "harbor", "lantern", "beacon"]) {
     const body = readFileSync(`dist-fixtures/products/tools/${key}.md`, "utf8");
     expect(body).toMatch(/^# /);
@@ -19,5 +20,9 @@ it("builds a Markdown file for every fixture product and feature entry", () => {
   expect(widget).toContain("Write the plan as one JSON document with `--json`.");
   expect(widget).not.toContain("Keep the input order when a folder holds files");
   const lantern = readFileSync("dist-fixtures/products/tools/lantern.md", "utf8");
-  expect(lantern).toContain(readFileSync("test/fixtures/product-content/lantern/README.md", "utf8").trim());
+  const processor = await createMarkdownProcessor();
+  const readme = readFileSync("test/fixtures/product-content/lantern/README.md", "utf8");
+  expect((await processor.render(lantern)).code).toContain(
+    (await processor.render(readme)).code.replace(/^<h1[^>]*>.*?<\/h1>\n/, ""),
+  );
 });

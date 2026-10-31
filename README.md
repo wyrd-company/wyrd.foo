@@ -14,7 +14,10 @@ RSS readers. Pagefind indexes the product, releases and docs
 pages.
 
 Each product page also has a Markdown form at `/tools/<key>.md`,
-including feature entries, all install methods and the latest release.
+including feature entries, all install methods and the latest release. Embedded
+README and changelog content preserves each document’s reference scope and
+closes EOF-scoped Markdown blocks before the next section. Published sources
+are unchanged.
 
 Apps and CLIs distributed as container images show their Docker command plus
 optional Docker Compose and Kubernetes method tabs. Tool repos author the YAML

@@ -2,6 +2,11 @@
 // relationships:
 //   verifies: site
 // ---
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import type { Nodes } from "mdast";
+import { createMarkdownProcessor } from "@astrojs/markdown-remark";
+import { parse as parseHtml } from "node-html-parser";
 import { readFileSync } from "node:fs";
 import { parse } from "yaml";
 import { describe, expect, it } from "vitest";
@@ -63,12 +68,127 @@ describe("product Markdown", () => {
     expect(image).toContain("| 0.9.0 | debian-bookworm | amd64, arm64 |");
   });
 
-  it("preserves feature README Markdown and omits full-product sections", () => {
+  it("preserves feature README Markdown and omits full-product sections", async () => {
     const readme = readFileSync("test/fixtures/product-content/lantern/README.md", "utf8");
     const result = productMarkdown("lantern", fixture("lantern"), [], readme);
-    expect(result).toContain(readme.trim());
+    const processor = await createMarkdownProcessor();
+    expect((await processor.render(result)).code).toContain(
+      (await processor.render(readme)).code.replace(/^<h1[^>]*>.*?<\/h1>\n/, ""),
+    );
+    expect(readFileSync("test/fixtures/product-content/lantern/README.md", "utf8")).toBe(readme);
     expect(result).not.toMatch(/## (Media|What it does|Documentation)/);
     expect(result).toContain("# Lantern\n");
+  });
+
+  it("keeps full, collapsed, shortcut, image and footnote references local to each source", async () => {
+    const source = (destination: string) => `
+[Full][GuIde] [guide][] [guide] ![Image][guide] ![guide][] ![guide]
+
+[guide]: https://example.org/${destination} "A title"
+[GUIDE]: https://example.org/ignored
+
+A note[^note].
+
+[^note]: Note for ${destination}.
+
+[unresolved] and \\[literal\\] and \`[guide]\`
+`;
+    const readme = source("readme");
+    const latest = Object.freeze({
+      version: "1.0.0",
+      body: source("release") + "\n[unresolved]: https://example.org/release-only\n",
+    });
+    const processor = await createMarkdownProcessor();
+    const output = parseHtml(
+      (await processor.render(productMarkdown("sample", fixture("lantern"), [], readme, latest))).code,
+    );
+    for (const destination of ["readme", "release"]) {
+      expect(output.querySelectorAll(`a[href="https://example.org/${destination}"]`)).toHaveLength(3);
+      expect(output.querySelectorAll(`img[src="https://example.org/${destination}"]`)).toHaveLength(3);
+    }
+    expect(output.querySelectorAll('a[href="https://example.org/ignored"]')).toHaveLength(0);
+    expect(output.querySelectorAll('a[href="https://example.org/release-only"]')).toHaveLength(1);
+    expect(output.querySelectorAll("code").some((node) => node.text === "[guide]")).toBe(true);
+    const notes = output.querySelectorAll("[data-footnote-ref]");
+    expect(notes).toHaveLength(2);
+    expect(new Set(notes.map((node) => node.getAttribute("href"))).size).toBe(2);
+    for (const [index, destination] of ["readme", "release"].entries()) {
+      const id = notes[index].getAttribute("href")!.slice(1);
+      expect(output.getElementById(id)?.text).toContain(`Note for ${destination}.`);
+    }
+    expect(readme).toBe(source("readme"));
+    expect(latest.body).toBe(source("release") + "\n[unresolved]: https://example.org/release-only\n");
+  });
+
+  it("preserves long labels and whitespace-normalized references", async () => {
+    const label = "a".repeat(999);
+    const source = `[Long][${label}] [Spaced][two\nwords]\n\n[${label}]: https://example.org/long\n[two words]: https://example.org/spaced\n`;
+    const processor = await createMarkdownProcessor();
+    const output = parseHtml((await processor.render(productMarkdown("sample", fixture("lantern"), [], source))).code);
+    expect(output.querySelector('a[href="https://example.org/long"]')?.text).toBe("Long");
+    expect(output.querySelector('a[href="https://example.org/spaced"]')?.text).toBe("Spaced");
+  });
+
+  it.each([
+    ["backtick fence", "```sh\necho sample"],
+    ["tilde fence", "~~~~sh\necho sample"],
+    ["nested fence", "> ```sh\n> echo sample"],
+    ["HTML comment", "<!-- sample"],
+    ["processing instruction", "<?sample"],
+    ["CDATA", "<![CDATA[sample"],
+    ["declaration", "<!SAMPLE"],
+    ["raw HTML", "<pre>sample"],
+    ["script", "<script>sample"],
+    ["style", "<style>sample"],
+    ["textarea", "<textarea>sample"],
+    ["indented code", "    echo sample"],
+    ["list", "- sample"],
+    ["table", "| sample |\n| --- |\n| value |"],
+  ])("isolates EOF-scoped %s in both embedded documents", async (_name, fragment) => {
+    const processor = await createMarkdownProcessor();
+    const latest = Object.freeze({ version: "1.0.0", body: fragment });
+    const result = productMarkdown(
+      "sample",
+      fixture("lantern"),
+      [
+        {
+          section: null,
+          groups: [
+            {
+              group: "Basics",
+              pages: [{ title: "Introduction", slug: "intro" }],
+            },
+          ],
+        },
+      ],
+      fragment,
+      latest,
+    );
+    const output = parseHtml((await processor.render(result)).code);
+    expect(output.querySelectorAll("h2").map((node) => node.text)).toEqual([
+      "Install",
+      "README",
+      "Documentation",
+      "Releases",
+    ]);
+    expect(output.querySelector('a[href="/docs/sample/intro"]')?.text).toBe("Introduction");
+    expect(output.querySelector('a[href="/tools/sample/releases"]')?.text).toBe("All releases");
+    expect(output.querySelectorAll("pre, code").every((node) => !node.text.includes("## Releases"))).toBe(
+      true,
+    );
+    expect(latest.body).toBe(fragment);
+    if (fragment.includes("echo sample")) {
+      const codeValues = (source: string) => {
+        const values: string[] = [];
+        function walk(node: Nodes) {
+          if (node.type === "code") values.push(node.value);
+          if ("children" in node) node.children.forEach(walk);
+        }
+        walk(unified().use(remarkParse).parse(source));
+        return values;
+      };
+      expect(codeValues(result).filter((value) => value === codeValues(fragment)[0])).toHaveLength(2);
+    }
   });
 
   it("escapes metadata and uses a code fence longer than any in the command", () => {
