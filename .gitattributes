@@ -1,0 +1,2 @@
+# Preserve the authored CRLF fixture for manifest Copy regression coverage.
+test/fixtures/product-content/harbor/docs/install/compose.yaml -text whitespace=cr-at-eol

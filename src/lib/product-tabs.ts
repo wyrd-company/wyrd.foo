@@ -53,6 +53,7 @@ export function startTabs(root: ParentNode = document) {
 /**
  * Make every `[data-copy]` button copy the text of the `pre` blocks in its
  * code block, in order: the repository setup (open or closed) and the install line.
+ * Authored manifests carry encoded source text to preserve their line endings.
  */
 export function startCopyButtons(root: ParentNode = document) {
   for (const button of root.querySelectorAll<HTMLButtonElement>("[data-copy]")) {
@@ -60,7 +61,8 @@ export function startCopyButtons(root: ParentNode = document) {
       const code = [...(button.closest("[data-code-block]")?.querySelectorAll("pre") ?? [])];
       if (code.length === 0) return;
       try {
-        await navigator.clipboard.writeText(code.map((pre) => pre.textContent ?? "").join("\n"));
+        const source = button.getAttribute("data-copy-source");
+        await navigator.clipboard.writeText(source === null ? code.map((pre) => pre.textContent ?? "").join("\n") : decodeURIComponent(source));
         button.textContent = "Copied";
       } catch {
         button.textContent = "Copy failed";

@@ -6,6 +6,7 @@
  * no sideways scroll on a phone.
  */
 import { expect, test, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { openPage, store } from "./support";
 
 test.use({ viewport: { width: 1440, height: 900 } });
@@ -170,9 +171,9 @@ test.describe("install tabs", () => {
       .getByRole("button", { name: "Copy", exact: true })
       .first()
       .click();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-      "# Tool-authored service settings.\nservices:\n  workspace:\n    image: alpine:3\n    command: [sleep, infinity]\n    environment:\n      MODE: demo\n",
-    );
+    const authoredCompose = readFileSync(new URL("../fixtures/product-content/harbor/docs/install/compose.yaml", import.meta.url), "utf8");
+    expect(authoredCompose).toContain("\r\n");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(authoredCompose);
     await compose.getByRole("button", { name: "Copy", exact: true }).last().click();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("docker compose -f 'install/compose.yaml' up -d");
     await block.screenshot({ path: "/tmp/pr47-compose.png" });
@@ -186,7 +187,7 @@ test.describe("install tabs", () => {
       .first()
       .click();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-      await kubernetes.locator("pre").first().textContent(),
+      readFileSync(new URL("../fixtures/product-content/harbor/docs/install/workload.yaml", import.meta.url), "utf8"),
     );
     await kubernetes
       .getByRole("button", { name: "Copy", exact: true })

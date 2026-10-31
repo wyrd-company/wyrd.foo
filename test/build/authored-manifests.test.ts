@@ -90,6 +90,7 @@ it("publishes tool-authored manifests through real Astro pages and asset bytes",
         assert.equal(panel !== null, declared, `${key}: ${method}`);
         if (!declared) continue;
         assert.equal(panel!.querySelector("pre")!.textContent, method === "compose" ? yaml : kube);
+        assert.equal(decodeURIComponent(panel!.querySelector("[data-copy-source]")!.getAttribute("data-copy-source")!), method === "compose" ? yaml : kube);
         const command =
           method === "compose"
             ? "docker compose -f 'install/compose.yaml' up -d"

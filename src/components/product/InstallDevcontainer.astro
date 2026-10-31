@@ -57,7 +57,7 @@ const imageOptions = block.kind === "devcontainer-image" ? containerImageOptions
               hidden={index !== 0}
             >
               <p class="install-label">{option.instruction}</p>
-              <CodeBlock code={option.code} label={option.label} />
+              <CodeBlock code={option.code} copyText={option.command ? option.code : undefined} label={option.label} />
               {option.command && <CodeBlock code={option.command} prompt label={`${option.label} command`} />}
             </div>
           ))}

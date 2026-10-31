@@ -58,6 +58,14 @@ describe("CodeBlock with a repository setup", () => {
     expect(pres(root)).toEqual(["brew install example"]);
     expect(root.querySelector(".code-block-prompt")).not.toBeNull();
   });
+
+  it("encodes authored Copy text independently of HTML newline handling", async () => {
+    const authored = '# Keep <tags> & Unicode: café\r\nservices: {}\r\n';
+    const root = await render(CodeBlock, { code: authored, copyText: authored });
+    expect(decodeURIComponent(root.querySelector("[data-copy-source]")!.getAttribute("data-copy-source")!)).toBe(authored);
+    const ordinary = await render(CodeBlock, { code: "echo sample" });
+    expect(ordinary.querySelector("[data-copy-source]")).toBeNull();
+  });
 });
 
 describe("ProductHero install", () => {

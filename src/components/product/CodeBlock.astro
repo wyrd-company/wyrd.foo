@@ -12,6 +12,8 @@ import type { RepoSetup } from "../../lib/install-blocks";
 
 interface Props {
   code: string;
+  /** Original authored text for Copy, before HTML newline normalization. */
+  copyText?: string;
   /** The repository setup above the install line, behind a one-line hint. */
   setup?: RepoSetup;
   /** Show a "$" prompt before the first line. */
@@ -20,7 +22,7 @@ interface Props {
   label?: string;
   class?: string;
 }
-const { code, setup, prompt = false, label, class: klass } = Astro.props;
+const { code, copyText, setup, prompt = false, label, class: klass } = Astro.props;
 ---
 
 <div class:list={["code-block", klass]} data-code-block role="group" aria-label={label}>
@@ -36,7 +38,7 @@ const { code, setup, prompt = false, label, class: klass } = Astro.props;
     }
     <pre>{code}</pre>
   </div>
-  <button type="button" class="code-block-copy" data-copy>Copy</button>
+  <button type="button" class="code-block-copy" data-copy data-copy-source={copyText === undefined ? undefined : encodeURIComponent(copyText)}>Copy</button>
 </div>
 
 <script>
