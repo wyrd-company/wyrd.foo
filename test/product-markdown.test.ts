@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs";
 import { parse } from "yaml";
 import { describe, expect, it } from "vitest";
 import { toolFileSchema } from "../src/schema/index";
+import { markdownFragment } from "../src/lib/markdown-fragment";
 import { productMarkdown } from "../src/lib/product-markdown";
 import { APT_SETUP, RPM_SETUP } from "../src/lib/install-blocks";
 
@@ -124,7 +125,9 @@ A note[^note].
     const label = "a".repeat(999);
     const source = `[Long][${label}] [Spaced][two\nwords]\n\n[${label}]: https://example.org/long\n[two words]: https://example.org/spaced\n`;
     const processor = await createMarkdownProcessor();
-    const output = parseHtml((await processor.render(productMarkdown("sample", fixture("lantern"), [], source))).code);
+    const output = parseHtml(
+      (await processor.render(productMarkdown("sample", fixture("lantern"), [], source))).code,
+    );
     expect(output.querySelector('a[href="https://example.org/long"]')?.text).toBe("Long");
     expect(output.querySelector('a[href="https://example.org/spaced"]')?.text).toBe("Spaced");
   });
@@ -138,6 +141,23 @@ A note[^note].
     ["CDATA", "<![CDATA[sample"],
     ["declaration", "<!SAMPLE"],
     ["raw HTML", "<pre>sample"],
+    ["nested pre probe", "<div>\n<pre>sample"],
+    ["nested textarea", "<section>\n<textarea>sample"],
+    ["nested script", "<div>\n<script>sample"],
+    ["script escaped", "<div>\n<script><!-- sample"],
+    ["script double escaped", "<div>\n<script><!-- <script>sample"],
+    ["nested style", "<div>\n<style>sample"],
+    ["nested comment", "<div>\n<!-- sample"],
+    ["raw title", "<div>\n<title>sample"],
+    ["raw xmp", "<div>\n<xmp>sample"],
+    ["raw iframe", "<div>\n<iframe>sample"],
+    ["foreign CDATA", "<svg><![CDATA[sample"],
+    ["template raw text", "<template><textarea>sample"],
+    ["open container", "<div>\n<span>sample"],
+    ["HTML nonvoid slash", "<div>\n<textarea/>sample"],
+    ["void before raw", '<div><img src="sample.png"><br><pre>sample'],
+    ["quoted apparent closer", '<div data-end="</pre>">\n<pre>sample'],
+    ["comment apparent closer", "<div><!-- </pre> -->\n<pre>sample"],
     ["script", "<script>sample"],
     ["style", "<style>sample"],
     ["textarea", "<textarea>sample"],
@@ -189,6 +209,45 @@ A note[^note].
       };
       expect(codeValues(result).filter((value) => value === codeValues(fragment)[0])).toHaveLength(2);
     }
+  });
+
+  it.each([
+    ["inline pre probe", "Text <pre>sample</pre> after.", "pre"],
+    ["inline textarea probe", "Text <textarea>sample</textarea> after.", "textarea"],
+    ["list pre probe", "- Text <pre>sample</pre> after.", "pre"],
+    ["inline script", "Text <script>sample</script> after.", "script"],
+    ["inline style", "Text <style>sample</style> after.", "style"],
+    ["split blocks", "<div>\n<pre>sample\n\n</pre>\n</div>", "pre"],
+    ["void and attributes", '<div><br><img src="sample.png"><pre data-end=">">sample</pre></div>', "pre"],
+    ["raw apparent tags", "<div><textarea><pre>sample</textarea></div>", "textarea"],
+    ["complete comment", "<div><!-- <pre> --><pre>sample</pre></div>", "pre"],
+  ])("preserves complete %s in both documents", async (_name, fragment, selector) => {
+    const processor = await createMarkdownProcessor();
+    const standalone = parseHtml((await processor.render(fragment)).code);
+    const result = productMarkdown("sample", fixture("lantern"), [], fragment, {
+      version: "1.0.0",
+      body: fragment,
+    });
+    const output = parseHtml((await processor.render(result)).code);
+    expect(
+      output
+        .querySelectorAll(selector)
+        .filter((node) => !node.classList.contains("astro-code"))
+        .map((node) => node.outerHTML),
+    ).toEqual([
+      ...standalone.querySelectorAll(selector).map((node) => node.outerHTML),
+      ...standalone.querySelectorAll(selector).map((node) => node.outerHTML),
+    ]);
+    expect(output.querySelector('a[href="/tools/sample/releases"]')?.text).toBe("All releases");
+    expect(result).toContain(fragment);
+    if (fragment.startsWith("Text")) expect(markdownFragment(fragment, "readme")).toBe(fragment);
+  });
+
+  it.each(["<!-->", "<!--->"])("preserves HTML abrupt-comment semantics for %s", async (fragment) => {
+    const processor = await createMarkdownProcessor();
+    const standalone = parseHtml((await processor.render(fragment)).code);
+    const composed = parseHtml((await processor.render(markdownFragment(fragment, "readme"))).code);
+    expect(composed.text).toBe(standalone.text);
   });
 
   it("escapes metadata and uses a code fence longer than any in the command", () => {
