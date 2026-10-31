@@ -71,6 +71,13 @@ describe("the PR build workflow", () => {
     assert.equal(step(/^Run the browser tests/).if, undefined, "the browser tests always run");
   });
 
+  it("installs Task before the contract checks so the dev:v2 run tests execute", () => {
+    const install = step(/^Install Task$/);
+    assert.match(install.uses ?? "", /^go-task\/setup-task@[0-9a-f]{40}$/);
+    assert.equal(install.if, undefined, "Task is installed on every build");
+    assert.ok(steps.indexOf(install) < steps.indexOf(step(/^Validate the docs contract/)));
+  });
+
   it("builds on content/, through the default of the variable the content config reads", () => {
     assert.match(read("src/lib/content-root.ts"), /= process\.env\.WYRD_CONTENT_DIR \?\? "\.\/content";$/m);
     const config = read("src/content.config.ts");
