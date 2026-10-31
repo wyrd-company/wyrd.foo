@@ -309,7 +309,11 @@ describe("install block: MCP server", () => {
     expect(tabs(block, "MCP client")).toEqual([
       "Claude Code",
       "Claude Desktop",
+      "Codex",
       "Cursor",
+      "OpenCode",
+      "Pi",
+      "Antigravity",
       "VS Code",
       "JSON",
       "Plugin Claude Code marketplace",

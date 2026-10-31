@@ -4,6 +4,7 @@
  * method pills for CLIs and apps, client tabs for MCP servers, devcontainer.json snippets for features and
  * images, and the default command the hero shows.
  */
+import { MCP_CLIENT_GUIDES } from "./mcp-client-guides.ts";
 import type { InstallMethod, Kind, KindBlock, McpInstallMethod, OperatingSystem } from "../schema/index.ts";
 
 type InstallKind = Extract<KindBlock, { kind: "cli" | "app" }>;
@@ -42,7 +43,11 @@ export const METHOD_LABELS: Record<InstallMethod, string> = {
 export const MCP_METHOD_LABELS: Record<McpInstallMethod, string> = {
   "claude-code": "Claude Code",
   "claude-desktop": "Claude Desktop",
+  codex: "Codex",
   cursor: "Cursor",
+  opencode: "OpenCode",
+  pi: "Pi",
+  antigravity: "Antigravity",
   vscode: "VS Code",
   json: "JSON",
   plugin: "Plugin",
@@ -111,7 +116,11 @@ export function defaultInstall<E extends { default?: boolean }>(entries: readonl
 const shellPrompt = (shell: boolean, command: string) => shell && !command.includes("\n");
 
 /** MCP methods whose command runs in a shell. */
-const SHELL_MCP_METHODS: readonly McpInstallMethod[] = ["claude-code", "vscode"];
+const SHELL_MCP_METHODS: readonly McpInstallMethod[] = ["claude-code", "codex", "pi", "vscode"];
+
+// The same client can accept an add command or a JSON/TOML configuration.
+const mcpShellPrompt = (entry: McpInstallEntry, command: string) =>
+  shellPrompt(SHELL_MCP_METHODS.includes(entry.method) && !command.trimStart().startsWith("{") && !command.trimStart().startsWith("["), command);
 
 export interface MethodOption {
   /** The pill text. */
@@ -166,6 +175,7 @@ export function platformTabs(entries: readonly InstallEntry[]): PlatformTab[] {
 }
 
 export interface ClientTab {
+  guide?: { text: string; url: string };
   label: string;
   command: string;
   prompt: boolean;
@@ -184,8 +194,9 @@ export function mcpClientTabs(entries: readonly McpInstallEntry[]): ClientTab[] 
   const chosen = defaultInstall(entries);
   return entries.map((entry) => ({
     label: mcpLabel(entry),
+    guide: MCP_CLIENT_GUIDES[entry.method],
     command: entry.command.trimEnd(),
-    prompt: shellPrompt(SHELL_MCP_METHODS.includes(entry.method), entry.command.trimEnd()),
+    prompt: mcpShellPrompt(entry, entry.command.trimEnd()),
     marketplace: entry.method === "plugin",
     selected: entry === chosen,
   }));
@@ -245,7 +256,7 @@ export function heroInstall(block: KindBlock): HeroInstall {
     case "mcp-server": {
       const entry = defaultInstall(block.install);
       const command = entry.command.trimEnd();
-      return { label: mcpInstallLabel(entry), command, prompt: shellPrompt(SHELL_MCP_METHODS.includes(entry.method), command) };
+      return { label: mcpInstallLabel(entry), command, prompt: mcpShellPrompt(entry, command) };
     }
     case "devcontainer-feature":
       return { label: "Add to devcontainer.json", command: devcontainerFeatureSnippet(block.ref), prompt: false };

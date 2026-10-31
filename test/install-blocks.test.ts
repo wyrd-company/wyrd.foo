@@ -161,6 +161,49 @@ describe("mcpClientTabs", () => {
     ]);
   });
 
+  it("keeps each harness configuration verbatim and gives it setup guidance", () => {
+    const methods = [
+      "claude-code",
+      "claude-desktop",
+      "codex",
+      "cursor",
+      "opencode",
+      "pi",
+      "antigravity",
+    ] as const;
+    const commands = methods.map((method) =>
+      method === "codex"
+        ? '[mcp_servers.sample]\ncommand = "sample"'
+        : '{"mcpServers":{}}',
+    );
+    const tabs = mcpClientTabs(
+      methods.map((method, i) => ({ method, command: commands[i] })),
+    );
+    expect(tabs.map((tab) => tab.label)).toEqual([
+      "Claude Code",
+      "Claude Desktop",
+      "Codex",
+      "Cursor",
+      "OpenCode",
+      "Pi",
+      "Antigravity",
+    ]);
+    expect(tabs.map((tab) => tab.command)).toEqual(commands);
+    expect(tabs.every((tab) => tab.guide?.url.startsWith("https://"))).toBe(
+      true,
+    );
+    expect(tabs.map((tab) => tab.prompt)).toEqual(methods.map(() => false));
+    expect(tabs.map((tab) => tab.selected)).toEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
+  });
+
   it("selects the default entry", () => {
     expect(mcpClientTabs(entries).filter((t) => t.selected).map((t) => t.label)).toEqual(["Claude Code"]);
   });
