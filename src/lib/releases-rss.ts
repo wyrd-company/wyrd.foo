@@ -19,7 +19,8 @@ export function releasesRss(site: URL, products: readonly HomeEntry[], notes: Re
       title: `${name} ${version}`,
       pubDate: date,
       link: new URL(productReleasesHref(key), site).href,
-      description: notes.get(key)!,
+      // Readers interpret descriptions as HTML after the feed's XML is decoded.
+      description: notes.get(key)!.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"),
       // A product's page URL stays the same across releases; its identity must not.
       customData: `<guid isPermaLink="false">urn:wyrd-tools:release:${encodeURIComponent(key)}:${encodeURIComponent(version)}</guid>`,
     })),

@@ -3,6 +3,7 @@
 //   verifies: site
 // ---
 import { readFileSync } from "node:fs";
+import { parse as parseHtml } from "node-html-parser";
 import { parse } from "yaml";
 import { describe, expect, it } from "vitest";
 import { toolFileSchema } from "../src/schema/index.ts";
@@ -58,9 +59,19 @@ describe("releases RSS", () => {
     entry.data.name = "Sample & <tool>";
     const xml = await (await releasesRss(site, [entry], new Map([[entry.key, 'Text & <script>alert("x")</script> ]]>']]))).text();
     expect(xml).toContain("Sample &amp; &lt;tool&gt;");
-    expect(xml).toContain("Text &amp; &lt;script&gt;");
+    expect(xml).toContain("Text &amp;amp; &amp;lt;script&amp;gt;");
     expect(xml).not.toContain("<script>");
     expect(xml).not.toContain("]]>");
+  });
+
+  it("preserves literal notes after XML decoding and reader HTML interpretation", async () => {
+    const entry = product("widget");
+    const notes = 'Use `--output <file>`; keep `&lt;tag&gt;` literally.\n<script>alert("x")</script> ]]>';
+    const xml = await (await releasesRss(site, [entry], new Map([[entry.key, notes]]))).text();
+    const description = parseHtml(xml).querySelector("item description")!.text;
+    const rendered = parseHtml(description);
+    expect(rendered.querySelector("script")).toBeNull();
+    expect(rendered.text).toBe(notes);
   });
 
   it("builds a valid empty channel when no product qualifies", async () => {
