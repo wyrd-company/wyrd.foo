@@ -7,7 +7,10 @@ images. Built with [Astro](https://astro.build) and Tailwind.
 The site is a static build with no backend. The front page holds the featured
 product, recent releases and the catalog. Each product has a product page, a
 releases page and, when it ships pages, a docs site. `/releases` lists every
-product's latest release, and Pagefind indexes the product, releases and docs
+product's latest release. Subscribe to `/releases.xml` for the same releases
+with changelog notes, publication dates and stable identities per product and
+version. The releases page links the feed, and every page advertises it for
+RSS readers. Pagefind indexes the product, releases and docs
 pages.
 
 ## Design
@@ -87,6 +90,7 @@ src/
 ├── components/              # shared, home, product and docs components
 └── pages/
     ├── index.astro          # front-page catalog
+    ├── releases.xml.ts      # RSS feed of every product’s latest release
     ├── releases.astro       # every product's latest release
     ├── 404.astro            # the page for every URL that has no page
     ├── tools/[key].astro    # product pages

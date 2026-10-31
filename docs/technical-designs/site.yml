@@ -276,6 +276,17 @@ proposed-design:
       script every entry shows in full. The clamp is visual: search indexes
       the whole entry. The product page's Releases section and
       `/tools/<key>/releases` do not clamp.
+    - **`/releases.xml`**: a static RSS 2.0 feed of the same products and
+      ordering as `/releases`, including feature entries with a changelog.
+      Each item has the product name and release version as its title, the
+      release date, an absolute link to the product's releases page, and
+      the latest changelog entry's Markdown as a plain-text description.
+      Its GUID identifies the product key and release version, so a docs
+      update does not create another release notification. A new version
+      has a new GUID. With no releases the feed has an empty channel.
+      `/releases` has a "Subscribe via RSS" link; the shared page head has
+      an RSS alternate link for feed discovery. The feed is rebuilt with
+      the site and requires no request-time service.
     - **`/tools/<key>/releases`**: one page for every product. The
       breadcrumb (Catalog / category / product / Releases), the product's
       mark and name, and the product's favicon and social image, as on its
