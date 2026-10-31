@@ -13,7 +13,7 @@ import { APT_SETUP, RPM_SETUP } from "../src/lib/install-blocks";
 
 const DIST = "dist-fixtures/products";
 const SITE = "https://wyrd.foo";
-const PRODUCTS = ["widget", "gadget", "sprocket", "gizmo", "harbor", "lantern", "beacon"];
+const PRODUCTS = ["widget", "gadget", "sprocket", "gizmo", "harbor", "lantern", "beacon", "compass"];
 
 /** The built product page; fails unless the page is the product page for `key`. */
 function productPage(key: string): HTMLElement {
@@ -66,6 +66,7 @@ describe("product pages from the fixture content", () => {
 
   it("indexes each page once for search, with its product, name and kinds", () => {
     const kinds: Record<string, string[]> = {
+      compass: ["coding-harness-plugin"],
       widget: ["cli"],
       gadget: ["app"],
       sprocket: ["mcp-server"],
@@ -89,8 +90,9 @@ describe("product pages from the fixture content", () => {
     const entry = JSON.parse(readFileSync(join(DIST, "pagefind", "pagefind-entry.json"), "utf8")) as {
       languages: Record<string, { page_count: number }>;
     };
-    // 7 product pages, their 7 releases pages, /releases and the 8 fixture docs pages (widget 4, gizmo 2, sprocket 1, harbor 1).
-    expect(Object.values(entry.languages).map((l) => l.page_count)).toEqual([2 * PRODUCTS.length + 1 + 8]);
+    // Each product and its releases page, /releases, and nine docs pages
+    // (widget 4, gizmo 2, sprocket 1, harbor 1, compass 1).
+    expect(Object.values(entry.languages).map((l) => l.page_count)).toEqual([2 * PRODUCTS.length + 1 + 9]);
   });
 
   it("serves every image, video and icon the pages use", () => {

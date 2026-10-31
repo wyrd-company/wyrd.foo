@@ -128,8 +128,21 @@ export const devcontainerImageKind = z.strictObject({
     .describe("Registry tags, when the publisher cannot read them from the image build config."),
 });
 
+// Plugin labels and instructions belong to the product repo, so new harnesses
+// need no vocabulary or install-command changes in the site.
+export const codingHarnessPluginKind = z.strictObject({
+  kind: z.literal("coding-harness-plugin"),
+  install: z.array(z.strictObject({
+    harness: oneLine.describe("The coding harness or marketplace tab label."),
+    command: z.string().trim().min(1)
+      .describe("Authored install instructions, including marketplace setup when needed."),
+    default: z.boolean().optional().describe("The install shown in the hero. At most one entry."),
+  })).min(1).superRefine(atMostOneDefault),
+});
+
 export const kindBlock = z.discriminatedUnion("kind", [
   cliKind,
+  codingHarnessPluginKind,
   mcpServerKind,
   appKind,
   devcontainerFeatureKind,

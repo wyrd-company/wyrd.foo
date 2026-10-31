@@ -5,6 +5,7 @@ export const KIND_LABELS: Record<Kind, string> = {
   cli: "CLI",
   "mcp-server": "MCP server",
   app: "App",
+  "coding-harness-plugin": "Coding harness plugin",
   "devcontainer-feature": "Dev container feature",
   "devcontainer-image": "Dev container image",
 };
