@@ -13,6 +13,9 @@ version. The releases page links the feed, and every page advertises it for
 RSS readers. Pagefind indexes the product, releases and docs
 pages.
 
+Each product page also has a Markdown form at `/tools/<key>.md`,
+including feature entries, all install methods and the latest release.
+
 Apps and CLIs distributed as container images show their Docker command plus
 optional Docker Compose and Kubernetes method tabs. Tool repos author the YAML
 files under `docs/user/`, list them in `assets`, and declare `compose` and

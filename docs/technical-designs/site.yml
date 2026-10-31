@@ -113,7 +113,7 @@ proposed-design:
       `/releases`, the docs index, every product page, every product releases
       page, and every docs page and docs changelog.
     - **Not listed:** a page that only redirects (`/docs/<key>/`, which goes
-      to the product's first docs page), and the 404 page. The `.md` copies of docs pages, the
+      to the product's first docs page), and the 404 page. The `.md` copies of product and docs pages, the
       JSON Schema and assets are not HTML pages, so the integration does not
       list them. `src/lib/sitemap.ts` decides from the route, so a new
       product needs no change.
@@ -200,6 +200,12 @@ proposed-design:
     entries. Docs pages are optional. A product with no docs pages has no
     "Read the docs" button, no Docs button in its catalog row and no
     Documentation section.
+
+    `/tools/<key>.md` serves the same content as Markdown with
+    `Content-Type: text/markdown; charset=utf-8`, including feature entries.
+    It includes all install methods and repository setup, media asset links,
+    the docs map, the feature README and the latest changelog entry when present.
+    It uses the same published content as the HTML page.
   media-tour: |
     Each tour item (not the first, full-width one) opens full size in a
     modal built on the native `<dialog>` element.
