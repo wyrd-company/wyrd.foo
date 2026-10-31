@@ -1,6 +1,6 @@
 name: gitpr
-version: 0.4.1
-docs-version: 0.1.1
+version: 0.4.2
+docs-version: 0.1.2
 tagline: Review worktree branches as local pull requests.
 blurb: A local Go CLI and TUI that turns worktree branches into lightweight pull requests against your local default branch — no server, no remote, no forge.
 status: stable
@@ -32,11 +32,32 @@ release-unit: gitpr
 owner: wyrd-company/gitpr
 docs-path: docs/user
 release:
-  version: 0.4.1
-  date: 2026-10-28T17:01:38.000Z
-  url: https://github.com/wyrd-company/gitpr/releases/tag/0.4.1
+  version: 0.4.2
+  date: 2026-10-31T21:03:57.000Z
+  url: https://github.com/wyrd-company/gitpr/releases/tag/0.4.2
   notes: |+
     ## Changelog
-    * e19609caba92455b1d5fc4316178714148fd7450 chore(release): gitpr 0.4.1, gitpr-docs 0.1.1 (#15)
-    * 9dd7d0aaea6c137513e10943ddb02122666a0dc7 docs(brand): add the gitpr logo, favicon and social images (#13)
+    * a96ecf45f8be2a4a7df897502e4c4ff6bcf01bf1 chore(deps): update actions/checkout action to v7
+    * aa0af2185bb05d757465fc19349230d8e4671a66 chore(deps): update ghcr.io/devcontainers/features/go docker tag to v1.4.0
+    * 0145e18363bb624808f8d24720fd75147dd6bd37 chore(release): apply gitpr 0.4.2 and docs 0.1.2 (#46)
+    * a7a069dfde20acecd675a0f9b2d15ab27e5d8188 chore(release): upgrade intentional config to contract-2 (#26)
+    * 6572c6bc050753f8cfe80ca241a65eecebf4b2af docs(release): describe tap updates and generated notes (#27)
+    * 6e8c02494662b3da1127d4704d22d673405525f0 feat(comment): read text from files and standard input
+    * 0555de44442c2aae1531447d133d6da4deda2760 feat(review): add compact summary output without patches
+    * 688cd8cbe2b4ff1fb3d1118587c0be78f9dea763 feat(review): support immutable tag bases
+    * 89b1cd64d219523216cacd824db43dfa982ae9e6 fix(build): keep development binaries in repo-local bin
+    * 957c1cac9cfcd9bd29b541d33fbbcb25ffd4804e fix(create): reject missing detected bases before saving records
+    * af06769523e8410951cace5c2cbaad9adf5b7a1a fix(deps): refresh compatible dashboard dependencies
+    * b6abbe33fe822bf838b5503e486f2860738d3ffe fix(deps): update module github.com/alecthomas/chroma/v2 to v2.27.0
+    * c7ba0ad535670827456767a3c2a19d3280a9059c fix(deps): update module github.com/oklog/ulid/v2 to v2.1.2
+    * da8a86748f6eb5f4992c61666b3bc684dbd5becc fix(deps): update module github.com/sourcegraph/go-diff to v0.9.0
+    * 4065247cfbc742c60307c77d1861f67ec0036bbe fix(deps): update module github.com/spf13/cobra to v1.10.2
+    * f988846b5da6deb06cbc2df93c1f5b333d9ef2f6 fix(release): build the pushed tag by name (#16)
+    * 3d001f3b317dde24f33140695d3e7d0dfb3c45f1 fix(tui): align adaptive colours with the brand palette
+    * 8f1a17b43c031f1ef6d70fbc713ed214c383eed1 fix(tui): migrate terminal models to Charm v2
+    * c662d55a0b1d5a35d871ea9564c11c277f687115 fix(tui): restore the live review diff view
+    * bc697036c8fe6decc34902eeb88a22c82c48671a fix(tui): scope diff responses to the active request
+    * e55085de2f4314e8e2eff07743c75e250881c84e style(test): preserve metadata through gofmt
+    * b9fceb85239c826f2d6e7b63dcca17da2ee70263 test(cli): make PR-id command coverage structural
+    * 2e829b2d199a401e8ebb80e91d4815b24b1b8733 test(cli): verify legacy skip output through the binary
 
