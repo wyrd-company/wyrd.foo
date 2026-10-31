@@ -73,6 +73,8 @@ proposed-design:
     under `source`. Full product pages link `docs/user/docs.yml`. Releases
     reports identify the page and product without guessing a changelog path.
     Page URLs use the site origin and pathname, without queries or fragments.
+    On the 404 page, script replaces the build-time page URL with the requested
+    missing pathname; without script the draft identifies the 404 page.
   product-marks: |
     Every product shows a square mark in catalog rows, the featured card,
     Recent releases entries, `/releases` entries, the product page hero, the
