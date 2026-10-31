@@ -100,6 +100,10 @@ templates/tool-docs/         # the Toha template that onboards a tool repo
 
 ## Develop
 
+Use Node.js 22.23.4 or later and the pnpm version declared in `package.json`.
+The Markdown renderer requires this Node minimum. The devcontainer installs
+Node's current LTS version; the publishing action provisions Node 24.
+
 ```sh
 pnpm install
 pnpm dev        # or: task dev  (binds 0.0.0.0 for the devcontainer)
