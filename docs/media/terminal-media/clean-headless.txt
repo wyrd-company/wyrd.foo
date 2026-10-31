@@ -1,0 +1,21 @@
+File: <scratch>/control.tape
+Output .gif <scratch>/control.gif
+Set Shell bash
+Set Width 800
+Set Height 240
+Set FontSize 18
+Set TypingSpeed 1ms
+Hide
+Type export PS1='demo$ '; clear
+Enter 1
+Sleep 500ms
+Show
+Type printf 'Ready\\n'
+Enter 1
+Wait 2s Line demo\$$
+Sleep 500ms
+Creating <scratch>/control.gif...
+Host your GIF on vhs.charm.sh: vhs publish <file>.gif
+
+exit: 0
+<scratch>/control.gif: GIF image data, version 89a, 800 x 240
