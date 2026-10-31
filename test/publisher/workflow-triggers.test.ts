@@ -142,6 +142,10 @@ describe("validate workflow_run names", () => {
   }
 
   const patterns: [string, string, boolean][] = [
+    ["Build", "Build/", false],
+    ["Build/", "Build/", true],
+    ["Absent", "Build/", false],
+    ["Build/*", "Build/package", true],
     ["Release*", "Release package", true],
     ["Release*", "release package", false],
     ["Release*", "Release", true],
@@ -175,6 +179,7 @@ describe("validate workflow_run names", () => {
   }
 
   for (const [pattern, name] of [
+    ["Build/*", "Build/"],
     ["Release?", "Releas"],
     ["Release+", "Releaseee"],
     ["**.yml", ".github/workflows/release.yml"],

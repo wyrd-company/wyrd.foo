@@ -33,6 +33,7 @@ function canCheck(pattern: string): boolean {
 }
 
 function matches(name: string, pattern: string): boolean {
+  if (!hasGlob(pattern)) return name === pattern.replace(/\\(.)/gs, "$1");
   return minimatch(name, pattern, {
     dot: true,
     nocase: false,
@@ -44,6 +45,10 @@ function matches(name: string, pattern: string): boolean {
     preserveMultipleSlashes: true,
     optimizationLevel: 0,
   });
+}
+
+function hasGlob(pattern: string): boolean {
+  return /[\[*]/.test(pattern.replace(/\\./gs, ""));
 }
 
 /** Check workflow_run names against the same tree that validate reads. */
@@ -82,6 +87,7 @@ export async function workflowTriggerFindings(
       // are not workflow-name restrictions in GitHub's contract.
       if (
         name.length > 64 * 1024 ||
+        (hasGlob(name) && names.some((value) => value.endsWith("/"))) ||
         names.some((value) =>
           value.split("/").some((part) => part === "." || part === ".."),
         )
