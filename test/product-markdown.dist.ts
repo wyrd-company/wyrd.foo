@@ -15,8 +15,9 @@ it("builds a Markdown file for every fixture product and feature entry", () => {
   }
   const widget = readFileSync("dist-fixtures/products/tools/widget.md", "utf8");
   expect(widget).toContain("getting-started");
-  expect(widget).toContain("## 1.4.0");
-  expect(widget).not.toContain("## 1.3.1");
+  expect(widget).toContain("Latest: 1.4.0");
+  expect(widget).toContain("Write the plan as one JSON document with `--json`.");
+  expect(widget).not.toContain("Keep the input order when a folder holds files");
   const lantern = readFileSync("dist-fixtures/products/tools/lantern.md", "utf8");
   expect(lantern).toContain(readFileSync("test/fixtures/product-content/lantern/README.md", "utf8").trim());
 });
