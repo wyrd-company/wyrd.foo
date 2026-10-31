@@ -14,7 +14,7 @@ const { title = "Wyrd Tools", pageUrl = Astro.url.href, reportProduct } = Astro.
     <span class="site-footer-name">Wyrd Company</span>
     <a href="https://wyrd.company">wyrd.company</a>
     {reportProduct && <a href={issueReportUrl(pageUrl, title, reportProduct)}>Report a problem with {reportProduct.name}</a>}
-    <a href={issueReportUrl(pageUrl, title)}>Report a site problem</a>
+    <a data-site-report data-report-page={pageUrl} href={issueReportUrl(pageUrl, title)}>Report a site problem</a>
     <span class="site-footer-note">Tools released under open-source licenses.</span>
   </div>
 </footer>
