@@ -2,7 +2,7 @@ $schema: https://refinery.systems/ontology/technical-design
 title: The wyrd.foo site
 objective: >-
   A static site that catalogs a few dozen tools on one front page and gives
-  each product a product page, a releases page and a docs site, for five
+  each product a product page, a releases page and a docs site, for six
   kinds of product, built from the content folders the publisher writes.
 relationships:
   references:
@@ -32,7 +32,7 @@ proposed-design:
     `/tools/<key>` and the `product:` field of each of its docs pages.
 
     A product has one or more kinds, in a `kinds` array: `cli`, `mcp-server`,
-    `app`, `devcontainer-feature` and `devcontainer-image`. `app` means a
+    `app`, `coding-harness-plugin`, `devcontainer-feature` and `devcontainer-image`. `app` means a
     thing you run (for example trowel, wyrwood, xolotl). The first kind is
     the primary kind: it gives the kind badge and the "get it" command
     wherever a product shows as one row or card. The product page and the
@@ -205,6 +205,14 @@ proposed-design:
       `--surface`, in both themes.
     - Without script a thumbnail is a plain link, so it opens the full-size
       file.
+  plugin-install: |
+    A coding harness plugin is a full product. Its install block has one tab
+    per authored harness entry, in install order. The default entry (else the
+    first) is selected and supplies the hero and catalog command. Each tab
+    shows its complete instructions with Copy, without a shell prompt. The
+    instructions may include marketplace registration and plugin installation.
+    Harness labels are authored text so new harnesses need no site change.
+    Plugins use the same catalog, releases, docs and search as other products.
   install-blocks: |
     - **CLI and app**: platform tabs (macOS, Linux, Windows, Docker)
       generated from `install[].os`, method pills for each platform, and one

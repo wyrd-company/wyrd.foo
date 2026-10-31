@@ -1,0 +1,32 @@
+---
+// relationships: implements site
+import CodeBlock from "./CodeBlock.astro";
+import { defaultInstall } from "../../lib/install-blocks";
+import type { KindBlock } from "../../schema/index";
+interface Props {
+  entries: Extract<KindBlock, { kind: "coding-harness-plugin" }>["install"];
+}
+const { entries } = Astro.props;
+const selected = defaultInstall(entries);
+const panelId = (index: number) => `install-plugin-${index}`;
+---
+
+<div class="install-card" data-install-block="coding-harness-plugin">
+  <div class="install-body">
+    <p class="install-label">Add to your coding harness</p>
+    <div class="install-pills" role="tablist" aria-label="Coding harness">
+      {entries.map((entry, index) => (
+        <button type="button" role="tab" class="install-pill"
+          id={`${panelId(index)}-tab`} aria-controls={panelId(index)}
+          aria-selected={entry === selected ? "true" : "false"} tabindex={entry === selected ? 0 : -1}>
+          {entry.harness}
+        </button>
+      ))}
+    </div>
+    {entries.map((entry, index) => (
+      <div role="tabpanel" id={panelId(index)} aria-labelledby={`${panelId(index)}-tab`} hidden={entry !== selected}>
+        <CodeBlock code={entry.command} prompt={false} label={`${entry.harness} plugin install`} />
+      </div>
+    ))}
+  </div>
+</div>

@@ -1,0 +1,28 @@
+# relationships: implements site
+release-unit: compass
+name: Compass
+version: 1.0.0
+docs-version: 1.0.0
+owner: example-org/sample-plugins
+status: preview
+category: Agent Tooling
+tagline: Sample instructions for an agent.
+blurb: A generic plugin fixture with two harness install paths.
+highlights: [Provides sample instructions.]
+media:
+  - src: assets/demo.svg
+    caption: Sample plugin illustration.
+kinds:
+  - kind: coding-harness-plugin
+    install:
+      - harness: Example harness
+        command: |-
+          /plugin marketplace add example-org/plugins
+          /plugin install sample@examples
+      - harness: Another harness
+        command: Follow the setup guide
+        default: true
+release:
+  version: 1.0.0
+  date: 2026-01-01
+  url: https://example.com/releases/1.0.0

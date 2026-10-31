@@ -17,6 +17,7 @@ export type McpInstallEntry = McpKind["install"][number];
 export const KIND_INSTALL_TABS: Record<Kind, string> = {
   cli: "Install",
   app: "Install",
+  "coding-harness-plugin": "Coding harness plugin",
   "mcp-server": "MCP server",
   "devcontainer-feature": "Dev container",
   "devcontainer-image": "Dev container image",
@@ -251,6 +252,10 @@ export function heroInstall(block: KindBlock): HeroInstall {
         setup: repoSetup(entry),
         prompt: shellPrompt(true, installCommand(entry)),
       };
+    }
+    case "coding-harness-plugin": {
+      const entry = defaultInstall(block.install);
+      return { label: `Install in ${entry.harness}`, command: entry.command.trimEnd(), prompt: false };
     }
     case "mcp-server": {
       const entry = defaultInstall(block.install);

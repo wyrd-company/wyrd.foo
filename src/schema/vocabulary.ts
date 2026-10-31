@@ -6,6 +6,7 @@ export const KINDS = [
   "cli",
   "mcp-server",
   "app",
+  "coding-harness-plugin",
   "devcontainer-feature",
   "devcontainer-image",
 ] as const;

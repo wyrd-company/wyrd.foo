@@ -17,7 +17,7 @@ proposed-design:
     tool repo's workflow, validates, records release data, and commits the
     result to wyrd.foo `main`. One repo holds any number of products, and one
     product holds any number of kinds: CLIs, MCP servers, apps, dev container
-    features and dev container images.
+    features, dev container images and coding harness plugins.
 
     ```text
     tool repo                                     wyrd.foo
@@ -165,15 +165,36 @@ proposed-design:
     publisher; `docs.yml` does not set them. `docs.yml` has no `repo` field:
     the site builds the GitHub link from `owner`. Every other field is
     rejected.
+  plugin-install: |
+    A `coding-harness-plugin` kind has a nonempty `install` list. Each entry
+    has a one-line `harness` label and nonempty `command` instructions. One
+    entry may set `default: true`; otherwise the first is selected. Commands
+    are authored by the plugin repo and can contain multiple lines, including
+    marketplace setup. The site neither derives commands nor reads harness
+    plugin manifests. The product uses the existing release and docs units.
+
+    ```yaml
+    kinds:
+      - kind: coding-harness-plugin
+        install:
+          - harness: Example harness
+            default: true
+            command: |-
+              /plugin marketplace add example-org/example-marketplace
+              /plugin install sample@examples
+          - harness: Another harness
+            command: Follow the plugin setup guide for this harness.
+    ```
   kinds: |
     `kinds` is an array of kind blocks. `kind` is one of `cli`, `mcp-server`,
-    `app`, `devcontainer-feature` and `devcontainer-image`. `app` means a
+    `app`, `coding-harness-plugin`, `devcontainer-feature` and `devcontainer-image`. `app` means a
     thing you run. Each kind block holds the data for that kind's install
     block on the product page:
 
     | Kind | Block |
     | --- | --- |
     | `cli`, `app` | `install`: the install methods (see `install`). |
+    | `coding-harness-plugin` | `install`: harness labels and complete install instructions (see `plugin-install`). |
     | `mcp-server` | `install`: the client methods (see `mcp-install`). `tools`: the tools table, one or more `{ name, description, effect }` entries; `effect` is a short text such as "Read-only" or "Writes". |
     | `devcontainer-feature` | `ref`: the feature's OCI reference. |
     | `devcontainer-image` | `ref`: the image reference. `tags`: optional, the tags table as `{ tag, base, architectures }` entries, for an image whose tags the publisher cannot read from the image build config. |
