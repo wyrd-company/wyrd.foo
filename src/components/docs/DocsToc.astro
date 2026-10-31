@@ -3,7 +3,7 @@
  * "On this page": the page's headings, nested. It highlights the last
  * heading that has scrolled past the top of the viewport, so the highlight
  * holds still while you read. Then: back to top, Copy page as Markdown, Edit
- * this page on GitHub.
+ * this page on GitHub.dev.
  */
 import type { MarkdownHeading } from "astro";
 
@@ -41,7 +41,7 @@ const shown = headings.filter((h) => h.depth === 2 || h.depth === 3);
     <button type="button" data-copy-markdown={markdownUrl}>
       <span data-copy-label>Copy page as Markdown</span>
     </button>
-    <a href={editUrl} rel="noopener" target="_blank">Edit this page on GitHub ↗</a>
+    <a href={editUrl} rel="noopener" target="_blank">Edit this page on GitHub.dev ↗</a>
   </div>
 </aside>
 

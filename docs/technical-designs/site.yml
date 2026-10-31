@@ -300,8 +300,11 @@ proposed-design:
       end of the page, where the last headings cannot reach the top, it
       highlights the last heading in view. Links: back to top, copy page as
       Markdown (the title as a heading, then the page body, also served at
-      `/docs/<key>/<slug>.md`), edit on GitHub (the page's file on the repo's
+      `/docs/<key>/<slug>.md`), edit on GitHub.dev (the page's file on the repo's
       default branch, under the product's `docs-path`).
+    - **Edit this page** also appears in the article footer, including on
+      narrow screens and the docs changelog. It opens the source file in
+      GitHub.dev in a new tab.
     - **Version footer**: "Docs 0.2.3 · for trowel 0.2.0", from the
       product's `docs-version` and `version`. "Docs 0.2.3" links the docs
       unit changelog at `/docs/<key>/changelog` when the product publishes

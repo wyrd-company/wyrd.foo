@@ -48,10 +48,10 @@ export function relPathOf(filePath: string, folder: string, root: string): strin
   return file.slice(prefix.length);
 }
 
-/** The GitHub edit link of a page: the repo's default branch (`HEAD`), `<docs-path>/<rel>`. */
+/** The GitHub.dev edit link of a page: the repo's default branch (`HEAD`), `<docs-path>/<rel>`. */
 export function editUrl(owner: string, docsPath: string, rel: string): string {
   const path = [...docsPath.split("/"), ...rel.split("/")].filter(Boolean).map(encodeURIComponent).join("/");
-  return `https://github.com/${owner}/edit/HEAD/${path}`;
+  return `https://github.dev/${owner}/blob/HEAD/${path}`;
 }
 
 /** "Docs 0.2.3 · for trowel 0.2.0" (docs/technical-designs/site.yml, docs). */

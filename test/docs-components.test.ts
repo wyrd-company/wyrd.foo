@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import SearchIndexMeta from "../src/components/SearchIndexMeta.astro";
+import DocsArticle from "../src/components/docs/DocsArticle.astro";
 import DocsHeader from "../src/components/docs/DocsHeader.astro";
 import DocsSidebar from "../src/components/docs/DocsSidebar.astro";
 import DocsToc from "../src/components/docs/DocsToc.astro";
@@ -113,7 +114,7 @@ describe("DocsToc", () => {
   ];
 
   it("lists level 2 and 3 headings, nested by depth", async () => {
-    const root = await render(DocsToc, { title: "T", headings, markdownUrl: "/docs/x/t.md", editUrl: "https://github.com/o/r/edit/HEAD/docs/user/t.md" });
+    const root = await render(DocsToc, { title: "T", headings, markdownUrl: "/docs/x/t.md", editUrl: "https://github.dev/o/r/blob/HEAD/docs/user/t.md" });
     expect(root.querySelectorAll(".docs-toc-nav li").map((li) => [li.getAttribute("data-depth"), li.querySelector("a")?.getAttribute("href")])).toEqual([
       ["2", "#one"],
       ["3", "#one-a"],
@@ -121,10 +122,10 @@ describe("DocsToc", () => {
   });
 
   it("links back to top, Copy as Markdown and Edit on GitHub", async () => {
-    const root = await render(DocsToc, { title: "T", headings, markdownUrl: "/docs/x/t.md", editUrl: "https://github.com/o/r/edit/HEAD/docs/user/t.md" });
+    const root = await render(DocsToc, { title: "T", headings, markdownUrl: "/docs/x/t.md", editUrl: "https://github.dev/o/r/blob/HEAD/docs/user/t.md" });
     expect(root.querySelector('.docs-toc-actions a[href="#top"]')).not.toBeNull();
     expect(root.querySelector("[data-copy-markdown]")?.getAttribute("data-copy-markdown")).toBe("/docs/x/t.md");
-    expect(root.querySelectorAll(".docs-toc-actions a").at(-1)?.getAttribute("href")).toBe("https://github.com/o/r/edit/HEAD/docs/user/t.md");
+    expect(root.querySelectorAll(".docs-toc-actions a").at(-1)?.getAttribute("href")).toBe("https://github.dev/o/r/blob/HEAD/docs/user/t.md");
   });
 });
 
@@ -151,5 +152,18 @@ describe("SearchIndexMeta", () => {
     expect(root.querySelectorAll('[data-pagefind-filter="kind"]').map((e) => e.text)).toEqual(["app", "devcontainer-feature"]);
     expect(root.querySelector('[data-pagefind-meta="productName"]')?.text).toBe("gadget, the app");
     expect(root.querySelector("[data-pagefind-ignore]")?.querySelectorAll("[data-pagefind-filter]")).toHaveLength(3);
+  });
+});
+
+describe("DocsArticle edit link", () => {
+  it("keeps an accessible edit link in the article footer outside the responsive TOC", async () => {
+    const url = "https://github.dev/example-org/things/blob/HEAD/docs/user/guides/setup.md";
+    const root = await render(DocsArticle, { product: flat, title: "Setup", section: null, editUrl: url });
+    const link = root.querySelector(".docs-article-foot .docs-edit-link");
+    expect(link?.text).toContain("Edit this page");
+    expect(link?.getAttribute("href")).toBe(url);
+    expect(link?.getAttribute("target")).toBe("_blank");
+    expect(link?.getAttribute("rel")).toBe("noopener");
+    expect(link?.hasAttribute("data-pagefind-ignore")).toBe(true);
   });
 });
