@@ -1,0 +1,20 @@
+---
+// relationships: { implements: site, references: publishing }
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { CONTENT_ROOT } from "../../lib/content-root";
+import { productAssetUrl } from "../../lib/product-assets";
+import { manifestOptions } from "../../lib/container-install";
+import type { ContainerManifests } from "../../schema/container-manifests";
+import CodeBlock from "./CodeBlock.astro";
+interface Props { productKey: string; manifest: ContainerManifests }
+const { productKey, manifest } = Astro.props;
+const options = manifestOptions(manifest, (path) => readFileSync(join(CONTENT_ROOT, productKey, "docs", path), "utf8"));
+---
+{options.map((option) => <div class="manifest-content">
+  <p class="install-label">{option.instruction}</p>
+  <p><a href={productAssetUrl(productKey, option.path)} download>Download {option.path}</a></p>
+  <CodeBlock code={option.code} copyText={option.code} label={option.label} />
+  <CodeBlock code={option.command} prompt label={`${option.label} command`} />
+</div>)}
+<style>.manifest-content :global(.code-block + .code-block) { margin-top: 12px; }</style>

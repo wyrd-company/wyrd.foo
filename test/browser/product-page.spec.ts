@@ -1058,3 +1058,37 @@ test.describe("/releases clamp without script", () => {
     expect(await body.evaluate((el) => el.scrollHeight - el.clientHeight)).toBe(0);
   });
 });
+
+for (const key of ["gadget", "widget"]) {
+  test(`${key}: app and CLI Docker manifests preserve authored settings and clipboard bytes`, async ({ context, page, baseURL }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openProduct(page, baseURL, key);
+    const block = page.locator('[data-install-block="platforms"]');
+    await block.getByRole("tab", { name: "Docker", exact: true }).click();
+    const docker = block.getByRole("tabpanel").filter({ has: page.getByRole("tablist", { name: "Docker install method", exact: true }) });
+    await expect(docker.getByRole("tablist").getByRole("tab")).toHaveText(["Docker run", "Docker Compose", "Kubernetes"]);
+    await expect(docker.getByRole("tab", { name: "Docker run", exact: true })).toHaveAttribute("aria-selected", "true");
+    await docker.getByRole("button", { name: "Copy", exact: true }).click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("docker run");
+    if (key === "gadget") await block.screenshot({ path: "docs/media/container-install/app-docker-run.png" });
+    for (const [label, path, command] of [
+      ["Docker Compose", "install/compose.yaml", "docker compose -f 'install/compose.yaml' up -d"],
+      ["Kubernetes", "install/workload.yaml", "kubectl apply -f 'install/workload.yaml'"],
+    ]) {
+      await docker.getByRole("tab", { name: label, exact: true }).click();
+      const panel = docker.getByRole("tabpanel");
+      const source = readFileSync(new URL(`../fixtures/product-content/${key}/docs/${path}`, import.meta.url), "utf8");
+      await panel.getByRole("button", { name: "Copy", exact: true }).first().click();
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(source);
+      await expect(panel.getByRole("button", { name: "Copied", exact: true })).toHaveCount(1);
+      if (key === "gadget") await block.screenshot({ path: `docs/media/container-install/app-${label === "Docker Compose" ? "compose" : "kubernetes"}.png` });
+      const download = panel.getByRole("link", { name: `Download ${path}`, exact: true });
+      const response = await page.request.get((await download.getAttribute("href"))!);
+      expect(await response.body()).toEqual(Buffer.from(source));
+      await panel.getByRole("button", { name: "Copy", exact: true }).last().click();
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(command);
+    }
+    await docker.getByRole("tab", { name: "Kubernetes", exact: true }).press("Home");
+    await expect(docker.getByRole("tab", { name: "Docker run", exact: true })).toHaveAttribute("aria-selected", "true");
+  });
+}

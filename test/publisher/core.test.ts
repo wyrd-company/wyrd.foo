@@ -609,10 +609,13 @@ describe("links outside docs/user/", () => {
 
 // relationships: { implements: publishing }
 describe("authored image manifests", () => {
+  for (const productKind of ["devcontainer-image", "app", "cli"]) describe(productKind, () => {
   function manifests(methods = ["compose", "kubernetes"]) {
     const files = betaFiles();
     const docs = parse(files["docs/user/docs.yml"] as string);
-    const kind = docs.products["sample-image"].kinds[0];
+    const product = docs.products["sample-image"];
+    if (productKind !== "devcontainer-image") product.kinds = [{ kind: productKind, install: [{ method: "docker", command: "docker run --rm alpine:3" }] }];
+    const kind = productKind === "devcontainer-image" ? product.kinds[0] : product.kinds[0].install[0];
     for (const method of methods) {
       kind[method] = `install/${method}.yaml`;
       docs.assets.push(`install/${method}.yaml`);
@@ -659,7 +662,8 @@ describe("authored image manifests", () => {
     it(`rejects ${problem} with a field diagnostic and no output`, async () => {
       const files = manifests();
       const docs = parse(files["docs/user/docs.yml"] as string);
-      const kind = docs.products["sample-image"].kinds[0];
+      const block = docs.products["sample-image"].kinds[0];
+      const kind = productKind === "devcontainer-image" ? block : block.install[0];
       const path = "docs/user/install/compose.yaml";
       if (problem === "missing") delete files[path];
       if (problem === "unlisted")
@@ -682,4 +686,5 @@ describe("authored image manifests", () => {
       assert.match(JSON.stringify(result.findings), /kinds.*compose/);
     });
   }
+  });
 });

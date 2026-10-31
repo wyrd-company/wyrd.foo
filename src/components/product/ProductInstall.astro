@@ -50,7 +50,7 @@ const panelId = (kind: string) => `install-kind-${kind}`;
         hidden={tabbed && index > 0}
       >
         {(block.kind === "cli" || block.kind === "app") && (
-          <InstallPlatforms tabs={platformTabs(block.install)} id={`install-${block.kind}`} />
+          <InstallPlatforms productKey={productKey} tabs={platformTabs(block.install)} id={`install-${block.kind}`} />
         )}
         {block.kind === "mcp-server" && (
           <InstallMcp tabs={mcpClientTabs(block.install)} tools={block.tools} id="install-mcp" />

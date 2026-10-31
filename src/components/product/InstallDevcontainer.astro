@@ -4,9 +4,7 @@
  * that adds it) or a dev container image (its reference and install method
  * tabs, then the tags table of its registry tags).
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { CONTENT_ROOT } from "../../lib/content-root";
+import InstallManifest from "./InstallManifest.astro";
 import CodeBlock from "./CodeBlock.astro";
 import { devcontainerFeatureSnippet } from "../../lib/install-blocks";
 import { containerImageOptions } from "../../lib/container-install";
@@ -17,7 +15,7 @@ interface Props {
   block: Extract<KindBlock, { kind: "devcontainer-feature" | "devcontainer-image" }>;
 }
 const { block, productKey } = Astro.props;
-const imageOptions = block.kind === "devcontainer-image" ? containerImageOptions(block, (path) => readFileSync(join(CONTENT_ROOT, productKey, "docs", path), "utf8")) : [];
+const imageOptions = block.kind === "devcontainer-image" ? containerImageOptions(block, () => "") : [];
 ---
 
 <div class="install-card" data-install-block={block.kind}>
@@ -56,9 +54,11 @@ const imageOptions = block.kind === "devcontainer-image" ? containerImageOptions
               aria-labelledby={`install-image-${option.id}-tab`}
               hidden={index !== 0}
             >
-              <p class="install-label">{option.instruction}</p>
-              <CodeBlock code={option.code} copyText={option.command ? option.code : undefined} label={option.label} />
-              {option.command && <CodeBlock code={option.command} prompt label={`${option.label} command`} />}
+              {option.command ? <InstallManifest productKey={productKey} manifest={{ [option.id]: block[option.id as "compose" | "kubernetes"] }} /> : <>
+                <p class="install-label">{option.instruction}</p>
+                <CodeBlock code={option.code} label={option.label} />
+              </>}
+
             </div>
           ))}
         </div>

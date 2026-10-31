@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: sample }
+spec:
+  selector: { matchLabels: { app: sample } }
+  template:
+    metadata: { labels: { app: sample } }
+    spec:
+      containers:
+        - name: worker
+          image: alpine:3
+          command: [sleep, infinity]
+          env: [{ name: MODE, value: sample }]

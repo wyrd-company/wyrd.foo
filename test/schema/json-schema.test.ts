@@ -57,3 +57,18 @@ describe("docs JSON Schema", () => {
     assert.equal(validatePage({ title: "T", product: "widget", docs: true }), false);
   });
 });
+
+// relationships: { implements: publishing }
+describe("Docker manifest fields in the source JSON contract", () => {
+  for (const kind of ["app", "cli"]) {
+    it(`${kind} accepts Docker manifests and rejects them on other methods`, () => {
+      const raw = readRawDocs(kind);
+      const product = Object.values(raw.products).find((entry: any) => entry.kinds.some((block: any) => block.kind === kind)) as any;
+      product.kinds = [{ kind, install: [{ method: "docker", command: "docker run alpine:3", compose: "install/compose.yaml", kubernetes: "install/workload.yaml" }] }];
+      assert.ok(validateDocs(raw), ajv.errorsText(validateDocs.errors));
+      product.kinds[0].install[0].method = "homebrew";
+      product.kinds[0].install[0].os = ["linux"];
+      assert.equal(validateDocs(raw), false);
+    });
+  }
+});

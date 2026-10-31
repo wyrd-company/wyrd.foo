@@ -55,6 +55,8 @@ kinds:
         os: [windows]
         command: winget install ExampleOrg.Widget
       - method: docker
+        compose: install/compose.yaml
+        kubernetes: install/workload.yaml
         command: docker run --rm -it ghcr.io/example-org/widget
 release:
   version: 1.4.0

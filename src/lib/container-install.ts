@@ -1,5 +1,5 @@
 /* relationships: { implements: site, references: publishing } */
-import { devcontainerImageSnippet } from "./install-blocks";
+import type { ContainerManifests } from "../schema/container-manifests";
 import type { KindBlock } from "../schema/index";
 
 /** Read published tool-authored YAML; never derive runtime settings from the image ref. */
@@ -18,9 +18,15 @@ export function containerImageOptions(
       id: "devcontainer",
       label: "Dev container",
       instruction: "Use in devcontainer.json",
-      code: devcontainerImageSnippet(block.ref),
+      code: `"image": ${JSON.stringify(block.ref)}`,
     },
   ];
+  return [...options, ...manifestOptions(block, read)];
+}
+
+/** Shared app, CLI and dev container manifest rendering contract. */
+export function manifestOptions(block: ContainerManifests, read: (path: string) => string) {
+  const options: { id: string; label: string; instruction: string; code: string; command: string; path: string }[] = [];
   for (const method of ["compose", "kubernetes"] as const) {
     const path = block[method];
     if (path === undefined) continue;
@@ -28,6 +34,7 @@ export function containerImageOptions(
     const argument = "'" + path.replaceAll("'", "'\"'\"'") + "'";
     options.push({
       id: method,
+      path,
       label: method === "compose" ? "Docker Compose" : "Kubernetes",
       instruction: `Save as ${path}`,
       code: read(path),

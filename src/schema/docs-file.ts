@@ -31,9 +31,12 @@ const includes = (list: readonly string[], value: string) => list.includes(value
 
 // --- install --------------------------------------------------------------
 
-const installEntry = z
-  .strictObject({
-    method: z.enum(INSTALL_METHODS),
+export const containerManifestShape = {
+  compose: assetPath.optional().describe("Authored Compose YAML, relative to the product docs folder; listed in assets."),
+  kubernetes: assetPath.optional().describe("Authored Kubernetes YAML, relative to the product docs folder; listed in assets."),
+};
+
+const installEntryShape = {
     os: z
       .array(z.enum(OPERATING_SYSTEMS))
       .min(1)
@@ -45,8 +48,12 @@ const installEntry = z
       .string()
       .min(1)
       .describe("One line, or several. For apt and rpm, only the install line: the site owns the repo setup."),
-  })
-  .superRefine((entry, ctx) => {
+  };
+
+const installEntry = z.discriminatedUnion("method", [
+  z.strictObject({ ...installEntryShape, method: z.enum(INSTALL_METHODS).exclude(["docker"]) }),
+  z.strictObject({ ...installEntryShape, method: z.literal("docker"), ...containerManifestShape }),
+]).superRefine((entry, ctx) => {
     if (entry.os === undefined && !includes(OS_FREE_METHODS, entry.method)) {
       ctx.addIssue({ code: "custom", path: ["os"], message: `is required for method ${entry.method}` });
     }
@@ -121,8 +128,7 @@ export const devcontainerFeatureKind = z.strictObject({
 export const devcontainerImageKind = z.strictObject({
   kind: z.literal("devcontainer-image"),
   ref: ociRef,
-  compose: assetPath.optional().describe("Authored Compose YAML, relative to the product docs folder; listed in assets."),
-  kubernetes: assetPath.optional().describe("Authored Kubernetes YAML, relative to the product docs folder; listed in assets."),
+  ...containerManifestShape,
   tags: z
     .array(imageTag)
     .min(1)

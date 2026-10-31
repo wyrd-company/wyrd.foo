@@ -3,15 +3,17 @@
  * The install block of a CLI or app: platform tabs, method pills for each
  * platform, and one code block with Copy for each method.
  */
+import InstallManifest from "./InstallManifest.astro";
 import CodeBlock from "./CodeBlock.astro";
 import type { PlatformTab } from "../../lib/install-blocks";
 
 interface Props {
   tabs: PlatformTab[];
+  productKey: string;
   /** Unique prefix for the tab and panel ids. */
   id: string;
 }
-const { tabs, id } = Astro.props;
+const { tabs, id, productKey } = Astro.props;
 const tabId = (platform: string) => `${id}-${platform}`;
 const methodId = (platform: string, index: number) => `${id}-${platform}-${index}`;
 ---
@@ -60,7 +62,7 @@ const methodId = (platform: string, index: number) => `${id}-${platform}-${index
             hidden={!method.selected}
           >
             {method.qualifier && <p class="install-qualifier">{method.qualifier}</p>}
-            <CodeBlock code={method.command} setup={method.setup} prompt={method.prompt} label={`${method.pill} install command`} />
+            {method.manifest ? <InstallManifest productKey={productKey} manifest={method.manifest} /> : <CodeBlock code={method.command} setup={method.setup} prompt={method.prompt} label={`${method.pill} install command`} />}
           </div>
         ))}
       </div>

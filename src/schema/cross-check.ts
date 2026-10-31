@@ -1,3 +1,4 @@
+import { manifestRefs } from "./container-manifests.ts";
 import { isMap, parseAllDocuments } from "yaml";
 import { isFeatureEntry, type DocsFile, type FeatureEntry, type ProductEntry } from "./docs-file.ts";
 import { productDocsFolder } from "./docs-folder.ts";
@@ -198,13 +199,8 @@ function assetRefs(key: string, entry: ProductEntry): AssetRef[] {
   if (entry["social-image"] !== undefined) {
     refs.push({ field: at("social-image"), path: entry["social-image"], types: ["png", "jpeg"], size: SOCIAL_IMAGE_SIZE });
   }
-  entry.kinds.forEach((block, index) => {
-    if (block.kind !== "devcontainer-image") return;
-    for (const method of ["compose", "kubernetes"] as const) {
-      if (block[method] !== undefined)
-        refs.push({ field: at("kinds", index, method), path: block[method] });
-    }
-  });
+  for (const ref of manifestRefs(entry.kinds))
+    refs.push({ field: at("kinds", ...ref.field), path: ref.path });
   entry.media.forEach((item, index) => refs.push({ field: at("media", index, "src"), path: item.src }));
   return refs;
 }

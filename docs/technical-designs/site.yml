@@ -209,6 +209,14 @@ proposed-design:
     - **CLI and app**: platform tabs (macOS, Linux, Windows, Docker)
       generated from `install[].os`, method pills for each platform, and one
       code block (single or multi-line) with one Copy button for each method.
+      Docker entries show a Docker run method and optional Docker Compose and
+      Kubernetes methods, declared by `install[].compose` and
+      `install[].kubernetes`. These use the same authored manifest display,
+      exact Copy, download and filename-specific commands as dev container
+      images. Each repeated Docker entry keeps its label on each method.
+      The declared default entry selects its platform and command, never a
+      manifest. Platforms without the default select their first command.
+      The hero and docs install command retain the default entry's command.
       For `method: apt` and `method: rpm` the site writes the repo.wyrd.foo
       setup lines above the product's install line (`command` is only the
       install line). The setup is collapsed: a block shows its install line,
@@ -233,7 +241,7 @@ proposed-design:
       with a `devcontainer.json` snippet. A Docker Compose tab appears only
       when the image kind declares `compose`; a Kubernetes tab appears only
       when it declares `kubernetes`. Each reads the published tool-authored
-      YAML file, shows its path in "Save as <path>", and copies its full text.
+      YAML file, shows its path in "Save as <path>", and copies its full text, preserving CRLF. A download link serves the original bytes.
       The command uses the same quoted path: `docker compose -f '<path>' up -d`
       or `kubectl apply -f '<path>'`. The site does not generate runtime
       settings. The image's registry tags table follows the install tabs.

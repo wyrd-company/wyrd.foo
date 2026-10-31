@@ -22,6 +22,8 @@ kinds:
   - kind: app
     install:
       - method: docker
+        compose: install/compose.yaml
+        kubernetes: install/workload.yaml
         default: true
         command: |-
           docker run -d --name gadget \

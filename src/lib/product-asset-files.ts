@@ -1,3 +1,4 @@
+import { manifestRefs } from "../schema/container-manifests.ts";
 /*
  * The asset files a product's tool.yaml names: `logo`, and for a full product
  * also `logo-dark`, `favicon`, `social-image` and each `media[].src`. Their
@@ -12,7 +13,7 @@ import type { ToolFile } from "../schema/index.ts";
 export function namedAssetPaths(data: ToolFile): string[] {
   const paths = [data.logo];
   if (!("source" in data)) {
-    paths.push(data["logo-dark"], data.favicon, data["social-image"], ...data.media.map((item) => item.src), ...data.kinds.flatMap((block) => block.kind === "devcontainer-image" ? [block.compose, block.kubernetes] : []));
+    paths.push(data["logo-dark"], data.favicon, data["social-image"], ...data.media.map((item) => item.src), ...manifestRefs(data.kinds).map((ref) => ref.path));
   }
   return [...new Set(paths.filter((path): path is string => path !== undefined))];
 }

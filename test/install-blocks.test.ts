@@ -78,7 +78,7 @@ describe("platformTabs", () => {
     const tabs = platformTabs([docker, cargo, brew]);
     expect(tabs.map((t) => t.label)).toEqual(["macOS", "Linux", "Windows", "Docker"]);
     expect(tabs.find((t) => t.platform === "windows")!.methods.map((m) => m.pill)).toEqual(["Cargo"]);
-    expect(tabs.find((t) => t.platform === "docker")!.methods.map((m) => m.pill)).toEqual(["Docker"]);
+    expect(tabs.find((t) => t.platform === "docker")!.methods.map((m) => m.pill)).toEqual(["Docker run"]);
   });
 
   it("lists a method under each of its systems, in install order", () => {
@@ -235,4 +235,14 @@ describe("heroInstall", () => {
       prompt: false,
     });
   });
+});
+
+// relationships: { implements: site }
+it("keeps repeated Docker entries and their optional manifests distinct", () => {
+  const tabs = platformTabs([
+    { method: "docker", label: "Worker", command: "docker run alpine:3", compose: "worker.yaml" },
+    { method: "docker", label: "Console", command: "docker run busybox:1", kubernetes: "console.yaml", default: true },
+  ]);
+  expect(tabs[0].methods.map((m) => m.pill)).toEqual(["Docker run · Worker", "Docker Compose · Worker", "Docker run · Console", "Kubernetes · Console"]);
+  expect(tabs[0].methods.filter((m) => m.selected).map((m) => m.pill)).toEqual(["Docker run · Console"]);
 });

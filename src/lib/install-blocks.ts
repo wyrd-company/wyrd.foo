@@ -1,3 +1,5 @@
+import { manifestOptions } from "./container-install";
+import type { ContainerManifests } from "../schema/container-manifests";
 /*
  * What the product page's install blocks show for each kind
  * (docs/technical-designs/site.yml, install-blocks): platform tabs and
@@ -114,6 +116,7 @@ const shellPrompt = (shell: boolean, command: string) => shell && !command.inclu
 const SHELL_MCP_METHODS: readonly McpInstallMethod[] = ["claude-code", "vscode"];
 
 export interface MethodOption {
+  manifest?: ContainerManifests;
   /** The pill text. */
   pill: string;
   /** The entry's label, shown beside the pills; none for `other`, whose pill is the label. */
@@ -149,10 +152,10 @@ export function platformTabs(entries: readonly InstallEntry[]): PlatformTab[] {
     const counts = new Map<string, number>();
     for (const entry of here) counts.set(entry.method, (counts.get(entry.method) ?? 0) + 1);
     const selected = platform === chosenPlatform;
-    const methods = here.map((entry, index) => {
+    const methods = here.flatMap((entry, index) => {
       const name = entry.method === "other" ? (entry.label ?? METHOD_LABELS.other) : METHOD_LABELS[entry.method];
       const repeated = entry.method !== "other" && counts.get(entry.method)! > 1 && entry.label !== undefined;
-      return {
+      const base = {
         pill: repeated ? `${name} · ${entry.label}` : name,
         qualifier: entry.method === "other" ? undefined : entry.label,
         command: entry.command.trimEnd(),
@@ -160,6 +163,13 @@ export function platformTabs(entries: readonly InstallEntry[]): PlatformTab[] {
         prompt: shellPrompt(true, installCommand(entry)),
         selected: selected ? entry === chosen : index === 0,
       };
+      if (entry.method !== "docker") return [base];
+      const variants = manifestOptions(entry, () => "").map((option) => ({
+        pill: repeated ? `${option.label} · ${entry.label}` : option.label,
+        qualifier: entry.label, command: "", prompt: false, selected: false,
+        manifest: { [option.id]: option.path },
+      }));
+      return [{ ...base, pill: repeated ? `Docker run · ${entry.label}` : "Docker run" }, ...variants];
     });
     return [{ platform, label: PLATFORM_LABELS[platform], methods, selected }];
   });

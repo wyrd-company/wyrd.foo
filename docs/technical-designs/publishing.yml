@@ -414,7 +414,26 @@ proposed-design:
     build tags (for example `20261018.123-noble`) are registry tags for the
     image's tags table, not release versions.
   container-manifests: |
-    A `devcontainer-image` kind block may declare `compose` and `kubernetes`:
+    An app or CLI `method: docker` install entry may declare optional `compose`
+    and `kubernetes` paths. Other install methods reject these fields. A
+    `devcontainer-image` kind block accepts the same fields. Each path names
+    a tool-authored file; the site does not infer runtime configuration from
+    `command` or `ref`. The Docker command remains required and keeps its
+    default and hero behavior. Only declared manifests add method tabs.
+
+    ```yaml
+    kinds:
+      - kind: app
+        install:
+          - method: docker
+            default: true
+            command: docker run --rm alpine:3
+            compose: install/compose.yaml
+            kubernetes: install/workload.yaml
+    ```
+
+    The same install entry is supported under `kind: cli`.
+    For a dev container image:
 
     ```yaml
     kinds:

@@ -10,12 +10,14 @@ releases page and, when it ships pages, a docs site. `/releases` lists every
 product's latest release, and Pagefind indexes the product, releases and docs
 pages.
 
-Image product pages show a dev container snippet and optional Docker Compose
-and Kubernetes tabs. Tool repos author those YAML files under `docs/user/`,
-list them in `assets`, and declare `compose` and `kubernetes` paths in their
-`devcontainer-image` kind block. Paths are relative to the product's docs
-folder, like media paths. The publisher preserves the files' bytes; the site
-shows and copies their content with commands that name the authored files.
+Apps and CLIs distributed as container images show their Docker command plus
+optional Docker Compose and Kubernetes method tabs. Tool repos author the YAML
+files under `docs/user/`, list them in `assets`, and declare `compose` and
+`kubernetes` paths on the relevant `method: docker` install entry. Dev container
+images accept the same fields on their kind block. Paths are relative to the
+product's docs folder, like media paths. The publisher preserves authored bytes;
+the site shows, downloads and copies the files with filename-specific commands.
+Only declared manifests appear. The default install command remains unchanged.
 See the [publishing contract](docs/technical-designs/publishing.yml),
 `container-manifests`, for examples and validation.
 

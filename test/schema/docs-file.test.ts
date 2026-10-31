@@ -180,7 +180,7 @@ describe("docs.yml schema", () => {
     });
 
     it("rejects a method outside the enum", () => {
-      assertIssue(issuesAfter("cli", (raw) => (widgetInstall(raw)[0].method = "brew")), "products.widget.kinds[0].install[0].method", /Invalid option/);
+      assertIssue(issuesAfter("cli", (raw) => (widgetInstall(raw)[0].method = "brew")), "products.widget.kinds[0].install[0].method", /is not a known method/);
     });
 
     it("uses client methods, not OS methods, on an mcp-server kind", () => {
