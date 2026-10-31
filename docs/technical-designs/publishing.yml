@@ -161,10 +161,43 @@ proposed-design:
     | `favicon` | no | SVG or PNG, relative to the product's docs folder and listed in `assets`. |
     | `social-image` | no | PNG or JPEG, 1200×630, relative to the product's docs folder and listed in `assets`. |
 
-    `owner`, `docs-path`, `release` and `featured` are written by the
+    `owner`, `docs-path`, `release`, `licence` and `featured` are written by the
     publisher; `docs.yml` does not set them. `docs.yml` has no `repo` field:
     the site builds the GitHub link from `owner`. Every other field is
     rejected.
+  licence: |
+    The publisher reads the repo-root `LICENSE` at the input ref once for
+    all products and feature entries. `tool.yaml` carries an optional,
+    ingest-owned `licence` containing an SPDX expression with listed licence
+    and exception identifiers. `docs.yml` does not declare it.
+
+    One explicit `SPDX-License-Identifier: <expression>` in LICENSE states
+    the expression, including AND, OR and WITH. A declaration alone, or with
+    exactly `See LICENSES/ for texts.`, is accepted. Any other accompanying
+    content must match one complete supported canonical text and the declaration
+    must be its simple SPDX identifier. A declaration cannot override modified
+    or contradictory terms. Compound declarations with accompanying full texts
+    warn and omit: the publisher cannot establish their relationship or exceptions.
+
+    Complete MIT and Apache-2.0 texts are matched against spdx-license-list.
+    Whitespace can vary. Numeric years, ranges and comma-separated years can
+    replace the canonical year slot. The holder slot accepts a single line of
+    capitalized name words (Unicode letters, apostrophes and hyphens), with
+    `contributors`, `and`, `of`, `the` and `&` as connecting or suffix words.
+    Words indicating terms, such as `No`, `Commercial`, `Use` and `Prohibited`,
+    are excluded. Literal template placeholders are also accepted. This is
+    conservative name matching, not general licence recognition or legal analysis;
+    unusual names, punctuation and free-form notices can warn and omit.
+    No copyright line or substantive permission, condition or restriction text
+    is discarded. A declaration does not relax these matching boundaries.
+
+    Missing, unidentifiable, invalid or ambiguous licences produce a warning
+    and no field, also in strict mode. Multiple different declarations are
+    ambiguous. A LICENSES/ folder does not establish the repo's expression;
+    the publisher never infers AND or OR from its contents. Other licences
+    can use a declaration alone or the supported reference form.
+    Detection is local and uses no network service. Republishing fills the
+    field for existing products.
   kinds: |
     `kinds` is an array of kind blocks. `kind` is one of `cli`, `mcp-server`,
     `app`, `devcontainer-feature` and `devcontainer-image`. `app` means a

@@ -60,3 +60,5 @@ release:
   version: 1.4.0
   date: 2026-09-30
   url: https://github.com/example-org/widget/releases/tag/1.4.0
+
+licence: MIT OR Apache-2.0

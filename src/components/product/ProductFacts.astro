@@ -15,8 +15,9 @@ interface Props {
   category: string;
   /** `owner/repo` on GitHub. */
   owner: string;
+  licence?: string;
 }
-const { kinds, status, version, date, category, owner } = Astro.props;
+const { kinds, status, version, date, category, owner, licence } = Astro.props;
 ---
 
 <dl class="facts">
@@ -51,6 +52,12 @@ const { kinds, status, version, date, category, owner } = Astro.props;
     <dt>Repository</dt>
     <dd data-fact="repository"><a href={`https://github.com/${owner}`}>{owner}</a></dd>
   </div>
+  {licence && (
+    <div class="facts-row">
+      <dt>Licence</dt>
+      <dd data-fact="licence"><a href={`https://github.com/${owner}/blob/HEAD/LICENSE`}>{licence}</a></dd>
+    </div>
+  )}
 </dl>
 
 <style>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { licenceSchema } from "./licence.ts";
 import { featureEntryShape, productEntryShape } from "./docs-file.ts";
 import { oneLine, ociRef, ownerRepo, releaseUnitId, repoPath, semver } from "./fields.ts";
 
@@ -30,6 +31,7 @@ const ingestShape = {
   "release-unit": releaseUnitId,
   owner: ownerRepo.describe("The repo that owns this key."),
   release: releaseSchema.optional(),
+  licence: licenceSchema.optional(),
 };
 
 /** The docs folder of a product in its repo when the publisher names none. */
