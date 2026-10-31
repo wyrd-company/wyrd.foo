@@ -26,6 +26,7 @@ export const KIND_LABEL: Record<Kind, string> = {
   cli: "CLI",
   "mcp-server": "MCP server",
   app: "App",
+  "coding-harness-plugin": "Coding harness plugin",
   "devcontainer-feature": "Dev container feature",
   "devcontainer-image": "Dev container image",
 };
@@ -35,6 +36,7 @@ export const KIND_TAB_LABEL: Record<Kind, string> = {
   cli: "CLIs",
   "mcp-server": "MCP servers",
   app: "Apps",
+  "coding-harness-plugin": "Coding harness plugins",
   "devcontainer-feature": "Dev container features",
   "devcontainer-image": "Dev container images",
 };
@@ -72,6 +74,7 @@ export function getItCommand(block: KindBlock): string {
   switch (block.kind) {
     case "cli":
     case "app":
+    case "coding-harness-plugin":
     case "mcp-server": {
       const install: { default?: boolean; command: string }[] = block.install;
       return (install.find((entry) => entry.default) ?? install[0]).command;

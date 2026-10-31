@@ -93,6 +93,7 @@ export function pageMarkdown(title: string, body: string): string {
 export function primaryInstall(kind: KindBlock): { label: string; command: string; setup?: RepoSetup } {
   if ("install" in kind) {
     const entry = kind.install.find((e) => e.default) ?? kind.install[0];
+    if ("harness" in entry) return { label: entry.harness, command: entry.command };
     return { label: entry.label ?? entry.method, command: entry.command, setup: repoSetup(entry) };
   }
   return { label: "Reference", command: kind.ref };

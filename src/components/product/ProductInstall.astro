@@ -6,6 +6,7 @@
  */
 import "./install-block.css";
 import InstallDevcontainer from "./InstallDevcontainer.astro";
+import InstallPlugin from "./InstallPlugin.astro";
 import InstallMcp from "./InstallMcp.astro";
 import InstallPlatforms from "./InstallPlatforms.astro";
 import { KIND_INSTALL_TABS, mcpClientTabs, platformTabs } from "../../lib/install-blocks";
@@ -51,6 +52,7 @@ const panelId = (kind: string) => `install-kind-${kind}`;
         {(block.kind === "cli" || block.kind === "app") && (
           <InstallPlatforms tabs={platformTabs(block.install)} id={`install-${block.kind}`} />
         )}
+        {block.kind === "coding-harness-plugin" && <InstallPlugin entries={block.install} />}
         {block.kind === "mcp-server" && (
           <InstallMcp tabs={mcpClientTabs(block.install)} tools={block.tools} id="install-mcp" />
         )}

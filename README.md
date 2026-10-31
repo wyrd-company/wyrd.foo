@@ -2,7 +2,7 @@
 
 The catalog and documentation site for [Wyrd Company](https://wyrd.company)'s
 public tools: CLIs, MCP servers, apps, dev container features and dev container
-images. Built with [Astro](https://astro.build) and Tailwind.
+images, and coding harness plugins. Built with [Astro](https://astro.build) and Tailwind.
 
 The site is a static build with no backend. The front page holds the featured
 product, recent releases and the catalog. Each product has a product page, a
@@ -63,6 +63,15 @@ shared schema, records release data and pushes `content/<key>/` for each
 product to `main`. The push starts the deploy. The contract, the calling
 workflow and the requirements are in
 [`docs/technical-designs/publishing.yml`](docs/technical-designs/publishing.yml).
+
+A coding harness plugin is a full product with `kind: coding-harness-plugin`.
+Each `install` entry sets `harness` (the tab label), `command` (the complete
+install instructions, including marketplace setup), and optionally `default`.
+The first entry is selected when none is marked default. The same publisher,
+release units, docs pages, catalog filters and search apply to plugins.
+See the publishing design's `plugin-install` section for an example. When using
+the tool-docs template, replace the generated `kinds` block with that plugin
+block before publishing.
 
 To onboard a tool repo, apply the Toha template in
 [`templates/tool-docs/`](templates/tool-docs/README.md) from
