@@ -123,9 +123,15 @@ The 60-second bound is for this short recording job, not product behavior.
 Keep source tapes and generic fixtures. Retain VHS's terminal result; an output
 file left by a failed run is not a passing capture.
 
-On a Linux host where VHS stalls without a display, run it inside a virtual
-X display: `xvfb-run -a vhs session.tape`. Install Xvfb in the host's maintained
-devcontainer configuration if that host needs it. Do not point the recorder at
-another person's desktop. On VHS 0.12.1, the headless control in the linked
-[evidence](../media/terminal-media/README.md) succeeded with DISPLAY unset;
-a virtual display is not required on that tested host.
+VHS 0.12.1 completed with no display variables and an empty HOME on the
+[tested runtime](../media/terminal-media/README.md). Its Chromium process
+used `--headless`. A virtual display is not required by that control.
+
+If a host stalls, retain the VHS version, browser version, terminal result
+and exit status under a recording-job bound. Check browser startup before
+attributing the stall to the missing display. `xvfb-run -a vhs session.tape`
+is a candidate diagnostic for an affected host, **not a verified recovery**.
+A failing no-display run and a successful Xvfb run of the same tape on the
+same affected runtime are still needed. Install Xvfb in the host's maintained
+devcontainer configuration when testing that path. Do not point the recorder
+at another person's desktop.
