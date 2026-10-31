@@ -33,7 +33,14 @@ describe("built page issue context", () => {
   it("keeps product ownership on releases pages", () => {
     const [product, site] = reports("products", "tools/widget/releases/index.html");
     expect(product.pathname).toBe("/example-org/widget/issues/new");
-    expect(product.searchParams.get("body")).toContain("Version:");
+    expect(product.searchParams.get("body")).toContain("Version: 1.4.0\nDocs version: 1.4.2\n");
     expect(site.pathname).toBe("/wyrd-company/wyrd.foo/issues/new");
+  });
+
+  it("omits docs version for feature releases", () => {
+    const [feature] = reports("products", "tools/lantern/releases/index.html");
+    expect(feature.pathname).toBe("/example-org/features/issues/new");
+    expect(feature.searchParams.get("body")).toContain("Version:");
+    expect(feature.searchParams.get("body")).not.toContain("Docs version:");
   });
 });

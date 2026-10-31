@@ -30,7 +30,7 @@ const [changelog] = await getCollection("codeChangelogs", (file) => file.id === 
 const Changelog = changelog ? (await render(changelog)).Content : undefined;
 ---
 
-<SiteLayout title={`${tool.name} releases — Wyrd Tools`} description={`Every release of ${tool.name}.`} product={head} nav="releases" reportProduct={{ owner: tool.owner, name: tool.name, key, version: tool.version }}>
+<SiteLayout title={`${tool.name} releases — Wyrd Tools`} description={`Every release of ${tool.name}.`} product={head} nav="releases" reportProduct={{ owner: tool.owner, name: tool.name, key, version: tool.version, docsVersion: "docs-version" in tool ? tool["docs-version"] : undefined }}>
   <article class="product-releases site-width" data-product-releases={key} data-pagefind-body>
     <SearchIndexMeta product={key} productName={tool.name} kinds={tool.kinds.map((block) => block.kind)} />
     <!-- The result title: the content form, as SearchIndexMeta writes its values. -->
