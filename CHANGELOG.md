@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.3.0
+
+### Features
+
+- Provide a releases RSS feed with subscription links and stable release identities.
+- Show repository licence expressions on product pages
+- Add page problem reports to the site and product repositories with page and source context.
+- Support coding harness plugins in the catalog, docs publisher and harness install tabs.
+- Serve product pages as Markdown at /tools/<key>.md
+- Accept optional tool-authored Compose and Kubernetes YAML paths on app and CLI Docker install entries and dev container image kinds and render, download and copy their published content in install tabs.
+
+### Fixes
+
+- Open docs edit links in GitHub.dev, with a footer link on narrow screens and docs changelogs.
+- Run the publishing action and site build on Node 26.
+- Warn during validate when workflow_run names no workflow in the repo; fail with --strict.
+- Require Node.js 22.23.4 or later to build the site with the Markdown renderer's security and escaping fixes.
+- Align the page-title design token with the regular weight of releases, docs index and 404 titles.
+- Build the site with Astro 7 and Vite 8 while preserving Markdown and HTML whitespace behavior.
+- Update Markdown rendering with safer Prism code escaping and current highlighting support.
+- Update the Markdown renderer and site build dependencies.
+
 ## 2.2.1
 
 ### Fixes
