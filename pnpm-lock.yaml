@@ -40,6 +40,9 @@ importers:
       isomorphic-git:
         specifier: ^1.44.3
         version: 1.44.8
+      mdast-util-to-hast:
+        specifier: ^13.2.1
+        version: 13.2.1
       parse5:
         specifier: ^7.3.0
         version: 7.3.0

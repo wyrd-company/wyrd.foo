@@ -2,6 +2,9 @@
 // relationships:
 //   implements: site
 // ---
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { CONTENT_ROOT } from "../../lib/content-root";
 import type { APIRoute, GetStaticPaths } from "astro";
 import { getCollection } from "astro:content";
 import { docsMap } from "../../lib/docs-map";
@@ -34,6 +37,7 @@ export const getStaticPaths = (async () => {
       map,
       product ? undefined : readmes.find((entry) => entry.id === key)?.body,
       latest ? { body: latest.body ?? "", version: latest.data.version } : undefined,
+      (path) => readFileSync(join(CONTENT_ROOT, key, "docs", path), "utf8"),
     );
     return { params: { key }, props: { markdown } };
   });

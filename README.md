@@ -14,7 +14,8 @@ RSS readers. Pagefind indexes the product, releases and docs
 pages.
 
 Each product page also has a Markdown form at `/tools/<key>.md`,
-including feature entries, all install methods and the latest release. Embedded
+including feature entries, licence facts, all harness instructions, authored
+Compose/Kubernetes files with download links and commands, and the latest release. Embedded
 README and changelog content preserves each document’s reference scope and
 closes EOF-scoped Markdown blocks before the next section. Published sources
 are unchanged.

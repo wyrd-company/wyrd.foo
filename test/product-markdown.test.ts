@@ -12,8 +12,13 @@ import { parse } from "yaml";
 import { describe, expect, it } from "vitest";
 import { toolFileSchema } from "../src/schema/index";
 import { markdownFragment } from "../src/lib/markdown-fragment";
-import { productMarkdown } from "../src/lib/product-markdown";
+import { productMarkdown as serializeProduct } from "../src/lib/product-markdown";
 import { APT_SETUP, RPM_SETUP } from "../src/lib/install-blocks";
+
+const productMarkdown = (...args: Parameters<typeof serializeProduct>) => serializeProduct(
+  args[0], args[1], args[2], args[3], args[4],
+  (path) => readFileSync(`test/fixtures/product-content/${args[0]}/docs/${path}`, "utf8"),
+);
 
 const fixture = (key: string) =>
   toolFileSchema.parse(parse(readFileSync(`test/fixtures/product-content/${key}/tool.yaml`, "utf8")));
@@ -254,8 +259,37 @@ A note[^note].
     const tool = fixture("gadget");
     tool.name = "Sample [tool]";
     if (tool.kinds[0].kind === "app") tool.kinds[0].install[0].command = "echo '```'\necho done";
-    const result = productMarkdown("sample", tool, []);
+    const result = productMarkdown("gadget", tool, []);
     expect(result).toContain("# Sample \\[tool\\]");
     expect(result).toContain("````\necho '```'\necho done\n````");
+  });
+});
+
+
+describe("approved sibling Markdown parity", () => {
+  it("includes every authored harness instruction", () => {
+    const tool = fixture("compass");
+    const body = productMarkdown("compass", tool, []);
+    for (const block of tool.kinds) if (block.kind === "coding-harness-plugin") {
+      for (const entry of block.install) {
+        expect(body).toContain(entry.harness);
+        expect(body).toContain(entry.command.trimEnd());
+      }
+    }
+  });
+  for (const key of ["widget", "gadget", "harbor"]) it(`${key} retains authored manifests, download links and filename commands`, () => {
+    const tool = fixture(key);
+    const body = productMarkdown(key, tool, []);
+    for (const path of ["install/compose.yaml", "install/workload.yaml"]) {
+      const source = readFileSync(`test/fixtures/product-content/${key}/docs/${path}`, "utf8");
+      expect(body).toContain(source);
+      expect(body).toContain(`/assets/${key}/${path}`);
+      expect(body).toContain(path.endsWith("compose.yaml") ? `docker compose -f '${path}' up -d` : `kubectl apply -f '${path}'`);
+    }
+    if (key !== "harbor") expect(body).toContain("Docker run");
+  });
+  it("includes the published licence and omits an absent licence", () => {
+    expect(productMarkdown("widget", fixture("widget"), [])).toContain("- Licence: [MIT OR Apache-2.0](<https://github.com/example-org/widget/blob/HEAD/LICENSE>)");
+    expect(productMarkdown("compass", fixture("compass"), [])).not.toContain("- Licence:");
   });
 });

@@ -12,6 +12,8 @@ import {
   mcpClientTabs,
   platformTabs,
 } from "./install-blocks";
+import { manifestOptions } from "./container-install";
+import type { ContainerManifests } from "../schema/container-manifests";
 import { KIND_LABELS } from "./kinds";
 import { formatReleaseDate, STATUS_LABELS } from "./product-facts";
 import { productAssetUrl } from "./product-assets";
@@ -33,7 +35,23 @@ const table = (headers: string[], rows: string[][]) =>
     .map((row) => `| ${row.map((cell) => text(cell).replace(/\|/g, "\\|")).join(" | ")} |`)
     .join("\n");
 
-function installMarkdown(block: KindBlock): string {
+const authoredCode = (value: string) => {
+  const fence = "`".repeat(Math.max(3, ...[...value.matchAll(/`+/g)].map((match) => match[0].length + 1)));
+  return `${fence}\n${value}\n${fence}`;
+};
+
+function manifestMarkdown(key: string, manifests: ContainerManifests, read: (path: string) => string): string[] {
+  return manifestOptions(manifests, read).flatMap((option) => [
+    `#### ${option.label}`,
+    text(option.instruction),
+    // Keep authored bytes, including CRLF and trailing whitespace, inside a safe fence.
+    authoredCode(option.code),
+    link(`Download ${option.path}`, productAssetUrl(key, option.path)),
+    code(option.command),
+  ]);
+}
+
+function installMarkdown(block: KindBlock, key: string, read: (path: string) => string): string {
   const parts = [`### ${KIND_LABELS[block.kind]}`];
   switch (block.kind) {
     case "cli":
@@ -41,9 +59,13 @@ function installMarkdown(block: KindBlock): string {
       for (const platform of platformTabs(block.install)) {
         parts.push(`#### ${platform.label}`);
         for (const method of platform.methods) {
-          parts.push(text([method.pill, method.qualifier].filter(Boolean).join(" · ")), code(copyText(method)));
+          if (method.manifest) parts.push(...manifestMarkdown(key, method.manifest, read));
+          else parts.push(text([method.pill, method.qualifier].filter(Boolean).join(" · ")), code(copyText(method)));
         }
       }
+      break;
+    case "coding-harness-plugin":
+      for (const entry of block.install) parts.push(`#### ${text(entry.harness)}`, code(entry.command));
       break;
     case "mcp-server":
       for (const client of mcpClientTabs(block.install)) {
@@ -62,6 +84,7 @@ function installMarkdown(block: KindBlock): string {
       break;
     case "devcontainer-image":
       parts.push("Image", code(block.ref), "Use in devcontainer.json", code(devcontainerImageSnippet(block.ref)));
+      parts.push(...manifestMarkdown(key, block, read));
       if (block.tags)
         parts.push(
           "#### Tags",
@@ -81,6 +104,7 @@ export function productMarkdown(
   map: readonly DocsMapSection[],
   readme?: string,
   latest?: { body: string; version: string },
+  readManifest: (path: string) => string = (path) => { throw new Error(`Missing published manifest reader for ${path}`); },
 ): string {
   const product = "source" in tool ? undefined : tool;
   const parts = [`# ${text(tool.name)}`];
@@ -92,6 +116,7 @@ export function productMarkdown(
     `- Latest: ${text(tool.release?.version ?? tool.version)}${tool.release ? ` · ${formatReleaseDate(tool.release.date)}` : ""}`,
     `- Category: ${text(tool.category)}`,
     `- Repository: ${link(tool.owner, `https://github.com/${tool.owner}`)}`,
+    ...(tool.licence ? [`- Licence: ${link(tool.licence, `https://github.com/${tool.owner}/blob/HEAD/LICENSE`)}`] : []),
   ];
   parts.push(facts.join("\n"));
   if (product) {
@@ -105,7 +130,7 @@ export function productMarkdown(
     }
     parts.push("## What it does", product.highlights.map((highlight) => `- ${text(highlight)}`).join("\n"));
   }
-  parts.push("## Install", ...tool.kinds.map(installMarkdown));
+  parts.push("## Install", ...tool.kinds.map((block) => installMarkdown(block, key, readManifest)));
   // Normalize independent documents before joining so their syntax cannot cross sections.
   if (readme !== undefined) parts.push("## README", markdownFragment(readme, "readme"));
   if (map.length > 0) {

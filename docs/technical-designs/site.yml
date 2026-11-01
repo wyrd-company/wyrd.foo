@@ -203,7 +203,8 @@ proposed-design:
 
     `/tools/<key>.md` serves the same content as Markdown with
     `Content-Type: text/markdown; charset=utf-8`, including feature entries.
-    It includes all install methods and repository setup, media asset links,
+    It includes licence facts, all harness instructions, authored Compose and
+    Kubernetes files with download links and filename commands, repository setup, media asset links,
     the docs map, the feature README and the latest changelog entry when present.
     It uses the same published content as the HTML page. Embedded README and
     changelog Markdown retain their meaning and headings, with document-local
