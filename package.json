@@ -40,7 +40,7 @@
     "html-void-elements": "^3.0.0",
     "isomorphic-git": "^1.44.3",
     "mdast-util-to-hast": "^13.2.1",
-    "parse5": "^7.3.0",
+    "parse5": "^8.0.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
