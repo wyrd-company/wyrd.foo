@@ -211,6 +211,10 @@ pnpm build                              # the suite reads dist/
 pnpm test:browser                       # or: task test:browser
 ```
 
+Hosted CI selects the Ubuntu HTTPS archive in the runner's apt mirror list
+before installing Chromium system dependencies, on both browser cache hits and
+misses.
+
 With the browser missing, the run fails and names the install step. `pnpm check`
 includes the suite.
 

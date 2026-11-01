@@ -76,6 +76,11 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
 
+      - name: Use the Ubuntu HTTPS archive for browser dependencies
+        # The hosted image uses this mirror list for all Ubuntu suites. Its
+        # Azure HTTP mirror can stall even after metadata falls back to HTTPS.
+        run: printf 'https://archive.ubuntu.com/ubuntu/\n' | sudo tee /etc/apt/apt-mirrors.txt
+
       - name: Install Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
