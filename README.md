@@ -151,7 +151,7 @@ templates/tool-docs/         # the Toha template that onboards a tool repo
 
 Use Node.js 22.23.4 or later and the pnpm version declared in `package.json`.
 The Markdown renderer requires this Node minimum. The devcontainer installs
-Node's current LTS version; the publishing action provisions Node 24.
+Node 26; CI, site deployment and the publishing action provision Node 26.
 The site uses Astro 7 with Vite 8 and the Tailwind Vite plugin. Its explicit
 Unified Markdown processor keeps the heading plugin active;
 `compressHTML: true` preserves HTML-aware whitespace handling.

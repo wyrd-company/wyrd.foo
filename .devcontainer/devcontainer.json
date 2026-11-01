@@ -2,7 +2,7 @@
   "name": "<site name> Devcontainer",
   "image": "mcr.microsoft.com/devcontainers/base:noble",
   "features": {
-    "ghcr.io/devcontainers/features/node:2": {},
+    "ghcr.io/devcontainers/features/node:2": { "version": "26" },
     "ghcr.io/devcontainers-extra/features/apt-get-packages:1": {
         "packages": "imagemagick,librsvg2-bin"
     }

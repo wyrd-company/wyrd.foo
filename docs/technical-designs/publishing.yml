@@ -654,7 +654,7 @@ proposed-design:
     (see `publisher`). A run times out after 15 minutes, which leaves room
     for the publisher's wait of at most 10 minutes for a GitHub Release.
 
-    The action is a composite action that sets up Node 24 and pnpm, installs
+    The action is a composite action that sets up Node 26 and pnpm, installs
     wyrd.foo's dependencies with the frozen lockfile, and runs
     `publisher/action.ts`: the publisher core in publish mode. It reads the
     tool repo's GitHub Releases with that repo's `GITHUB_TOKEN`. The action

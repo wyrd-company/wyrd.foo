@@ -61,7 +61,7 @@ describe("publish-docs reusable workflow", () => {
   it("checks out without persisting credentials", () => {
     const checkouts = [...steps, ...action.runs.steps].filter((step) => step.uses?.startsWith("actions/checkout@"));
     assert.ok(checkouts.length > 0);
-    for (const step of checkouts) assert.equal(step.with?.["persist-credentials"], false, step.name);
+    for (const step of checkouts) assert.equal(step.with?.["persist-credentials"], false, step.name ?? "");
   });
 
   it("checks out the tool repo at the ref, with its tags, at the path it publishes from", () => {
@@ -178,7 +178,7 @@ describe("publish-docs@v2 action", () => {
   });
 
   it("passes inputs to scripts only through env, never into the script text", () => {
-    for (const step of action.runs.steps) assert.ok(!(step.run ?? "").includes("${{"), step.id ?? step.uses);
-    for (const step of steps) assert.ok(!(step.run ?? "").includes("${{"), step.name);
+    for (const step of action.runs.steps) assert.ok(!(step.run ?? "").includes("${{"), step.id ?? step.uses ?? "");
+    for (const step of steps) assert.ok(!(step.run ?? "").includes("${{"), step.name ?? "");
   });
 });

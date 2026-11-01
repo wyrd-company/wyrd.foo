@@ -42,7 +42,7 @@ for (const path of FILES) {
       }
       assert.ok(remote.length > 0, "the workflow uses actions");
       for (const { uses } of remote) {
-        assert.match(uses!, /^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/, uses);
+        assert.match(uses!, /^[\w.-]+\/[\w.-]+@[0-9a-f]{40}$/, uses ?? "");
         const line = source.split("\n").find((candidate) => candidate.includes(`uses: ${uses}`));
         assert.match(line ?? "", / # v?\d+\.\d+\.\d+$/, `${uses} has a version comment`);
       }
