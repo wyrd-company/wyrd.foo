@@ -223,7 +223,9 @@ proposed-design:
       media tour is the screenshot tour of its console.
     - **MCP server**: one tab for each `install` entry, in install order, in
       place of install methods. An MCP client entry (Claude Code, Claude
-      Desktop, Cursor, VS Code, JSON) gets its client's name. A plugin
+      Desktop, Codex, Cursor, OpenCode, Pi, Antigravity, VS Code, JSON) gets
+      its client's name. Named harness tabs show setup guidance and a link
+      to client documentation before the copied command or configuration. A plugin
       marketplace entry (`method: plugin`) gets its label and is tagged
       "Plugin". Below the tabs, a table of the tools the server exposes with
       their side effects. The media is an animated GIF of an agent session.

@@ -50,6 +50,12 @@ The docs contract in `src/schema/` validates `tool.yaml` and page front matter,
 and the Astro content collections (`src/content.config.ts`) read the folders
 through it, so a product that breaks the contract fails the build.
 
+MCP products publish client-specific `install` entries for Claude Code, Claude
+Desktop, Codex, Cursor, OpenCode, Pi and Antigravity. Each tab shows the
+authored command or configuration with Copy and client setup guidance. The
+site keeps generic JSON, VS Code, plugin and other client entries available.
+See `publishing.yml`, `mcp-install`, for the method values and formats.
+
 The collections read `content/` unless `WYRD_CONTENT_DIR` names another
 folder, such as the dev content folder or a test fixture.
 

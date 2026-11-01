@@ -234,12 +234,17 @@ proposed-design:
 
     | Method | Tab |
     | --- | --- |
-    | `claude-code`, `claude-desktop`, `cursor`, `vscode` | The client's own tab. `command` is its add command or configuration. |
+    | `claude-code`, `claude-desktop`, `codex`, `cursor`, `opencode`, `pi`, `antigravity`, `vscode` | The client's own tab. `command` is its add command or configuration. |
     | `json` | The generic JSON configuration. |
     | `plugin` | A plugin marketplace. `label` names the marketplace and is required. |
     | `other` | A client with no method in the list. `label` names it and is required. |
 
-    The site makes one tab for each entry present.
+    The site makes one tab for each entry present. Each entry owns its
+    client-specific add command or complete configuration snippet; the site
+    does not convert commands between clients. Codex configuration uses TOML;
+    OpenCode uses its `mcp` map and command array; Claude Code, Claude Desktop,
+    Cursor, Pi and Antigravity accept an `mcpServers` JSON map. Client tabs show configuration guidance
+    and a link to the client documentation outside the copied snippet.
 
     ```yaml
     kinds:

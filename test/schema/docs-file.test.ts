@@ -23,6 +23,25 @@ function assertIssue(issues: ContractIssue[], field: string, message: RegExp) {
 const widgetInstall = (raw: Raw) => raw.products.widget.kinds[0].install as Raw[];
 
 describe("docs.yml schema", () => {
+  for (const method of [
+    "claude-code",
+    "claude-desktop",
+    "codex",
+    "cursor",
+    "opencode",
+    "pi",
+    "antigravity",
+  ]) {
+    it(`accepts the ${method} MCP client method`, () => {
+      assert.deepEqual(
+        issuesAfter("mcp-server", (raw) => {
+          raw.products["sprocket-mcp"].kinds[0].install[0].method = method;
+        }),
+        [],
+      );
+    });
+  }
+
   it("rejects a schemaVersion other than 1", () => {
     assertIssue(issuesAfter("cli", (raw) => (raw.schemaVersion = 2)), "schemaVersion", /expected 1/);
   });
