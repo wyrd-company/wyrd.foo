@@ -6,6 +6,7 @@ category: Dev Containers
 logo: logo.svg
 release-unit: openobserve
 owner: wyrd-company/devcontainers
+licence: MIT
 release:
   version: 1.2.0
   date: 2026-10-31T20:38:08.000Z

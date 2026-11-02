@@ -6,6 +6,7 @@ category: Dev Containers
 logo: logo.svg
 release-unit: pi-coding-agent-cli
 owner: wyrd-company/devcontainers
+licence: MIT
 release:
   version: 1.0.0
   date: 2026-10-26T07:41:08.000Z

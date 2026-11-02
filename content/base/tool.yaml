@@ -54,6 +54,7 @@ nav:
 logo: assets/base.svg
 release-unit: base
 owner: wyrd-company/devcontainers
+licence: MIT
 docs-path: docs/user
 release:
   version: 1.0.0

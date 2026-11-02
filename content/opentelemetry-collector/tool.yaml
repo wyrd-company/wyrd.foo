@@ -6,13 +6,14 @@ category: Dev Containers
 logo: logo.svg
 release-unit: opentelemetry-collector
 owner: wyrd-company/devcontainers
+licence: MIT
 release:
-  version: 1.2.0
-  date: 2026-10-31T20:38:08.000Z
+  version: 1.2.1
+  date: 2026-11-02T19:36:28.000Z
   notes: |-
-    ### Features
+    ### Fixes
 
-    - When the Ansible Feature is installed, the services of this Feature start after its `ansible-setup` oneshot succeeds. Without Ansible, startup does not change. The Feature adds the Ansible Feature to `installsAfter`.
+    - Resolves latest Collector releases through the release-page redirect, using the API search only when the selected platform archive is absent.
 name: OpenTelemetry Collector
 description: Installs the OpenTelemetry Collector core or contrib distribution and runs it as an s6-overlay service.
-version: 1.2.0
+version: 1.2.1

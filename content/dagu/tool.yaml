@@ -6,6 +6,7 @@ category: Dev Containers
 logo: logo.svg
 release-unit: dagu
 owner: wyrd-company/devcontainers
+licence: MIT
 release:
   version: 1.3.0
   date: 2026-11-01T01:50:56.000Z
