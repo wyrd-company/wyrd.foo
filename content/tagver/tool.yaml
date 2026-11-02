@@ -9,34 +9,34 @@ order: 4
 kinds:
   - kind: cli
     install:
-      - method: homebrew
-        os:
+      - os:
           - macos
           - linux
         default: true
         command: brew install wyrd-company/tools/tagver
-      - method: cargo
-        os:
+        method: homebrew
+      - os:
           - macos
           - linux
           - windows
         command: cargo install tagver-cli
-      - method: archive
-        os:
+        method: cargo
+      - os:
           - linux
         label: Linux x86_64
         command: |
           curl -LO https://github.com/wyrd-company/tagver/releases/latest/download/tagver-linux-x86_64.tar.gz
           tar -xzf tagver-linux-x86_64.tar.gz
           sudo install tagver-linux-x86_64/tagver /usr/local/bin/tagver
-      - method: archive
-        os:
+        method: archive
+      - os:
           - macos
         label: macOS arm64
         command: |
           curl -LO https://github.com/wyrd-company/tagver/releases/latest/download/tagver-macos-arm64.tar.gz
           tar -xzf tagver-macos-arm64.tar.gz
           sudo install tagver-macos-arm64/tagver /usr/local/bin/tagver
+        method: archive
 highlights:
   - Reads your Git tags and commit height, and calculates a SemVer 2.0.0 version with no version file to edit.
   - Follows the first parent, so merge commits do not inflate the height.
@@ -48,8 +48,13 @@ media:
   - src: assets/demo.gif
     caption: tagver prints the version one commit after the 1.2.3 tag.
     alt: Terminal recording of tagver printing the version as text and as JSON one commit after the 1.2.3 tag.
+logo: assets/logo.svg
+logo-dark: assets/logo-dark.svg
+favicon: assets/favicon.svg
+social-image: assets/social-image.png
 release-unit: tagver
 owner: wyrd-company/tagver
+licence: Apache-2.0
 docs-path: docs/user
 release:
   version: 0.1.7
