@@ -1,6 +1,6 @@
 name: wyrwood
-version: 0.4.1
-docs-version: 0.1.1
+version: 0.5.0
+docs-version: 0.1.2
 tagline: OpenBao-backed secrets and signing for containers, with nothing stored inside.
 blurb: "A controller that owns policy and an agent on each Docker host that gives every bound container a directory of sockets: an OpenBao endpoint carrying the container's own token and an SSH agent whose keys live in OpenBao."
 status: preview
@@ -9,18 +9,18 @@ order: 6
 kinds:
   - kind: app
     install:
-      - method: apt
-        os:
+      - os:
           - linux
         command: sudo apt install wyrwood
-      - method: rpm
-        os:
+        method: apt
+      - os:
           - linux
         command: sudo dnf install wyrwood
-      - method: aur
-        os:
+        method: rpm
+      - os:
           - linux
         command: paru -S wyrwood-bin
+        method: aur
 highlights:
   - A bound container holds no token, no key, and no secret file.
   - Each container gets a socket directory with vault.sock for the OpenBao API and ssh-agent.sock for SSH.
@@ -33,17 +33,56 @@ media:
     caption: Agents page with one key pending approval.
     alt: The Agents page of the controller web interface listing an agent whose key awaits approval.
   - src: assets/web-policy.png
-    caption: Policy editor with a saved policy.
-    alt: The policy editor showing a saved policy document.
+    caption: Policy editor with a saved policy, on its OpenBao policy tab.
+    alt: The policy editor with its actions at the top and the OpenBao policy tab selected.
+  - src: assets/web-policy-identities.png
+    caption: The SSH identities tab of the policy editor.
+    alt: The policy editor with the SSH identities tab selected, listing Transit keys and SSH-engine roles.
+  - src: assets/web-policy-contract.png
+    caption: The Container contract tab of the policy editor.
+    alt: The policy editor with the Container contract tab selected, showing the mount target and environment.
+  - src: assets/web-policy-bindings.png
+    caption: The Bindings tab of a saved policy.
+    alt: The policy editor with the Bindings tab selected, listing a binding with an Edit action.
+  - src: assets/web-policy-rename.png
+    caption: Rename screen for a policy that one binding selects.
+    alt: A screen taking the new name of a policy, stating that one binding gets a fresh credential, above a table of that binding.
+  - src: assets/web-policy-delete-confirm.png
+    caption: Confirm screen for deleting a policy that no binding selects.
+    alt: A confirm screen naming the policy and its OpenBao policy, with a Delete policy button.
+  - src: assets/web-policy-delete.png
+    caption: A policy that cannot be deleted, with the binding that blocks it.
+    alt: A screen saying that the policy cannot be deleted, above a table of the binding that selects it.
   - src: assets/web-bind.png
     caption: Binding policies to a container.
-    alt: The binding panel for attaching policies to a container.
+    alt: The bind screen for attaching policies to a container.
+  - src: assets/web-bind-settings.png
+    caption: The Settings tab of the bind screen.
+    alt: The bind screen with the Settings tab selected, showing token lifetimes, access group, and enforcement.
+  - src: assets/web-bind-effective.png
+    caption: A preview on the Effective policy tab of the bind screen.
+    alt: The bind screen with the Effective policy tab selected, showing the previewed composition.
   - src: assets/web-container-setup.png
-    caption: Container setup examples in the binding panel.
-    alt: Container setup examples shown in the binding panel.
-  - src: assets/web-containers.png
+    caption: Container setup examples on the binding screen.
+    alt: Container setup examples shown on the binding screen.
+  - src: assets/web-binding.png
     caption: A bound container that conforms to its contract.
-    alt: The containers list with a bound container that meets its contract.
+    alt: The binding screen of a container that meets its contract.
+  - src: assets/web-binding-policies.png
+    caption: The Policies tab of a binding.
+    alt: The binding screen with the Policies tab selected.
+  - src: assets/web-binding-settings.png
+    caption: The Settings tab of a binding.
+    alt: The binding screen with the Settings tab selected.
+  - src: assets/web-binding-effective.png
+    caption: The Effective policy tab of a binding.
+    alt: The binding screen with the Effective policy tab selected, showing the saved composition.
+  - src: assets/web-add-binding.png
+    caption: Reported containers that have no binding.
+    alt: The add binding screen listing reported containers with no binding.
+  - src: assets/web-bindings.png
+    caption: The bindings list with a binding and its container.
+    alt: The bindings list with a binding whose container meets its contract.
   - src: assets/web-keys.png
     caption: OpenBao keys page with Transit keys and SSH-engine roles.
     alt: The keys page listing OpenBao Transit keys and SSH-engine roles.
@@ -67,51 +106,16 @@ logo-dark: assets/emblem-dark.svg
 favicon: assets/icon.svg
 release-unit: wyrwood
 owner: wyrd-company/wyrwood
+licence: Apache-2.0
 docs-path: docs/user
 release:
-  version: 0.4.1
-  date: 2026-10-31T21:06:21.000Z
-  url: https://github.com/wyrd-company/wyrwood/releases/tag/0.4.1
+  version: 0.5.0
+  date: 2026-11-03T04:43:07.000Z
+  url: https://github.com/wyrd-company/wyrwood/releases/tag/0.5.0
   notes: |+
     ## Changelog
-    * 6aa09b278fe365745b23b70ee2c75cfdab1316ea chore(deps): update GoReleaser and align the release toolchain
-    * 707934573023d1ea6808f7e02793c8973eb6babc chore(deps): update Node type definitions to 26.6.6
-    * 50cf78c01a5f7bd5b6b6b7a3210c578754c48b62 chore(deps): update actions/checkout action to v7
-    * 04a864da53f6b0e74e72366c3375e2b56017ce9d chore(deps): update actions/setup-go action to v7
-    * 10566924f6bc61a7055a32fbe119d2ea281b737a chore(deps): update actions/setup-node action to v7
-    * de22d577abb40806b8692dff3c9495887005e213 chore(deps): update dependency node to v26
-    * bb89f2caa20dd1e0f6a3748925ac50ae4596aa74 chore(deps): update dependency openbao/openbao to v2.7.2
-    * 63add0743fd204ba16f7a8afeef90f3349ad3178 chore(deps): update dependency rumdl to v0.3.2
-    * 952a98241a1ad18722f55efcf1abbf8aa7a35021 chore(deps): update dependency ryl to v0.27.0
-    * 2b759956cda67360abc766afccdb9af3cfae55c1 chore(deps): update dependency vite to v8.3.5
-    * 938de353ee44b55fd67872ababac251470770282 chore(deps): update github artifact actions
-    * e010de27b370b52664db8278555211349b10fb8f chore(deps): update golang docker tag to v1.27.3
-    * ff2b3bb86bce526462af73b582ed9b8784dba29e chore(deps): update goreleaser/goreleaser-action digest to a4f02ab
-    * b229af3090d0aeb0593e2437e74205888f6b1e42 chore(deps): update pnpm to v11.28.10
-    * cbb6e281a14e0c145059a39d3997403351608a38 chore(deps): update pnpm to v12
-    * 3120e1f276a067f3b41a5d99588d36467a4165a8 chore(deps): update wyrd-company/wyrd.foo action to v2.2.1
-    * aaa4e8cd6b3b96f967466424f616919dbe29dff1 chore(release): prepare Wyrwood 0.4.1 and docs 0.1.1 (#85)
-    * 9fd5656f7a61a5d4ee0a560294043d12714c00df chore(release): upgrade intentional config to contract-2 (#67)
-    * d0f418b40194aa7f255fab189cfe7e98cb01b33c docs: capture Settings and refresh the combined UI receipt
-    * 74ea7b852062ded1f7e5e5ca04c197d1ed66d786 docs: converge host workflows and real access group screenshots
-    * 2048c9a9b94b71304aa72dcfc1ddaaef5aaa8644 docs: cover Settings in the screenshot workflow and operator guide
-    * 8f464537dcf6a2a54638e50314d0f2563cfbf8d6 docs: lead with web workflows and maintain real UI screenshots
-    * f2a1cc435eaddee24f7bb2ba9425445bbac5cb7c docs: refresh real screenshots on the integration base
-    * 796d282de4bd758ee24d2b2dfb8eeb9c9b9fc014 docs: refresh screenshots for the updated frontend lockfile
-    * ac357dd097edc9ba02def8e5919de506f6d7713c docs: wrap controller settings guidance
-    * fdc46cf3ef2d286f0a579f62c09d6f7d0404cd84 feat(bindings): choose access groups from running agent capabilities (#69)
-    * 6cef576a8e1e1c12a66eee019e8f54056ca107e8 feat(controller): run the shared local agent runtime (#72)
-    * ebc6cf367a8a482c8d5a4efe6a772424d95c2446 feat(web): display effective local agent setting with fresh screenshots
-    * 8c5a10b406bd1a768bd7fa0c6f0f0c6d7a46e2dd feat(web): show safe effective controller settings
-    * da13097c89fec60d6737f612362db76a39b326d5 fix(build): install Corepack for Node 26 toolchains
-    * c0defae21d456a0a102273fed0d67725b043e098 fix(build): preserve pnpm 12 lockfile format and refresh UI media
-    * 72cd227f87572312a658fe77b74fd010f10fe12e fix(deps): retain the OpenBao HCL 1 policy dialect
-    * 52c2b8a0cc3536e26ef864ed21c984cc472e8a68 fix(deps): update coordinated Charm SSH and Wish modules
-    * 108fddb85ac5b9c7b167bad2629c640987192e72 fix(deps): update module github.com/go-jose/go-jose/v4 to v4.1.7
-    * 8399378242639de47e437c2ae83a52d2a5a597c5 fix(deps): update module github.com/hashicorp/hcl to v2
-    * b68b8ad58c5f1e581091a24c559b388be72e3de2 fix(deps): update module modernc.org/sqlite to v1.61.1
-    * ea1cd0464905951bd6d17349d2f90c00a6aa63b0 fix(docs): exclude test entry points from screenshot freshness
-    * dfdad58cdb4521a7773217b1c7845610858a334f fix(docs): exempt generated documentation changelog wrapping (#86)
-    * b4ad2fc0f033a9feb3fdb6a3e33dffdd13733452 fix(release): build the pushed tag by name (#66)
-    * 28a901ef62c52b6278ee77df2e3d9b303ff878fa fix(renovate): preserve Vault-tagged HCL 1 updates
+    * 45c05488e4ef88508011ce05a50a901c36ee7c6e chore(deps): update wyrd-company/wyrd.foo action to v2.3.0 (#87)
+    * 91b31180bcbbe3eea75c155680b0a62f87d6b73f chore(release): prepare Wyrwood 0.5.0 and docs 0.1.2
+    * 7154a43c48b90951d5fad19d6e0714b7785232d1 feat(web): complete policy and binding management (#97)
+    * 36e65dc8aab6125109ff6e6826fe5760279bedf1 test(baotest): start OpenBao again when its port is taken (#103)
 
