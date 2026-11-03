@@ -25,15 +25,19 @@ TypeScript declarations ship with the package.
 - [Shell API](https://wyrd.foo/docs/t3c/library-shell)
 - [Server API summary](https://wyrd.foo/docs/t3c/library-server-summary)
 - [Scheduled tasks API](https://wyrd.foo/docs/t3c/library-schedules)
+- [Peer links API](https://wyrd.foo/docs/t3c/library-peer-links)
+- [Guest shares API](https://wyrd.foo/docs/t3c/library-guest-shares)
 - [Version control API](https://wyrd.foo/docs/t3c/library-vcs)
 - [Terminal API](https://wyrd.foo/docs/t3c/library-terminal)
 
 ## Members
 
+- [Shared types and constants](https://wyrd.foo/docs/t3c/library-types)
 - [Thread state and helpers](https://wyrd.foo/docs/t3c/library-thread-state)
 
 ## Constants
 
+- [Client and transport](https://wyrd.foo/docs/t3c/library-client)
 - [Authentication API](https://wyrd.foo/docs/t3c/library-authentication)
 - [Errors](https://wyrd.foo/docs/t3c/library-errors)
 - [Shared types and constants](https://wyrd.foo/docs/t3c/library-types)
@@ -46,6 +50,7 @@ TypeScript declarations ship with the package.
 - [Authentication API](https://wyrd.foo/docs/t3c/library-authentication)
 - [Profiles and credentials](https://wyrd.foo/docs/t3c/library-profiles)
 - [Errors](https://wyrd.foo/docs/t3c/library-errors)
+- [Shared types and constants](https://wyrd.foo/docs/t3c/library-types)
 - [Thread state and helpers](https://wyrd.foo/docs/t3c/library-thread-state)
 
 ## Reference pages
@@ -65,5 +70,7 @@ TypeScript declarations ship with the package.
 - [Server API](https://wyrd.foo/docs/t3c/library-server)
 - [Server API methods](https://wyrd.foo/docs/t3c/library-server-methods)
 - [Scheduled tasks API](https://wyrd.foo/docs/t3c/library-schedules)
+- [Peer links API](https://wyrd.foo/docs/t3c/library-peer-links)
+- [Guest shares API](https://wyrd.foo/docs/t3c/library-guest-shares)
 - [Version control API](https://wyrd.foo/docs/t3c/library-vcs)
 - [Terminal API](https://wyrd.foo/docs/t3c/library-terminal)

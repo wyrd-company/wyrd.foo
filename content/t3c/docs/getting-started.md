@@ -18,7 +18,7 @@ its answer, continues the conversation, and lists the selected project and threa
 
 `t3c` sends prompts to a stock T3 Code server and prints the assistant's final
 answer. Use it in a terminal or a harness that supplies a prompt on stdin.
-Node >=22.16 is required. The target is T3 Code 0.1.2, protocol 2.
+Node >=22.16 is required. The target is T3 Code 0.1.6, protocol 2.
 
 Install with npm or Homebrew:
 
@@ -55,5 +55,6 @@ model selection use project defaults, then server defaults. Ambiguous selection
 asks for an explicit choice through a usage error.
 
 Use [command behavior](commands.md), [output and exit codes](policy.md),
-[the Dagu harness](dagu.md), or [the library API](library-reference.md) for details.
+[the Dagu harness](dagu.md), [the library guides](guide-quick-start.md), or
+[the library API](library-reference.md) for details.
 `t3c --help` and each command's `--help` list supported options.
