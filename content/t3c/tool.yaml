@@ -1,6 +1,6 @@
 name: t3c
 version: 0.2.1
-docs-version: 0.4.0
+docs-version: 0.4.1
 release-unit: t3code-cli
 tagline: Run T3 Code conversations from your terminal and automation.
 blurb: A Node command-line client and TypeScript library for stock T3 Code. Pair named servers, run or continue conversations, inspect threads, and preserve clear output and exit codes in automation.

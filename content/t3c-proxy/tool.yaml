@@ -1,0 +1,57 @@
+name: t3c-proxy
+version: 0.1.0
+docs-version: 0.1.0
+release-unit: t3code-proxy
+tagline: Show who sent each message on a shared T3 Code server.
+blurb: A service in front of one stock T3 Code server. Each person has their own hostname, and each message they send there ends with their name. Agents and the direct route stay clean, and the server does not change.
+status: preview
+category: Agent Infrastructure
+kinds:
+  - kind: cli
+    install:
+      - os:
+          - macos
+          - linux
+        default: true
+        command: npm install -g @wyrd-company/t3code-proxy
+        method: npm
+  - kind: devcontainer-feature
+    ref: ghcr.io/wyrd-company/t3code-client/t3code-proxy:0
+highlights:
+  - Each person has one listener and their own HTTPS hostname.
+  - Each message that a person sends ends with a byline such as "— Sent by Alice".
+  - Agents, slash commands and the direct route have no byline.
+  - T3 pairing and sessions stay the only access control.
+  - A dev container Feature runs the service and writes one Caddy site for each person.
+media:
+  - src: assets/logo.svg
+    caption: t3c-proxy adds the sender's name to a message.
+    alt: The letters t3c and proxy above a message with a signature line.
+nav:
+  - section: Get started
+    groups:
+      - group: Setup
+        pages:
+          - getting-started
+          - reverse-proxy
+  - section: Reference
+    groups:
+      - group: Operating
+        pages:
+          - limits
+          - devcontainer-feature
+logo: assets/logo.svg
+favicon: assets/logo.svg
+owner: wyrd-company/t3code-client
+licence: MIT
+docs-path: docs/user/t3c-proxy
+release:
+  version: 0.1.0
+  date: 2026-11-03T22:09:22.000Z
+  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-proxy%400.1.0
+  notes: |
+    ## 0.1.0
+
+    ### Features
+
+    - Add `t3c-proxy`, a service in front of a shared stock T3 Code server. Each person has one listener, configured from a YAML file or flags. Messages that a person sends on their listener end with `— Sent by <name>`, and all other traffic passes through unchanged.
