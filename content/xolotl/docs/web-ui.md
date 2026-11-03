@@ -53,11 +53,11 @@ server log has the details.
 | Overview | Fixable failures with **Replace key** or **Log in again** links, OpenBao and SQLite health, configured account pools with state bars and usage windows, Claude and Codex reset credit totals, traffic and provider split for the last 24 hours, configured gateway providers, recent failed requests |
 | Accounts | Accounts by provider with their state and cooldown reason: refresh usage, refresh models, enable or disable. Details: set priority, **Retry**, log in again (OAuth accounts) or replace the key (API-key accounts), remove, last error, Claude and Codex reset credits |
 | Add account | Codex device or browser login, Claude login, OpenCode Go key, import of a CLI credential file |
-| Policies | Providers and the accounts of each subscription provider, scopes, MCP access, rate limits (in total, per provider and per account) with the policy's consumption, and the model list (below). Each section folds away |
+| Policies | Providers and the accounts of each subscription provider, scopes (with `key_policies` under the `keys` scope), MCP access, rate limits (in total, per provider and per account) with the policy's consumption, and the model list (below). Each section folds away |
 | Client keys | Issue, rotate with a grace period, enable or disable, revoke. Consumption against the policy's rate limits. Shows the OpenBao path, the `bao` command and the OpenBao policy the client needs. Never shows the key |
 | MCP servers | Upstream servers: add, edit and remove runtime servers, set header secrets, OAuth sign-in, tools, recent tool calls |
 | Providers & models | Gateway providers and their key state, set a key, the model catalog with each model's endpoints |
-| Usage | The request log grouped by client, account, provider or model, and a link to `telemetry.dashboard_url` |
+| Usage | The request log grouped by client, account, provider or model, sessions, the tools each key called, and a link to `telemetry.dashboard_url` |
 
 Every member of the admin group has full access.
 
@@ -68,8 +68,10 @@ screen after sign-in and can be reached with Tab and opened with Enter.
 
 ### Overview
 
-**Needs action** lists enabled accounts whose credentials were refused, plus
-OpenBao and SQLite failures. Account actions open that account's details.
+**Needs action** lists enabled accounts whose credentials were refused, stored
+policies that did not load, plus OpenBao and SQLite failures. Account actions
+open that account's details. See
+[Policies that do not load](policies-and-keys#policies-that-do-not-load).
 Cooling accounts and credentials waiting to save appear under **Health**;
 xolotl retries saving refreshed credentials.
 
@@ -140,6 +142,16 @@ Select a row to narrow the view to it. The view then groups by the first of
 model, account, client and provider that is not shown or narrowed yet. Each
 filter shows as a chip; remove a chip to widen the view again. The URL keeps
 the filters (`/#/usage?group=model&client=...`), so you can bookmark a view.
+
+![The Usage screen: requests per client, then sessions with their size, cache hits and lock, then the tools each key called](assets/usage-sessions.png)
+
+**Sessions** lists the 100 most recently used conversations: how full each one
+is against its model's context window, its peak, its turns, its share of prompt
+tokens read from cache, and its [context lock](accounts#context-lock) with any
+failures and breaks. **Tools called** lists each tool a key called and how
+often, so you can remove unused tools from its policy by hand. Both follow the
+client filter. Tool names are as the upstream sent them: a name that xolotl
+shortened for a translated request stays shortened.
 
 ## Models
 
