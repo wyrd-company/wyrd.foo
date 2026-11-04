@@ -54,7 +54,8 @@ container a directory of sockets:
   when `registry-credentials` is configured. Both use the binding's own
   token.
 - `ssh-agent.sock` signs Toha's SSH template fetches and Menagerie's SSH
-  backup pushes with Menagerie's SSH key, when the policy offers one.
+  backup pushes with Menagerie's SSH key, when the policy offers one. With
+  [provisioning](#provisioning) it also signs with the operator key.
 
 ### Git identity
 
@@ -95,7 +96,7 @@ and `github-app.transit-key` in the configuration.
 #### SSH identity
 
 Toha's template fetches and Menagerie's backup pushes use the same agent, so
-the agent must offer one key, and that key must reach every repository
+the agent must offer one Git key, and that key must reach every repository
 Menagerie uses over SSH. An SSH client offers its keys in turn, and the Git
 host signs it in with the first key it knows, whether or not that key can
 reach the repository. A second key in the agent does not select a second
@@ -137,13 +138,79 @@ contract:
 With only the GitHub App, leave out the SSH key's two paths and the `ssh`
 section. With only SSH, leave out the App key's path.
 
-Bind the container `menagerie` (the name `deploy/compose.yml` gives it) to
-the policy. Give the binding an **access group** that Menagerie's user has,
-for example the group that owns the workspace root: Menagerie runs as the
-workspace root's owner, not as root, and without an access group Wyrwood's
-sockets are open only to Wyrwood's own user. The agent creates the consumer
-directory `/run/wyrwood/containers/menagerie` when it binds the container.
-Create the container first, bind it, then start it.
+You bind the container `menagerie` (the name `deploy/compose.yml` gives it) to
+the policy as you [install it](#the-host). Give the binding an **access group**
+that Menagerie's user has, for example the group that owns the workspace root:
+Menagerie runs as the workspace root's owner, not as root, and without an access
+group Wyrwood's sockets are open only to Wyrwood's own user.
+
+### Provisioning
+
+To let Menagerie provision workspaces, prepare the host once. After this, a
+[create](usage.md#a-workspace-with-a-provisioning-declaration) needs no step in a
+CLI or a web interface. Keep Menagerie's data volume: the retirement records are
+in its `provisioning` folder, and what a lost record named stays until an operator
+removes it.
+
+1. Create an Ed25519 Transit key, here `menagerie-operator`, and offer it in
+   Menagerie's policy beside any SSH key. Also grant `read` on the secret that
+   holds Xolotl's scoped key:
+
+   ```yaml
+   openbao:
+     policy: |
+       path "transit/keys/menagerie-operator" { capabilities = ["read"] }
+       path "transit/sign/menagerie-operator" { capabilities = ["update"] }
+       path "kv/data/menagerie/xolotl" { capabilities = ["read"] }
+   ssh:
+     transit-keys:
+       - menagerie-operator
+   ```
+
+   Add these lines to the policy above. `ssh-agent.sock` then offers the key to
+   every SSH connection Menagerie makes. No Git host accepts it, because no Git
+   host has its public key.
+
+2. Write one Wyrwood policy that all this host's workspaces share. It reads a
+   workspace's Xolotl key by a per-binding value, and its path fixes
+   [the Xolotl key policy of this host](configuration.md#xolotl), so the value
+   names only the key:
+
+   ```yaml
+   name: host-sample-workspace
+   openbao:
+     agent-token-renewal: true
+     policy: |
+       path "secret/data/xolotl/keys/host-sample/{{binding.xolotl_key_name}}" { capabilities = ["read"] }
+   contract:
+     mount-target: /run/wyrwood
+   ```
+
+   Use the path your Xolotl writes client keys to, and only this host's key
+   policy in it. If it names a key policy other hosts use, one host can read the
+   keys of another.
+
+3. Configure [`provisioning.wyrwood`](configuration.md#wyrwood-operator-key) and
+   restart Menagerie. Start a job on a workspace with a declaration. It fails and
+   names the key's fingerprint, and the controller records the key as pending
+   with the proposed label `menagerie-<agent>`.
+
+4. In the Wyrwood web interface, open **Operator keys**, compare the fingerprint
+   and approve the key with this grant:
+
+   | Grant | Value |
+   | --- | --- |
+   | **Agents** | Only this host's agent |
+   | **Policies** | Only the policies your templates declare, such as `host-sample-workspace` |
+   | **Read** and **Bind** | On |
+   | **Policy write** | Off |
+
+Approve the key once. It has no expiry, so that provisioning does not stop in
+silence, and **Revoke** ends it. A grant cannot be edited: a wider allowlist needs
+a new Transit key and a new approval under a new label. A binding that holds a
+policy outside the allowlist is outside the grant, so Menagerie cannot change it.
+Keep Menagerie's own policy out of the allowlist, so that Menagerie cannot change
+its own binding.
 
 ## The host
 
@@ -155,12 +222,12 @@ edit both files.
 | The workspace root at the same path on the host and in the container | Devcontainers bind-mount their workspace folder. The host daemon resolves that path, so it must be the host path. Set `MENAGERIE_WORKSPACE_ROOT` and `workspace-root` to the same value. |
 | The workspace socket folder at the same path on the host and in the container | Each devcontainer mounts its own socket folder from it, so it must be the host path. Set `MENAGERIE_WORKSPACE_SOCKETS` and `workspace-socket.folder` to the same value; leave both out to run without [workspace sockets](configuration.md#workspace-sockets). |
 | `/var/run/docker.sock` | The workspace service drives the host Docker daemon: devcontainers, and the throwaway containers that run template hooks and `initializeCommand`. |
-| The Wyrwood consumer directory at `/run/wyrwood` | `vault.sock` and `ssh-agent.sock`. `wyrwood-directory` names the mount target. |
+| The Wyrwood consumer directory at `/run/wyrwood` | `vault.sock` and `ssh-agent.sock`. `wyrwood-directory` names the mount target. The example's long form sets `create_host_path: false`, so that Docker never creates a missing directory as root. |
 | `SSH_AUTH_SOCK=/run/wyrwood/ssh-agent.sock` | With an SSH identity: Toha's Git transport runs the image's `ssh` client with this agent. Leave it out with only a GitHub App. |
 | `config.yml` at `/etc/menagerie/config.yml` | Both services read it. |
 | `SSL_CERT_FILE` and the bundle it names | Optional: a Git server whose certificate a private authority signed. See [Git hosts](#git-hosts). |
 | A volume at `/var/lib/menagerie` | Toha's template cache, the template service's session key, the services' home and the folder Toha builds an upgrade's candidate in. Without it they are lost when the container is recreated. |
-| `restart: unless-stopped` | Docker starts Menagerie after a host restart, and restarts it after either service stops. |
+| `restart: unless-stopped` | Docker restarts Menagerie after either service stops. After a host restart the Wyrwood agent starts it: see [After a host restart](#after-a-host-restart). |
 | Port `8080` | The web UI and workspace API. Publish it on a private address only. |
 
 Create the socket folder before the first start, owned by the workspace
@@ -171,10 +238,15 @@ Menagerie then refuses to start:
 sudo install -d -m 0700 -o "$(stat -c %u /srv/menagerie/workspaces)" -g "$(stat -c %g /srv/menagerie/workspaces)" /srv/menagerie/sockets
 ```
 
+Then install in this order. `deploy/compose.yml` refuses a missing consumer
+directory, so create it once, by hand, to create the container. The agent takes
+it over at the binding, and recreates it after each host restart.
+
 ```sh
+sudo install -d -o wyrwood -g wyrwood -m 0700 /run/wyrwood/containers/menagerie
 cp -r deploy ~/menagerie && cd ~/menagerie
 docker compose create
-# Bind the container "menagerie" in Wyrwood now.
+# In Wyrwood: Bindings, Add binding, on the row of "menagerie", with its policy and access group.
 docker compose up -d
 docker compose logs menagerie
 ```
@@ -246,15 +318,18 @@ folder.
 
 ### Throwaway containers
 
-Template hooks and `initializeCommand` run in throwaway containers on the
-host daemon, which need no extra mount or setting. By default they run
+Template hooks, `initializeCommand` and the check of a new workspace's bind
+sources run in throwaway containers on the host daemon, which need no extra
+mount or setting. By default they run
 Menagerie's own image, which Menagerie finds by inspecting its own
 container: by the container id in its mounts or, when they name none, by
-its hostname, Docker's default. When it cannot, a job with a hook or an `initializeCommand`
-fails as `runner-image-unavailable`; set
+its hostname, Docker's default. When it cannot, a job with a hook, an
+`initializeCommand` or a bind source outside its folder fails as
+`runner-image-unavailable`; set
 [`runner-image`](configuration.md#runner-images). Each container carries
 the label `menagerie.throwaway` and is removed when its command ends; any
-left by a stopped Menagerie are removed when it starts.
+left by a stopped Menagerie are removed when it starts. A bind source check
+creates and removes its container and never starts it.
 
 ### Container registries
 
@@ -265,6 +340,32 @@ Docker Hub base image on a host that reaches Docker Hub's anonymous pull
 limit, needs an entry for that registry; for Docker Hub use `docker.io` and
 a Docker Hub access token as the password. See
 [Configuration](configuration.md#registry-credentials).
+
+## After a host restart
+
+Menagerie and its workspaces come back with no host unit and no step by hand.
+This needs Wyrwood 0.6.1 or later.
+
+A host restart empties `/run`, and Docker starts containers before the Wyrwood
+agent runs. Docker's start of a bound container fails on its missing consumer
+directory, and Docker does not retry. The agent restores the directory and both
+sockets from its cached policy, then starts the container. It starts a container
+that a binding governs, whose restart policy is `always`, `unless-stopped` or
+`on-failure`, and whose last start failed on that directory. A container you
+stopped stays stopped.
+
+So give a workspace a restart policy in its definition's `runArgs` if it must
+come back, and mount its consumer directory with `--mount` or a definition's
+`mounts`, never `-v`. With `-v`, Docker creates the missing directory as root and
+starts the container with no sockets. To read the error Docker recorded:
+
+```sh
+docker inspect -f '{{.State.Error}}' <name>
+```
+
+The agent tries a failed start again at most once every five minutes. See
+[Wyrwood](https://wyrd.foo/docs/wyrwood/operations#after-a-host-reboot) for its
+rules.
 
 ## Upgrades
 

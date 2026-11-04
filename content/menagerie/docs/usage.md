@@ -7,6 +7,7 @@ relationships:
     - workspace
     - workspace-root
     - workspace-api
+    - t3-code-pairing-token
 ---
 
 Sign in at Menagerie's address with your identity provider. Members of
@@ -15,13 +16,14 @@ says they are not a manager, and can change nothing.
 
 ## The workspace list
 
-Every folder in the workspace root is a row, with its container's state:
+Every folder in the workspace root is a row, unless its name starts with a
+dot, with its container's state:
 **Running**, **Stopped**, or **No container** for a folder whose
 devcontainer was never created. Containers that belong to no folder in the
 root do not appear. **Refresh** reads the folders and containers again.
 
-Each row has **Stop**, **Start**, **Rebuild**, **Apply branch** and
-**Upgrade**. A commit,
+Each row has **Stop**, **Start**, **Rebuild**, **Apply branch**, **Upgrade**
+and [**T3 Code token**](#connect-t3-code-to-a-workspace). A commit,
 from the [schedule or the workspace itself](#commit-from-inside-a-workspace),
 shows on its row as **committing**. Rebuild asks
 for confirmation, then removes the container and creates it again from the
@@ -49,16 +51,83 @@ The job console then shows each phase:
 2. `generate`: Toha writes the files and runs the template's hooks, each in
    a throwaway container that sees only the workspace folder. Output a hook
    does not capture appears in the console, each line prefixed `hook: `.
-3. `commit` and `backup`: the first commit, pushed to the workspace's own
+3. `host-prerequisites`: Docker checks the bind sources outside the workspace
+   folder and the networks of `runArgs`. The job fails as
+   `host-prerequisites-missing` when the host lacks any, and the message names
+   them all. Nothing is committed or started.
+4. `commit` and `backup`: the first commit, pushed to the workspace's own
    orphan branch in the workspace repository.
-4. `initialize-command`: the devcontainer's `initializeCommand`, in
+5. `initialize-command`: the devcontainer's `initializeCommand`, in
    throwaway containers that see only the workspace folder, with only the
    variables of [`local-env`](configuration.md#local-environment) beside
    the [runner image](configuration.md#runner-images)'s own.
-5. `build` when the definition builds an image, then `up`: the devcontainer
+6. `build` when the definition builds an image, then `up`: the devcontainer
    starts.
 
 The answers are kept in the workspace, in `.toha.json`.
+
+If a branch with the workspace's name is already in the workspace repository,
+from a workspace that was deleted, the `backup` phase first copies it to
+`archive/<name>-<UTC stamp>`, and the console names the copy.
+
+When a create fails after `generate`, **Start** finishes it: the commit and
+backup that did not run, then the devcontainer. Until its first backup lands, any
+job's first push copies the earlier branch first. A second create of that name is
+refused while the folder exists.
+
+### A workspace with a provisioning declaration
+
+A template that renders a `customizations.menagerie` block in its definition
+gets a Wyrwood binding and, when it asks for one, a Xolotl client key, with no
+step in a CLI or a web interface, once the [host is
+prepared](install.md#provisioning). The console shows these phases in a create:
+
+1. `read-definition`: the block is read and checked. The job fails as
+   `provisioning-invalid` when the block is not valid, when the definition has
+   no `--name` in `runArgs`, and when another workspace holds the container name
+   or the key. The job fails as `provisioning-unavailable` when
+   [`provisioning`](configuration.md#provisioning) lacks the section the block
+   needs.
+2. `host-prerequisites`, as above.
+3. `issue-key`: the Xolotl key. A key that exists stays as it is, and the
+   console says when it is disabled or expires.
+4. `bind`: the Wyrwood binding. A binding that differs from the definition is
+   removed and made again while the container is stopped, and the console names
+   the fields.
+5. `commit` and `backup`, `initialize-command` and `build`, as above.
+6. `create-container`: the container, not started. A bind with an SELinux `z` or
+   `Z` option or `bind-create-src` fails here, so such a definition uses neither.
+7. `wait-for-sockets`: the job reads the binding's status until the agent reports
+   this container with the declared access group and both sockets. The console
+   shows each change of the status and the agent's last error.
+8. `up`: the container starts, with its sockets, and its lifecycle commands run.
+9. `verify`: the status again, with the container running. What the container
+   needs from its sockets is the template's to check in a lifecycle command,
+   whose failure fails the job.
+
+Each step is safe to repeat. A job that fails leaves what it finished, and
+**Start** continues from what is missing: it does not rotate the key or write
+the binding again. It replaces a container that has a name the definition no
+longer declares, because a rebuild that failed left it. **Start** is off while a
+container runs, so after an upgrade that failed with the old container still
+running, **Stop** it, then **Start**. A rebuild, an upgrade's
+rebuild and an apply-branch's rebuild run the same steps without the commit and
+backup. A start of a container that exists goes on when Xolotl cannot be
+reached, with a note in the console; any other failure of a step fails the job.
+
+Before an upgrade or an apply-branch changes the definition, Menagerie records the
+container name and key it declares. A job that ends with the devcontainer started
+then runs `retire`: it unbinds each recorded name and revokes each recorded key
+that no workspace declares any more. A definition edited by other means has no
+record, so what it stops declaring stays until an operator removes it in the
+Wyrwood and Xolotl web interfaces.
+
+Before each create, start, rebuild and upgrade, Menagerie creates any missing
+bind source folder inside the workspace folder, so a clone of a backup starts:
+Git keeps no empty folder. The job console names each folder it creates.
+
+A string in `mounts` is read as Docker's `--mount` value: without `type=` it
+is a volume, not a bind, and a space around a field or a value is refused.
 
 ![A template interview](assets/create-interview.png)
 
@@ -197,11 +266,61 @@ With [automatic commits](configuration.md#automatic-commits), Menagerie
 also commits a workspace with changes on a schedule, with the message
 `chore(menagerie): automatic commit`.
 
+## Connect T3 Code to a workspace
+
+**T3 Code token** mints a pairing token on a running workspace whose
+devcontainer has the
+[t3code-server Feature](https://github.com/wyrd-company/devcontainers/tree/main/src/features/t3code-server). Pair a T3 Code
+client with the token that appears on the row. T3 Code sets the token's
+lifetime, shows it as `menagerie` in the server's connections list, and gives
+it its default scopes. These are full control of the workspace's T3 Code.
+
+Menagerie shows the token once and keeps no copy. **Dismiss** clears it from
+the page. The button also works while a job runs on the workspace. A refusal
+appears on the row: `workspace-not-running` when the container has stopped,
+`t3-code-not-installed` when the container does not have the Feature.
+
 ## Stop, start and rebuild
 
 Start runs `initializeCommand` before it starts the container, as rebuild
 does. When `initializeCommand` fails, the job fails with
 `initialize-command-failed` and the container stays stopped.
+
+## Delete a workspace
+
+**Delete** on a row asks you to type the workspace's name, and removes the
+workspace from the host. Ignored files, such as cloned repositories, are not in
+the backup and are lost. The console shows these phases:
+
+1. `read-definition`: the job fails as `delete-refused` while a running container
+   outside the workspace mounts its folder, and as `provisioning-unavailable`
+   when the workspace holds a binding or a key that
+   [`provisioning`](configuration.md#provisioning) cannot reach. Nothing changes.
+2. `stop`: the devcontainer, and for Compose every service of its project.
+3. `commit` and `backup`: tracked and new files, as a commit does. A folder with
+   no applied record, such as one whose generation failed, has no backup. A
+   failure here removes nothing and leaves the devcontainer stopped.
+4. `unbind`: the Wyrwood binding, when the workspace has one. The console shows
+   a warning, or a token that may stay valid until it expires.
+5. `remove-container`: the workspace's containers.
+6. `revoke-key`: the Xolotl key, when the workspace has one.
+7. `remove-folder`: the workspace socket's folder, then the workspace folder. A
+   throwaway container that runs as root removes the folder, in the
+   [runner image](configuration.md#runner-images), which needs `sh`, `mv` and
+   `find`.
+
+A failed delete keeps what it finished. **Delete** again continues from what is
+left. Once `remove-folder` has taken the repository, **Start** and **Rebuild**
+fail as `delete-unfinished`, and **Delete** finishes the removal with no second
+backup.
+
+These stay: the workspace's branch in the workspace repository, images, Compose
+volumes and networks, and bind sources outside the folder. A later create of that
+name copies the branch to `archive/<name>-<UTC stamp>` first. The agent's empty
+consumer directory stays until the next host restart.
+
+A binding or a key that another workspace's definition declares stays, and the
+console says so.
 
 ## Time limits
 
