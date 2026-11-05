@@ -197,9 +197,9 @@ proposed-design:
        releases page when it has a changelog.
 
     Every product page has highlights and media, except the pages of feature
-    entries. Docs pages are optional. A product with no docs pages has no
-    "Read the docs" button, no Docs button in its catalog row and no
-    Documentation section.
+    entries and of plugins without `media`. Docs pages are optional. A
+    product with no docs pages has no "Read the docs" button, no Docs button
+    in its catalog row and no Documentation section.
 
     `/tools/<key>.md` serves the same content as Markdown with
     `Content-Type: text/markdown; charset=utf-8`, including feature entries.
@@ -247,6 +247,15 @@ proposed-design:
     instructions may include marketplace registration and plugin installation.
     Harness labels are authored text so new harnesses need no site change.
     Plugins use the same catalog, releases, docs and search as other products.
+    When the kind has `provides`, a "What the plugin provides" table follows
+    the tabs in the same card, in the style of the MCP tools table: Element
+    (the site's display name), Name, What it does and Harnesses ("All" when
+    the entry names none). `/tools/<key>.md` has the same table.
+    A plugin may have no `media`: the page then has no Media section, the
+    featured card has no media column and the plugin is not in the featured
+    rotation. It is still featured by an active feature or a recent release.
+    Both additions are additive within schemaVersion 1 and publish-docs v2:
+    a minor contract release.
   install-blocks: |
     - **CLI and app**: platform tabs (macOS, Linux, Windows, Docker)
       generated from `install[].os`, method pills for each platform, and one

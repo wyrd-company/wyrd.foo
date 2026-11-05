@@ -1,0 +1,24 @@
+# relationships: implements site
+release-unit: quill
+name: Quill
+version: 1.0.0
+docs-version: 1.0.0
+owner: example-org/sample-plugins
+status: preview
+category: Agent Tooling
+tagline: A sample plugin with no media.
+blurb: A generic plugin fixture that publishes no media.
+highlights: [Runs one session hook.]
+kinds:
+  - kind: coding-harness-plugin
+    install:
+      - harness: Example harness
+        command: /plugin install quill@examples
+    provides:
+      - element: hook
+        name: SessionStart
+        description: Runs when a session starts.
+release:
+  version: 1.0.0
+  date: 2026-01-02
+  url: https://example.com/releases/1.0.0

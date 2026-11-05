@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { licenceSchema } from "./licence.ts";
-import { featureEntryShape, productEntryShape } from "./docs-file.ts";
+import { featureEntryShape, productEntryShape, requireMedia } from "./docs-file.ts";
 import { oneLine, ociRef, ownerRepo, releaseUnitId, repoPath, semver } from "./fields.ts";
 
 // The schema of `content/<key>/tool.yaml`: a validated docs.yml entry, with
@@ -45,7 +45,7 @@ export const toolProductSchema = z.strictObject({
     .default(DEFAULT_DOCS_PATH)
     .describe("The repo folder that holds the product's pages: docs/user, or docs/user/<key> in a repo with more than one docs unit."),
   featured: featuredSchema.optional(),
-});
+}).superRefine(requireMedia);
 
 /**
  * tool.yaml for a feature entry. Name, description and version come from the

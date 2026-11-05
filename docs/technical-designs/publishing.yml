@@ -155,7 +155,7 @@ proposed-design:
     | `order` | no | Integer catalog position, lower first. Products without `order` sort after the products with it, by `name`. |
     | `kinds` | yes | One or more kind blocks; the first is the primary kind. |
     | `highlights` | yes | One to six one-line statements for "What it does". |
-    | `media` | yes | One or more items: `src` (relative to the product's docs folder and listed in `assets`), a one-line `caption`, and an optional one-line `alt`. |
+    | `media` | yes, except when the primary kind is `coding-harness-plugin` | One or more items: `src` (relative to the product's docs folder and listed in `assets`), a one-line `caption`, and an optional one-line `alt`. A plugin as a non-primary kind still needs it. |
     | `nav` | no | Docs sections, groups and page order. |
     | `logo`, `logo-dark` | no | Square SVG marks, relative to the product's docs folder and listed in `assets`. |
     | `favicon` | no | SVG or PNG, relative to the product's docs folder and listed in `assets`. |
@@ -173,6 +173,17 @@ proposed-design:
     marketplace setup. The site neither derives commands nor reads harness
     plugin manifests. The product uses the existing release and docs units.
 
+    The kind may also have a nonempty `provides` list: what the plugin
+    contributes to the harness, like the `tools` table of an MCP server. Each
+    entry has an `element`, a one-line `name` (a hook event, or a skill or
+    server name) and a one-line `description`. `element` is one of `hook`,
+    `skill`, `command`, `agent`, `mcp-server`, `lsp-server` and `output-style`;
+    the site owns each element's display name. The optional `harnesses` is a
+    nonempty list of labels, each equal to the `harness` of an `install` entry
+    in the same block; without it the element applies to every harness in
+    `install`. Pairs of `element` and `name` are unique. The harness labels
+    stay authored text: `element` is the only closed list.
+
     ```yaml
     kinds:
       - kind: coding-harness-plugin
@@ -184,7 +195,19 @@ proposed-design:
               /plugin install sample@examples
           - harness: Another harness
             command: Follow the plugin setup guide for this harness.
+        provides:
+          - element: hook
+            name: SessionStart
+            description: Reads the operator profile when a session starts.
+          - element: skill
+            name: sample-review
+            description: Reviews a change against the repo conventions.
+            harnesses: [Example harness]
     ```
+
+    A product whose primary kind is `coding-harness-plugin` may omit `media`
+    (see `product-fields`). Both this and `provides` are additive within
+    schemaVersion 1 and publish-docs v2: a minor contract release.
   licence: |
     The publisher reads the repo-root `LICENSE` at the input ref once for
     all products and feature entries. `tool.yaml` carries an optional,
@@ -227,7 +250,7 @@ proposed-design:
     | Kind | Block |
     | --- | --- |
     | `cli`, `app` | `install`: the install methods (see `install`). |
-    | `coding-harness-plugin` | `install`: harness labels and complete install instructions (see `plugin-install`). |
+    | `coding-harness-plugin` | `install`: harness labels and complete install instructions. `provides`: optional table of what the plugin contributes, `{ element, name, description, harnesses }` entries (see `plugin-install`). |
     | `mcp-server` | `install`: the client methods (see `mcp-install`). `tools`: the tools table, one or more `{ name, description, effect }` entries; `effect` is a short text such as "Read-only" or "Writes". |
     | `devcontainer-feature` | `ref`: the feature's OCI reference. |
     | `devcontainer-image` | `ref`: the image reference. `tags`: optional, the tags table as `{ tag, base, architectures }` entries, for an image whose tags the publisher cannot read from the image build config. |

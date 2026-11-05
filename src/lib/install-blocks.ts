@@ -6,7 +6,7 @@ import type { ContainerManifests } from "../schema/container-manifests";
  * method pills for CLIs and apps, client tabs for MCP servers, devcontainer.json snippets for features and
  * images, and the default command the hero shows.
  */
-import type { InstallMethod, Kind, KindBlock, McpInstallMethod, OperatingSystem } from "../schema/index.ts";
+import type { InstallMethod, Kind, PluginElement, KindBlock, McpInstallMethod, OperatingSystem } from "../schema/index.ts";
 
 type InstallKind = Extract<KindBlock, { kind: "cli" | "app" }>;
 type McpKind = Extract<KindBlock, { kind: "mcp-server" }>;
@@ -267,4 +267,32 @@ export function heroInstall(block: KindBlock): HeroInstall {
     case "devcontainer-image":
       return { label: "Use in devcontainer.json", command: devcontainerImageSnippet(block.ref), prompt: false };
   }
+}
+
+export const PLUGIN_ELEMENT_LABELS: Record<PluginElement, string> = {
+  hook: "Hook",
+  skill: "Skill",
+  command: "Command",
+  agent: "Agent",
+  "mcp-server": "MCP server",
+  "lsp-server": "LSP server",
+  "output-style": "Output style",
+};
+
+export interface ProvidesRow {
+  element: string;
+  name: string;
+  description: string;
+  /** The harness labels, or "All" when the entry names none. */
+  harnesses: string;
+}
+
+/** The rows of a plugin's "What the plugin provides" table, in authored order. */
+export function providesRows(block: Extract<KindBlock, { kind: "coding-harness-plugin" }>): ProvidesRow[] {
+  return (block.provides ?? []).map((item) => ({
+    element: PLUGIN_ELEMENT_LABELS[item.element],
+    name: item.name,
+    description: item.description,
+    harnesses: item.harnesses?.join(", ") ?? "All",
+  }));
 }

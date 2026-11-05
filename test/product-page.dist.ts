@@ -13,7 +13,7 @@ import { APT_SETUP, RPM_SETUP } from "../src/lib/install-blocks";
 
 const DIST = "dist-fixtures/products";
 const SITE = "https://wyrd.foo";
-const PRODUCTS = ["widget", "gadget", "sprocket", "gizmo", "harbor", "lantern", "beacon", "compass"];
+const PRODUCTS = ["widget", "gadget", "sprocket", "gizmo", "harbor", "lantern", "beacon", "compass", "quill"];
 
 /** The built product page; fails unless the page is the product page for `key`. */
 function productPage(key: string): HTMLElement {
@@ -67,6 +67,7 @@ describe("product pages from the fixture content", () => {
   it("indexes each page once for search, with its product, name and kinds", () => {
     const kinds: Record<string, string[]> = {
       compass: ["coding-harness-plugin"],
+      quill: ["coding-harness-plugin"],
       widget: ["cli"],
       gadget: ["app"],
       sprocket: ["mcp-server"],

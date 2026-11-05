@@ -11,6 +11,7 @@ import {
   devcontainerImageSnippet,
   mcpClientTabs,
   platformTabs,
+  providesRows,
 } from "./install-blocks";
 import { manifestOptions } from "./container-install";
 import type { ContainerManifests } from "../schema/container-manifests";
@@ -66,6 +67,14 @@ function installMarkdown(block: KindBlock, key: string, read: (path: string) => 
       break;
     case "coding-harness-plugin":
       for (const entry of block.install) parts.push(`#### ${text(entry.harness)}`, code(entry.command));
+      if (block.provides)
+        parts.push(
+          "#### What the plugin provides",
+          table(
+            ["Element", "Name", "What it does", "Harnesses"],
+            providesRows(block).map((row) => [row.element, row.name, row.description, row.harnesses]),
+          ),
+        );
       break;
     case "mcp-server":
       for (const client of mcpClientTabs(block.install)) {
@@ -120,8 +129,8 @@ export function productMarkdown(
   ];
   parts.push(facts.join("\n"));
   if (product) {
-    parts.push("## Media");
-    for (const media of product.media) {
+    if (product.media) parts.push("## Media");
+    for (const media of product.media ?? []) {
       const href = productAssetUrl(key, media.src);
       parts.push(
         isVideo(media.src) ? link(media.alt ?? media.caption, href) : `!${link(media.alt ?? media.caption, href)}`,

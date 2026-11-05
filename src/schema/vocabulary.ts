@@ -83,3 +83,6 @@ export type McpInstallMethod = (typeof MCP_INSTALL_METHODS)[number];
 /** Methods that need a `label`, because the method alone does not name the target. */
 export const LABELLED_METHODS = ["other", "plugin"] as const;
 
+/** What a coding harness plugin can contribute to the harness. The site owns each display name. */
+export const PLUGIN_ELEMENTS = ["hook", "skill", "command", "agent", "mcp-server", "lsp-server", "output-style"] as const;
+export type PluginElement = (typeof PLUGIN_ELEMENTS)[number];

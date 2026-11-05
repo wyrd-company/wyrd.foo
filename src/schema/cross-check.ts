@@ -201,7 +201,7 @@ function assetRefs(key: string, entry: ProductEntry): AssetRef[] {
   }
   for (const ref of manifestRefs(entry.kinds))
     refs.push({ field: at("kinds", ...ref.field), path: ref.path });
-  entry.media.forEach((item, index) => refs.push({ field: at("media", index, "src"), path: item.src }));
+  (entry.media ?? []).forEach((item, index) => refs.push({ field: at("media", index, "src"), path: item.src }));
   return refs;
 }
 

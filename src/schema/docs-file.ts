@@ -18,6 +18,7 @@ import {
   MCP_INSTALL_METHODS,
   OPERATING_SYSTEMS,
   OS_FREE_METHODS,
+  PLUGIN_ELEMENTS,
   SITE_SETUP_METHODS,
   STATUSES,
 } from "./vocabulary.ts";
@@ -136,17 +137,68 @@ export const devcontainerImageKind = z.strictObject({
     .describe("Registry tags, when the publisher cannot read them from the image build config."),
 });
 
+// What a plugin contributes to the harness. The site owns each element's
+// display name; the names and descriptions are authored.
+const pluginProvide = z.strictObject({
+  element: z.enum(PLUGIN_ELEMENTS),
+  name: oneLine.describe("For example a hook event, or a skill or server name."),
+  description: oneLine,
+  harnesses: z
+    .array(oneLine)
+    .min(1)
+    .optional()
+    .describe("Harness labels from install that get the element. Default: every harness in install."),
+});
+
+function checkProvides(
+  block: { install: { harness: string }[]; provides?: z.output<typeof pluginProvide>[] },
+  ctx: Ctx,
+) {
+  const labels = new Set(block.install.map((entry) => entry.harness));
+  const seen = new Set<string>();
+  block.provides?.forEach((item, index) => {
+    const id = `${item.element}\u0000${item.name}`;
+    if (seen.has(id)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["provides", index, "name"],
+        message: `${item.element} ${item.name} is listed more than once`,
+      });
+    }
+    seen.add(id);
+    item.harnesses?.forEach((label, position) => {
+      if (!labels.has(label)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["provides", index, "harnesses", position],
+          message: `${label} is not the harness label of an install entry`,
+        });
+      }
+    });
+    if (item.harnesses !== undefined && new Set(item.harnesses).size !== item.harnesses.length) {
+      ctx.addIssue({ code: "custom", path: ["provides", index, "harnesses"], message: "lists a harness more than once" });
+    }
+  });
+}
+
 // Plugin labels and instructions belong to the product repo, so new harnesses
 // need no vocabulary or install-command changes in the site.
-export const codingHarnessPluginKind = z.strictObject({
-  kind: z.literal("coding-harness-plugin"),
-  install: z.array(z.strictObject({
-    harness: oneLine.describe("The coding harness or marketplace tab label."),
-    command: z.string().trim().min(1)
-      .describe("Authored install instructions, including marketplace setup when needed."),
-    default: z.boolean().optional().describe("The install shown in the hero. At most one entry."),
-  })).min(1).superRefine(atMostOneDefault),
-});
+export const codingHarnessPluginKind = z
+  .strictObject({
+    kind: z.literal("coding-harness-plugin"),
+    install: z.array(z.strictObject({
+      harness: oneLine.describe("The coding harness or marketplace tab label."),
+      command: z.string().trim().min(1)
+        .describe("Authored install instructions, including marketplace setup when needed."),
+      default: z.boolean().optional().describe("The install shown in the hero. At most one entry."),
+    })).min(1).superRefine(atMostOneDefault),
+    provides: z
+      .array(pluginProvide)
+      .min(1)
+      .optional()
+      .describe("What the plugin contributes to the harness: hooks, skills, commands and so on."),
+  })
+  .superRefine(checkProvides);
 
 export const kindBlock = z.discriminatedUnion("kind", [
   cliKind,
@@ -200,7 +252,11 @@ export const productEntryShape = {
   order: z.number().int().optional().describe("Catalog position, lower first. Products without order sort after, by name."),
   kinds: z.array(kindBlock).min(1).superRefine(uniqueKinds).describe("Kind blocks. The first is the primary kind."),
   highlights: z.array(oneLine).min(1).max(6),
-  media: z.array(mediaItem).min(1),
+  media: z
+    .array(mediaItem)
+    .min(1)
+    .optional()
+    .describe("Required, except when the primary kind is coding-harness-plugin."),
   nav: navSchema.optional(),
   logo: assetPath.optional().describe("Square SVG mark, listed in assets."),
   "logo-dark": assetPath.optional().describe("SVG mark for the dark theme, listed in assets."),
@@ -208,7 +264,18 @@ export const productEntryShape = {
   "social-image": assetPath.optional().describe("PNG or JPEG, 1200x630, listed in assets."),
 };
 
-export const productEntry = z.strictObject(productEntryShape);
+/** `media` is required unless the primary kind is a coding harness plugin. */
+export function requireMedia(entry: { kinds: { kind: string }[]; media?: unknown }, ctx: Ctx) {
+  if (entry.media === undefined && entry.kinds[0]?.kind !== "coding-harness-plugin") {
+    ctx.addIssue({
+      code: "custom",
+      path: ["media"],
+      message: "is required unless the primary kind is coding-harness-plugin",
+    });
+  }
+}
+
+export const productEntry = z.strictObject(productEntryShape).superRefine(requireMedia);
 
 // --- feature entry --------------------------------------------------------
 

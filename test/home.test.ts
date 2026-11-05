@@ -171,7 +171,14 @@ describe("featured", () => {
     const cards = featuredCards(fixtures());
     expect(cards.get("alpha-cli")!.getStarted).toBe("/docs/alpha-cli/");
     expect(cards.get("delta-image")!.getStarted).toBe("/tools/delta-image#install");
-    expect(cards.get("alpha-cli")!.media.src).toBe("/assets/alpha-cli/assets/demo.png");
+    expect(cards.get("alpha-cli")!.media?.src).toBe("/assets/alpha-cli/assets/demo.png");
+  });
+
+  it("gives a plugin with no media a card without media and keeps it out of the rotation", () => {
+    const data = toolFileSchema.parse(parse(readFileSync("test/fixtures/product-content/quill/tool.yaml", "utf8")));
+    const entries: HomeEntry[] = [{ key: "quill", data, hasDocs: false }];
+    expect(featuredCards(entries).get("quill")!.media).toBeUndefined();
+    expect(featuredCandidates(entries)[0].hasMedia).toBe(false);
   });
 
   const c = (key: string, more: Partial<FeaturedCandidate> = {}): FeaturedCandidate => ({
