@@ -1,5 +1,5 @@
 name: menagerie
-version: 0.4.1
+version: 0.4.2
 docs-version: 0.2.4
 tagline: Manage workspaces and fleets of development containers through a web UI.
 blurb: One container that creates workspaces from Toha templates through their interviews, provisions the Wyrwood binding and Xolotl key a template declares, shows every workspace with its devcontainer, starts, stops, rebuilds, upgrades and deletes them, and backs each one up to its own Git branch. Managers sign in through OpenID Connect; Wyrwood supplies its SSH key and registry credentials.
@@ -60,10 +60,10 @@ owner: wyrd-company/menagerie
 licence: Apache-2.0
 docs-path: docs/user
 release:
-  version: 0.4.1
-  date: 2026-11-04T18:52:21.000Z
-  url: https://github.com/wyrd-company/menagerie/releases/tag/0.4.1
+  version: 0.4.2
+  date: 2026-11-05T00:19:02.000Z
+  url: https://github.com/wyrd-company/menagerie/releases/tag/0.4.2
   notes: |
-    ### Features
+    ### Fixes
 
-    - An upgrade can ask every question again: **Ask every question again** on the upgrade screen, or `reanswer` on an `upgrade` job, asks every question with the workspace's recorded answers as the defaults, so an answer can take an option the new template version adds.
+    - An interview of more than one batch of questions moves on from a batch accepted as shown: a re-answered upgrade no longer asks that batch again. The web UI now sends every question it shows, the untouched ones with their defaults, and the template service answers a question a submission leaves out with its default.
