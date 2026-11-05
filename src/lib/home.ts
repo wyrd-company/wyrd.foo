@@ -229,7 +229,7 @@ export function featuredCandidates(entries: readonly HomeEntry[]): FeaturedCandi
       {
         key,
         stable: data.status === "stable",
-        hasMedia: data.media.length > 0,
+        hasMedia: (data.media?.length ?? 0) > 0,
         featured: data.featured && { from: data.featured.from.getTime(), until: data.featured.until.getTime() },
         released: data.release?.date.getTime(),
       },
@@ -246,7 +246,8 @@ export interface FeaturedCard {
   blurb: string;
   /** Docs when the product has docs pages, else the product page's install section. */
   getStarted: string;
-  media: { src: string; alt: string };
+  /** Absent for a plugin with no media; the card then has no media column. */
+  media?: { src: string; alt: string };
   logo?: string;
   logoDark?: string;
 }
@@ -257,7 +258,7 @@ export function featuredCards(entries: readonly HomeEntry[]): Map<string, Featur
   for (const entry of entries) {
     const { key, data, hasDocs } = entry;
     if (isFeature(data)) continue;
-    const media = data.media[0];
+    const media = data.media?.[0];
     cards.set(key, {
       key,
       name: data.name,
@@ -266,7 +267,7 @@ export function featuredCards(entries: readonly HomeEntry[]): Map<string, Featur
       tagline: data.tagline,
       blurb: data.blurb,
       getStarted: hasDocs ? docsUrl(key) : `${productUrl(key)}#install`,
-      media: { src: productAssetUrl(key, media.src), alt: media.alt ?? media.caption },
+      ...(media && { media: { src: productAssetUrl(key, media.src), alt: media.alt ?? media.caption } }),
       ...markOf(entry),
     });
   }

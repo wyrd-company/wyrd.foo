@@ -280,7 +280,7 @@ async function productOutput(ctx: Context, tree: Tree, key: string, entry: Produ
  * it, so it gets a warning.
  */
 function usedAssets(ctx: Context, tree: Tree, key: string, entry: ProductEntry, folder: string, pages: string[]): string[] {
-  const fields = [entry.logo, entry["logo-dark"], entry.favicon, entry["social-image"], ...entry.media.map((item) => item.src), ...manifestRefs(entry.kinds).map((ref) => ref.path)];
+  const fields = [entry.logo, entry["logo-dark"], entry.favicon, entry["social-image"], ...(entry.media ?? []).map((item) => item.src), ...manifestRefs(entry.kinds).map((ref) => ref.path)];
   const named = new Set(fields.flatMap((path) => (path === undefined ? [] : [folder + path])));
   const texts = pages.map((path) => ({ dir: posix.dirname(path), text: new TextDecoder().decode(tree.files.get(path)) }));
   const linked = (asset: string) => texts.some(({ dir, text }) => text.includes(posix.relative(dir, asset)));

@@ -1,12 +1,13 @@
 ---
 // relationships: implements site
 import CodeBlock from "./CodeBlock.astro";
-import { defaultInstall } from "../../lib/install-blocks";
+import { defaultInstall, providesRows, type ProvidesRow } from "../../lib/install-blocks";
 import type { KindBlock } from "../../schema/index";
 interface Props {
   entries: Extract<KindBlock, { kind: "coding-harness-plugin" }>["install"];
+  provides?: ProvidesRow[];
 }
-const { entries } = Astro.props;
+const { entries, provides = [] } = Astro.props;
 const selected = defaultInstall(entries);
 const panelId = (index: number) => `install-plugin-${index}`;
 ---
@@ -29,4 +30,47 @@ const panelId = (index: number) => `install-plugin-${index}`;
       </div>
     ))}
   </div>
+  {
+    provides.length > 0 && (
+      <div class="install-body plugin-provides">
+        <p class="install-label" id="install-plugin-provides">What the plugin provides</p>
+        <div class="plugin-provides-scroll">
+          <table class="install-table" aria-labelledby="install-plugin-provides">
+            <thead>
+              <tr>
+                <th scope="col">Element</th>
+                <th scope="col">Name</th>
+                <th scope="col">What it does</th>
+                <th scope="col">Harnesses</th>
+              </tr>
+            </thead>
+            <tbody>
+              {provides.map((row) => (
+                <tr>
+                  <td>{row.element}</td>
+                  <td><code>{row.name}</code></td>
+                  <td>{row.description}</td>
+                  <td class="plugin-harnesses">{row.harnesses}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
 </div>
+
+<style>
+  .plugin-provides {
+    border-top: 1px solid var(--divider);
+  }
+  .plugin-provides-scroll {
+    overflow-x: auto;
+  }
+  .plugin-harnesses {
+    font-family: var(--font-code);
+    font-size: 13px;
+    color: var(--text-2);
+  }
+</style>

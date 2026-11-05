@@ -43,6 +43,7 @@ describe("/llms.txt built from the product fixture content", () => {
       `- [gadget](${SITE}/tools/gadget): A small sample console that you run.`,
       `- [harbor](${SITE}/tools/harbor): A sample base image for dev containers.`,
       expect.stringMatching(new RegExp(`^- \\[Lantern\\]\\(${SITE}/tools/lantern\\): .+`)),
+      `- [Quill](${SITE}/tools/quill): A sample plugin with no media.`,
       `- [sprocket](${SITE}/tools/sprocket): Let an agent read and update sample records.`,
     ]);
   });

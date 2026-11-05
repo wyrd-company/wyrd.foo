@@ -22,6 +22,14 @@ kinds:
       - harness: Another harness
         command: Follow the setup guide
         default: true
+    provides:
+      - element: hook
+        name: SessionStart
+        description: Loads the sample instructions when a session starts.
+      - element: skill
+        name: sample-review
+        description: Reviews a change against the sample conventions.
+        harnesses: [Example harness]
 release:
   version: 1.0.0
   date: 2026-01-01

@@ -77,7 +77,7 @@ describe("docs.yml schema", () => {
   describe("highlights and media", () => {
     it("are required on a full product", () => {
       assertIssue(issuesAfter("cli", (raw) => delete raw.products.widget.highlights), "products.widget.highlights", /expected array/);
-      assertIssue(issuesAfter("cli", (raw) => delete raw.products.widget.media), "products.widget.media", /expected array/);
+      assertIssue(issuesAfter("cli", (raw) => delete raw.products.widget.media), "products.widget.media", /is required unless the primary kind is coding-harness-plugin/);
       assertIssue(issuesAfter("cli", (raw) => (raw.products.widget.media = [])), "products.widget.media", /at least 1|>=1/);
     });
 

@@ -17,7 +17,7 @@ interface Props {
 const { card, lazy = false } = Astro.props;
 ---
 
-<article class="featured-card" data-featured-key={card.key}>
+<article class="featured-card" data-featured-key={card.key} data-no-media={card.media ? undefined : ""}>
   <div class="featured-body">
     <span class="featured-label">Featured</span>
     <div class="featured-title">
@@ -34,11 +34,15 @@ const { card, lazy = false } = Astro.props;
       <a class="featured-cta" href={card.getStarted}>Get started <span aria-hidden="true">→</span></a>
     </div>
   </div>
-  <div class="featured-media">
-    <div class="featured-frame">
-      <img src={card.media.src} alt={card.media.alt} loading={lazy ? "lazy" : "eager"} decoding="async" />
-    </div>
-  </div>
+  {
+    card.media && (
+      <div class="featured-media">
+        <div class="featured-frame">
+          <img src={card.media.src} alt={card.media.alt} loading={lazy ? "lazy" : "eager"} decoding="async" />
+        </div>
+      </div>
+    )
+  }
 </article>
 
 <style>
@@ -51,6 +55,9 @@ const { card, lazy = false } = Astro.props;
     border: 1px solid var(--divider);
     border-radius: 8px;
     transition: border-color 160ms ease;
+  }
+  .featured-card[data-no-media] {
+    grid-template-columns: minmax(0, 1fr);
   }
   .featured-card:hover {
     border-color: var(--header-line);
