@@ -52,6 +52,9 @@ references again and can prompt on the host. `workspaceSnapshotsOnDemand`
 replies without snapshots or, with `instanceId` and `cwd`, with only that
 instance's snapshot of that folder and empty `models`, `slashCommands` and
 `skills`. `usageLimitsCommand` adds /usage-limits to that reply.
+`providerCatalogsOnDemand` replies with the machine catalog as a pending
+snapshot when the workspace scan fails. `modelCatalogOnly` refetches a stale
+model manifest and ignores the other fields; `watchConfig` carries the result.
 
 ```ts
 refreshProviders(
@@ -177,7 +180,9 @@ async providerStatus(instanceId?: string, signal?: AbortSignal): Promise<ServerP
 Historical token usage and cost from provider transcripts (diagnostics:read).
 Buckets keep provider, model and cost source; sources report scan status.
 The result has no grand total: costs from different sources, and tokens
-of different kinds, are not added together.
+of different kinds, are not added together. `modelFilter` keeps or drops
+records by provider and original model id; settings `usageModelFilter`
+holds the filter a user saved, and the result echoes the filter applied.
 
 ```ts
 usageSummary(input: UsageSummaryInput, signal?: AbortSignal): Promise<UsageSummary>;

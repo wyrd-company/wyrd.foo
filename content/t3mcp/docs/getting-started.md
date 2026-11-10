@@ -1,6 +1,7 @@
 ---
 product: t3mcp
 title: Getting started
+install: true
 order: 1
 relationships:
   references: [mcp, automation-capabilities, profiles]
@@ -27,6 +28,24 @@ to launch the npm package with `npx`:
 You can also install the executable with `npm install -g
 @wyrd-company/t3code-mcp` and use `t3code-mcp --profile sample`.
 
+The install selector provides configurations for Claude Code, Claude Desktop,
+Codex, Cursor, OpenCode, Pi and Antigravity, plus generic JSON. Select your host
+and merge its configuration into the host's MCP configuration file:
+
+| Host           | Configuration file                                                              |
+| -------------- | ------------------------------------------------------------------------------- |
+| Claude Code    | `.mcp.json` in the project                                                      |
+| Claude Desktop | `claude_desktop_config.json` (Settings, Developer, Edit Config)                 |
+| Codex          | `~/.codex/config.toml`                                                          |
+| Cursor         | `.cursor/mcp.json` in the project, or `~/.cursor/mcp.json`                      |
+| OpenCode       | `opencode.json` in the project                                                  |
+| Pi             | `~/.pi/agent/mcp.json`, or `.pi/mcp.json` in the project                        |
+| Antigravity    | `~/.gemini/config/mcp_config.json`, or `.agents/mcp_config.json` in the project |
+
+Replace `sample` with your saved profile name. All entries launch the same stdio
+server with `npx -y @wyrd-company/t3code-mcp --profile sample`; Codex uses TOML
+and OpenCode uses a local command array.
+
 Pair the profile with `t3c auth pair` first. `--profile` selects an exact saved
 profile and ignores environment overrides. Alternatively, `--server` and
 `--credentials` use the same resolution as t3c. A named profile conflicts with
@@ -46,7 +65,15 @@ t3mcp with a person's hostname, because a hostname is for the messages of one pe
 | `scheduled_task_configuration`, `configure_scheduled_task` | Full task configuration/run diagnostics; execution-only changes                           |
 | `thread_status`, `thread_approvals`                        | Run/queue/background-work state and pending approvals for human review                    |
 | `thread_usage`, `thread_diff`, `thread_search_content`     | Usage ownership, checkpoint diff or within-thread search                                  |
+| `thread_family`, `worktree_threads`                        | A thread's whole family, or the active threads on a worktree path                         |
+| `thread_tag`, `tagged_threads`                             | Add or remove a thread tag, or list the threads that carry a tag                          |
+| `thread_terminals`, `terminal_output`                      | A thread's terminals, or the recent plain-text output of one                              |
+| `server_traces`, `server_processes`                        | The server's trace summary, or its backend descendant processes                           |
+| `server_host_resources`, `server_resource_history`         | Host CPU and memory, or the server's resource use over a window                           |
+| `server_storage_cleanup_report`                            | The latest storage cleanup report                                                         |
+| `local_servers`, `stop_local_server`                       | Local servers and their owning threads, or stop one that a thread's agent started         |
 | `thread_stop`, `thread_queue_resume`, `thread_queue_start` | Native Stop, queue release or selected queued-message start                               |
+| `thread_force_stop`                                        | Force stop of an agent that ignored Stop                                                  |
 | `provider_status`, `usage_summary`                         | Current provider state/limits or historical usage buckets                                 |
 
 Every tool returns matching structured data and JSON text. Failures set
@@ -80,6 +107,11 @@ other queued messages can follow. Get ids from `thread_status` or the stock
 queue tools. These tools require `orchestration:operate` and return dispatch
 acknowledgements; inspect status for subsequent state. Stock queue editing,
 cancellation, reordering and promotion remain in the built-in MCP server.
+
+`thread_force_stop` is for an agent that ignored `thread_stop`. It ends the turn
+and kills or releases the agent process, and returns the outcome and the threads
+that share that process. With `runId`, it fails with code `superseded` when
+another run is the latest.
 
 ## Build from source
 

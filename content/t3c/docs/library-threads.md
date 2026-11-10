@@ -114,7 +114,13 @@ queued-run commands, unknown command metadata survives, and malformed or
 missing ids fail before sending. The server starts only a queued plain user
 message on a stopped thread; otherwise it fails with
 <code>OrchestrationV2DispatchCommandError</code>. <code>startQueuedRun</code> sends it. Both it and
-<code>resumeQueue</code> clear the hold on all queued runs; other queued messages may follow.</p>
+<code>resumeQueue</code> clear the hold on all queued runs; other queued messages may follow.
+<code>dispatch</code> accepts <code>thread.tag.set</code> with <code>commandId</code>, <code>threadId</code>, <code>tag</code> and
+boolean <code>tagged</code> (true adds, false removes). Tags are trimmed, nonempty, at
+most 64 characters and one line, and match by exact spelling and case;
+malformed fields fail before sending. The server records
+<code>thread.tags-updated</code> with the whole thread. Threads, shells and projections
+expose optional <code>tags</code>; a malformed stored list reads as empty.</p>
 <p><code>watchCommandOutput</code> follows <code>orchestration.subscribeCommandOutput</code> for one
 <code>command_execution</code> row (<code>{ threadId, itemId }</code>, trimmed nonempty ids). Each
 frame has <code>kind</code> (<code>replace</code> carries the bounded tail, <code>append</code> extends it;
@@ -243,6 +249,12 @@ missing ids fail before sending. The server starts only a queued plain user
 message on a stopped thread; otherwise it fails with
 `OrchestrationV2DispatchCommandError`. `startQueuedRun` sends it. Both it and
 `resumeQueue` clear the hold on all queued runs; other queued messages may follow.
+`dispatch` accepts `thread.tag.set` with `commandId`, `threadId`, `tag` and
+boolean `tagged` (true adds, false removes). Tags are trimmed, nonempty, at
+most 64 characters and one line, and match by exact spelling and case;
+malformed fields fail before sending. The server records
+`thread.tags-updated` with the whole thread. Threads, shells and projections
+expose optional `tags`; a malformed stored list reads as empty.
 
 `watchCommandOutput` follows `orchestration.subscribeCommandOutput` for one
 `command_execution` row (`{ threadId, itemId }`, trimmed nonempty ids). Each
@@ -277,6 +289,7 @@ older server. The library does not render terminal output.
   - [.unarchive()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+unarchive)
   - [.settle()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+settle)
   - [.unsettle()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+unsettle)
+  - [.setTag()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+setTag)
   - [.delete()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+delete)
   - [.setRuntimeMode()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+setRuntimeMode)
   - [.setInteractionMode()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+setInteractionMode)
@@ -307,7 +320,8 @@ older server. The library does not render terminal output.
 ### threadsApi.list()
 
 Active threads from the shell; with `includeArchived`, archived threads
-as well, read from the archived shell over RPC.
+as well, read from the archived shell over RPC. With `tag`, only threads
+that carry it, matched by exact spelling and case after trimming.
 
 ```ts
 list(

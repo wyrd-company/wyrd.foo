@@ -10,6 +10,24 @@ relationships:
 
 # Shared types and constants
 
+## Classes
+
+<dl>
+<dt><a href="#DiagnosticsApi">DiagnosticsApi</a></dt>
+<dd><p>Read-only views of the server&#39;s own health: trace summaries, its backend processes,
+host resources, resource history and the latest storage cleanup report. None of
+these signal a process, run a cleanup or restart the resource monitor; those stay
+on <code>client.rpc</code>. Trace causes, log messages and command lines are text that other
+programs wrote, and can hold host paths.</p>
+</dd>
+<dt><a href="#LocalServersApi">LocalServersApi</a></dt>
+<dd><p>The local servers that the server&#39;s preview discovery finds on its host: listeners
+that it attributes to a thread terminal (<code>terminal</code>) or to the agent of a thread
+(<code>agent</code>), of every thread, plus each configured URL that answers as a web server,
+which can have no owner. Process names are text that other programs chose.</p>
+</dd>
+</dl>
+
 ## Members
 
 <dl>
@@ -24,6 +42,25 @@ relationships:
 ## Constants
 
 <dl>
+<dt><a href="#SPEECH_STREAM_PATH">SPEECH_STREAM_PATH</a></dt>
+<dd><p>The socket path.</p>
+</dd>
+<dt><a href="#SPEECH_STREAM_MAX_CHUNK_BYTES">SPEECH_STREAM_MAX_CHUNK_BYTES</a></dt>
+<dd><p>The largest binary audio message the server reads: one second of 16 kHz mono Float32 PCM.</p>
+</dd>
+<dt><a href="#SpeechStreamText">SpeechStreamText</a></dt>
+<dd><p>The text so far: <code>committed</code> does not change again, <code>tentative</code> can.</p>
+</dd>
+<dt><a href="#SpeechStreamEvent">SpeechStreamEvent</a></dt>
+<dd><p>A text message that the server sends. <code>ready</code> answers <code>start</code>, <code>update</code> answers each audio
+message, <code>finished</code> answers <code>finish</code>, and <code>error</code> comes before the server closes with 1008.</p>
+</dd>
+<dt><a href="#SPEECH_MAX_OPTIONS_BYTES">SPEECH_MAX_OPTIONS_BYTES</a></dt>
+<dd><p>The largest options JSON the server reads.</p>
+</dd>
+<dt><a href="#DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS">DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS</a></dt>
+<dd><p>The default recognition preferences, as upstream&#39;s clients send them.</p>
+</dd>
 <dt><a href="#DpopPrivateJwk">DpopPrivateJwk</a></dt>
 <dd><p>The P-256 key that a proof-bound session signs with. <code>d</code> is the private part.</p>
 </dd>
@@ -41,6 +78,13 @@ relationships:
 </dd>
 <dt><a href="#ORCHESTRATION_PROTOCOL_HEADER">ORCHESTRATION_PROTOCOL_HEADER</a></dt>
 <dd><p>Header on orchestration HTTP routes that names the protocol.</p>
+</dd>
+<dt><a href="#CLIENT_CAPABILITIES_QUERY_PARAM">CLIENT_CAPABILITIES_QUERY_PARAM</a></dt>
+<dd><p>Query parameter on the <code>/ws</code> upgrade that lists the wire shapes a client understands, comma-separated.</p>
+</dd>
+<dt><a href="#SETTINGS_SECRET_REFERENCES_CAPABILITY">SETTINGS_SECRET_REFERENCES_CAPABILITY</a></dt>
+<dd><p>Secret settings fields may hold a secret provider reference in place of a
+string. A client that omits it sees a reference as a saved, redacted secret.</p>
 </dd>
 <dt><a href="#OrchestrationProjectShell">OrchestrationProjectShell</a></dt>
 <dd><p>Project summary shared by the shell and the application project APIs.</p>
@@ -75,8 +119,160 @@ tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; n
 <pre><code class="language-ts">export function webhookUrlParams(path: string): { hookId: string; token: string };
 </code></pre>
 </dd>
+<dt><a href="#encodeSpeechPcmRequest">encodeSpeechPcmRequest()</a></dt>
+<dd><p>Frames 16 kHz mono Float32 <code>pcm</code> with its recognition options as the body of <code>voice.transcribe</code>
+or <code>voice.transcribeCloud</code>. Raises <code>T3PreconditionError</code> for invalid options, for audio that is
+not whole samples and for options over <code>SPEECH_MAX_OPTIONS_BYTES</code>.</p>
+<pre><code class="language-ts">export function encodeSpeechPcmRequest(
+  pcm: Uint8Array,
+  options: SpeechTranscriptionOptions = DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
+): Uint8Array&lt;ArrayBuffer&gt;;
+</code></pre>
+</dd>
 </dl>
 
+<a name="DiagnosticsApi"></a>
+
+## DiagnosticsApi
+
+Read-only views of the server's own health: trace summaries, its backend processes,
+host resources, resource history and the latest storage cleanup report. None of
+these signal a process, run a cleanup or restart the resource monitor; those stay
+on `client.rpc`. Trace causes, log messages and command lines are text that other
+programs wrote, and can hold host paths.
+
+**Kind**: global class
+
+- [DiagnosticsApi](#DiagnosticsApi)
+  - [.traces()](#DiagnosticsApi+traces)
+  - [.processes()](#DiagnosticsApi+processes)
+  - [.hostResources()](#DiagnosticsApi+hostResources)
+  - [.resourceHistory()](#DiagnosticsApi+resourceHistory)
+  - [.storageCleanupReport()](#DiagnosticsApi+storageCleanupReport)
+
+<a name="DiagnosticsApi+traces"></a>
+
+### diagnosticsApi.traces()
+
+Span and failure summaries from the server's trace files (diagnostics:read). A
+read failure keeps the partial counts and sets `error`.
+
+```ts
+traces(signal?: AbortSignal): Promise<ServerTraceDiagnosticsResult>;
+```
+
+**Kind**: instance method of [<code>DiagnosticsApi</code>](#DiagnosticsApi)  
+<a name="DiagnosticsApi+processes"></a>
+
+### diagnosticsApi.processes()
+
+The server's signalable descendants, with CPU and memory (diagnostics:read):
+child processes and the root processes of agents and terminals. The server
+process itself is not in `processes` or the totals; `resourceHistory` covers it.
+
+```ts
+processes(signal?: AbortSignal): Promise<ServerProcessDiagnosticsResult>;
+```
+
+**Kind**: instance method of [<code>DiagnosticsApi</code>](#DiagnosticsApi)  
+<a name="DiagnosticsApi+hostResources"></a>
+
+### diagnosticsApi.hostResources()
+
+CPU and memory of the server host (orchestration:read).
+
+```ts
+hostResources(signal?: AbortSignal): Promise<HostResourcesSnapshot>;
+```
+
+**Kind**: instance method of [<code>DiagnosticsApi</code>](#DiagnosticsApi)  
+<a name="DiagnosticsApi+resourceHistory"></a>
+
+### diagnosticsApi.resourceHistory()
+
+Resource use of the server's processes over `windowMs`, in buckets of
+`bucketMs`, with the top processes and monitor health (diagnostics:read).
+
+```ts
+resourceHistory(
+    input: ResourceTelemetryHistoryInput,
+    signal?: AbortSignal,
+  ): Promise<ResourceTelemetryHistory>;
+```
+
+**Kind**: instance method of [<code>DiagnosticsApi</code>](#DiagnosticsApi)  
+<a name="DiagnosticsApi+storageCleanupReport"></a>
+
+### diagnosticsApi.storageCleanupReport()
+
+The latest storage cleanup report, or `null` before the first cleanup
+(orchestration:read). Reads the first item of the report stream and closes it.
+
+```ts
+storageCleanupReport(signal?: AbortSignal): Promise<StorageCleanupReportUpdate>;
+```
+
+**Kind**: instance method of [<code>DiagnosticsApi</code>](#DiagnosticsApi)  
+<a name="LocalServersApi"></a>
+
+## LocalServersApi
+
+The local servers that the server's preview discovery finds on its host: listeners
+that it attributes to a thread terminal (`terminal`) or to the agent of a thread
+(`agent`), of every thread, plus each configured URL that answers as a web server,
+which can have no owner. Process names are text that other programs chose.
+
+**Kind**: global class
+
+- [LocalServersApi](#LocalServersApi)
+  - [.watch()](#LocalServersApi+watch)
+  - [.list()](#LocalServersApi+list)
+  - [.stop()](#LocalServersApi+stop)
+
+<a name="LocalServersApi+watch"></a>
+
+### localServersApi.watch()
+
+Follow the listeners (orchestration:read): a fresh scan, then each change. The
+server also probes `configuredUrls`.
+
+```ts
+watch(
+    input: SubscribeDiscoveredLocalServersInput = {},
+    options?: { readonly signal?: AbortSignal },
+  ): AsyncIterable<DecodedStreamItem<DiscoveredLocalServerList>>;
+```
+
+**Kind**: instance method of [<code>LocalServersApi</code>](#LocalServersApi)  
+<a name="LocalServersApi+list"></a>
+
+### localServersApi.list()
+
+The listeners of one fresh scan (orchestration:read), from the first watch item.
+
+```ts
+list(
+    input: SubscribeDiscoveredLocalServersInput = {},
+    signal?: AbortSignal,
+  ): Promise<DiscoveredLocalServerList>;
+```
+
+**Kind**: instance method of [<code>LocalServersApi</code>](#LocalServersApi)  
+<a name="LocalServersApi+stop"></a>
+
+### localServersApi.stop()
+
+Stop a listener's process group (terminal:operate): SIGTERM, then SIGKILL after a
+grace period. The server scans again and signals only a listener with this pid and
+port that it attributes to a terminal or an agent; otherwise it fails with
+`PreviewStopLocalServerError` reason `not-found`. A process group shared with the
+server fails with reason `shared-group`.
+
+```ts
+async stop(input: PreviewStopLocalServerInput, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>LocalServersApi</code>](#LocalServersApi)  
 <a name="messageId"></a>
 
 ## messageId
@@ -91,6 +287,49 @@ The message the snippet is from. Older servers omit it.
 The run that ignored Stop; the server refuses once a newer run has started.
 
 **Kind**: global variable  
+<a name="SPEECH_STREAM_PATH"></a>
+
+## SPEECH\_STREAM\_PATH
+
+The socket path.
+
+**Kind**: global constant  
+<a name="SPEECH_STREAM_MAX_CHUNK_BYTES"></a>
+
+## SPEECH\_STREAM\_MAX\_CHUNK\_BYTES
+
+The largest binary audio message the server reads: one second of 16 kHz mono Float32 PCM.
+
+**Kind**: global constant  
+<a name="SpeechStreamText"></a>
+
+## SpeechStreamText
+
+The text so far: `committed` does not change again, `tentative` can.
+
+**Kind**: global constant  
+<a name="SpeechStreamEvent"></a>
+
+## SpeechStreamEvent
+
+A text message that the server sends. `ready` answers `start`, `update` answers each audio
+message, `finished` answers `finish`, and `error` comes before the server closes with 1008.
+
+**Kind**: global constant  
+<a name="SPEECH_MAX_OPTIONS_BYTES"></a>
+
+## SPEECH\_MAX\_OPTIONS\_BYTES
+
+The largest options JSON the server reads.
+
+**Kind**: global constant  
+<a name="DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS"></a>
+
+## DEFAULT\_SPEECH\_TRANSCRIPTION\_OPTIONS
+
+The default recognition preferences, as upstream's clients send them.
+
+**Kind**: global constant  
 <a name="DpopPrivateJwk"></a>
 
 ## DpopPrivateJwk
@@ -131,6 +370,21 @@ Query parameter on the `/ws` upgrade that names the protocol.
 ## ORCHESTRATION\_PROTOCOL\_HEADER
 
 Header on orchestration HTTP routes that names the protocol.
+
+**Kind**: global constant  
+<a name="CLIENT_CAPABILITIES_QUERY_PARAM"></a>
+
+## CLIENT\_CAPABILITIES\_QUERY\_PARAM
+
+Query parameter on the `/ws` upgrade that lists the wire shapes a client understands, comma-separated.
+
+**Kind**: global constant  
+<a name="SETTINGS_SECRET_REFERENCES_CAPABILITY"></a>
+
+## SETTINGS\_SECRET\_REFERENCES\_CAPABILITY
+
+Secret settings fields may hold a secret provider reference in place of a
+string. A client that omits it sees a reference as a saved, redacted secret.
 
 **Kind**: global constant  
 <a name="OrchestrationProjectShell"></a>
@@ -192,6 +446,22 @@ The route params of a webhook endpoint's `path`, from `scheduledTasks.webhookEnd
 
 ```ts
 export function webhookUrlParams(path: string): { hookId: string; token: string };
+```
+
+**Kind**: global function  
+<a name="encodeSpeechPcmRequest"></a>
+
+## encodeSpeechPcmRequest()
+
+Frames 16 kHz mono Float32 `pcm` with its recognition options as the body of `voice.transcribe`
+or `voice.transcribeCloud`. Raises `T3PreconditionError` for invalid options, for audio that is
+not whole samples and for options over `SPEECH_MAX_OPTIONS_BYTES`.
+
+```ts
+export function encodeSpeechPcmRequest(
+  pcm: Uint8Array,
+  options: SpeechTranscriptionOptions = DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
+): Uint8Array<ArrayBuffer>;
 ```
 
 **Kind**: global function
