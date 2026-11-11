@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { docsFileOf, docsLinkHref, docsTargets, filesUnder, rewriteDocsLinks } from "../src/lib/docs-links";
+import { docsFileOf, docsFilesFingerprint, docsLinkHref, docsTargets, filesUnder, rewriteDocsLinks } from "../src/lib/docs-links";
 import { servedAssetFiles } from "../src/lib/product-asset-files";
 import type { ToolFile } from "../src/schema/index";
 
@@ -14,6 +14,7 @@ const targets = docsTargets([
   "guides/deep/tuning.md",
   "assets/demo.gif",
   "assets/sample file.yaml",
+  "assets/demo+v1.gif",
 ]);
 const root = { key: "widget", rel: "overview.md" };
 const nested = { key: "widget", rel: "guides/deep/tuning.md" };
@@ -30,6 +31,9 @@ describe("docsLinkHref", () => {
     ["CHANGELOG.md#020", "/docs/widget/changelog/#020"],
     ["assets/demo.gif", "/assets/widget/assets/demo.gif"],
     ["assets/sample%20file.yaml", "/assets/widget/assets/sample%20file.yaml"],
+    ["assets/demo%2Bv1.gif", "/assets/widget/assets/demo%2Bv1.gif"],
+    ["assets/demo+v1.gif", "/assets/widget/assets/demo%2Bv1.gif"],
+    ["guides%2Fconfiguration.md", "/docs/widget/configuration/"],
   ])("resolves %s from a top-level page to %s", (href, site) => {
     expect(docsLinkHref(href, root, targets)).toBe(site);
   });
@@ -115,5 +119,19 @@ describe("filesUnder and servedAssetFiles", () => {
     const data = { logo: "assets/logo.svg", source: "src/widget" } as unknown as ToolFile;
     const served = servedAssetFiles(dir, "widget", data, () => true, [...docsTargets(files).assets]);
     expect(served.map((asset) => asset.path)).toEqual(["assets/logo.svg", "assets/guide.pdf"]);
+  });
+});
+
+describe("docsFilesFingerprint", () => {
+  it("changes when a docs file is added and not when a file outside docs/ is", () => {
+    const dir = mkdtempSync(join(tmpdir(), "docs-fingerprint-"));
+    mkdirSync(join(dir, "widget", "docs"), { recursive: true });
+    writeFileSync(join(dir, "widget", "docs", "overview.md"), "x");
+    const before = docsFilesFingerprint(dir);
+    writeFileSync(join(dir, "widget", "tool.yaml"), "x");
+    expect(docsFilesFingerprint(dir)).toBe(before);
+    writeFileSync(join(dir, "widget", "docs", "other.md"), "x");
+    expect(docsFilesFingerprint(dir)).not.toBe(before);
+    expect(docsFilesFingerprint(join(dir, "missing"))).toBe(docsFilesFingerprint(join(dir, "missing-too")));
   });
 });

@@ -1,6 +1,7 @@
 import { defineCollection } from "astro:content";
 import { z } from "astro/zod";
 import { contentGlob } from "./lib/content-glob.ts";
+import { docsFilesFingerprint } from "./lib/docs-links.ts";
 import { CONTENT_ROOT } from "./lib/content-root.ts";
 import { latestEntries } from "./lib/latest-entries.ts";
 import { pageSchema, pageSlugOf, toolFileSchema, withClosestIssues } from "./schema/index.ts";
@@ -28,6 +29,8 @@ const pages = defineCollection({
     base: CONTENT_ROOT,
     // <key>/docs/guides/getting-started.md -> "<key>/getting-started"
     generateId: ({ entry }) => `${entry.split("/")[0]}/${pageSlugOf(entry)}`,
+    // A page's links render to the URLs of the docs files they name (lib/docs-links.ts).
+    fingerprint: () => docsFilesFingerprint(CONTENT_ROOT),
   }),
   schema: pageSchema,
 });
@@ -39,6 +42,7 @@ const docsChangelogs = defineCollection({
     pattern: "*/docs/CHANGELOG.md",
     base: CONTENT_ROOT,
     generateId: ({ entry }) => entry.split("/")[0],
+    fingerprint: () => docsFilesFingerprint(CONTENT_ROOT),
   }),
 });
 

@@ -7,6 +7,7 @@
  * the same product to that file's site URL, and keeps the query and
  * fragment. Other links stay as written.
  */
+import { createHash } from "node:crypto";
 import { readdirSync } from "node:fs";
 import { join, posix, relative, resolve, sep } from "node:path";
 import { pageSlugOf } from "../schema/index.ts";
@@ -82,12 +83,7 @@ export function docsLinkHref(href: string, from: DocsFile, targets: DocsTargets)
   const written = at === -1 ? href : href.slice(0, at);
   const suffix = at === -1 ? "" : href.slice(at);
   if (written === "" || written.endsWith("/")) return undefined;
-  let path = written;
-  try {
-    path = decodeURI(written);
-  } catch {
-    // Not valid percent-encoding: match it as written.
-  }
+  const path = written.split("/").map(decodeSegment).join("/");
   const resolved = posix.normalize(posix.join(posix.dirname(from.rel), path));
   if (resolved.startsWith("../")) return undefined;
   const page = (slug: string) => `${pageHref(from.key, slug)}/${suffix}`;
@@ -101,6 +97,15 @@ export function docsLinkHref(href: string, from: DocsFile, targets: DocsTargets)
     if (!path.includes("/") && targets.slugs.has(path)) return page(path);
   }
   return undefined;
+}
+
+// A path segment with its percent-escapes decoded, reserved ones (`%2B`) too; as written when they are not valid.
+function decodeSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
 }
 
 interface HastNode {
@@ -133,8 +138,11 @@ interface Processor {
 /**
  * The rehype plugin, for files under `<root>/<key>/docs/` only. Like
  * rehypeEmbeddedHeadings, it adds its step last, so raw HTML `<a>` elements
- * are elements by then. It lists the product's docs folder for each file, so
- * a page added in dev resolves without a restart.
+ * are elements by then. It lists the product's docs folder for each file.
+ * Astro keeps a file's rendered HTML until the file itself changes, so the
+ * docs collections clear their store when the set of docs files changes
+ * (docsFilesFingerprint). In dev, restart the server after adding or removing
+ * a docs file, so the pages that link to it render again.
  */
 export function rehypeDocsLinks(this: Processor, options: { contentRoot: string }): void {
   this.use(() => (tree, file) => {
@@ -142,4 +150,24 @@ export function rehypeDocsLinks(this: Processor, options: { contentRoot: string 
     if (!from) return;
     rewriteDocsLinks(tree, from, docsTargets(filesUnder(join(options.contentRoot, from.key, "docs"))));
   });
+}
+
+/**
+ * A digest of the paths of every file under `<root>/<key>/docs/`. The links a
+ * docs file renders to depend on these paths, so a docs collection clears its
+ * cached entries when the digest changes (contentGlob, `fingerprint`).
+ */
+export function docsFilesFingerprint(root: string): string {
+  const hash = createHash("sha256");
+  let keys: string[] = [];
+  try {
+    keys = readdirSync(root, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+  } catch {
+    // No content root: nothing to link to.
+  }
+  for (const key of keys) for (const file of filesUnder(join(root, key, "docs")).sort()) hash.update(`${key}/${file}\n`);
+  return hash.digest("hex");
 }
