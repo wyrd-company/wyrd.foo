@@ -1,0 +1,2 @@
+gitpr create --help | sed -n '1,16p'
+cat review.txt

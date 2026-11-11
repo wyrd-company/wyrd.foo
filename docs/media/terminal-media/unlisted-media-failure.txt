@@ -1,0 +1,4 @@
+== /workspaces/worktrees/gitpr/terminal-media-proof (wyrd-company/gitpr): failed
+  error docs/user/docs.yml: products.gitpr.media[0].src: assets/terminal.png is not listed in assets
+  products: none
+1 repos: 0 published, 0 passed, 1 failed, 0 skipped; 0 warnings
