@@ -35,5 +35,10 @@ Press `Ctrl+C` in the terminal that runs it.
 
 | To do this | Read |
 | --- | --- |
-| Install it for good | Install |
-| Change the port | Configuration |
+| Install it for good | [Install](install.md) |
+| Change the port | [The port](guides/configuration.md#the-port) |
+| Fix a problem | [Troubleshooting](troubleshooting) |
+| See what changed | [Docs changelog](CHANGELOG.md) |
+| Watch the console | [Demo](assets/demo.gif) |
+| Read the code | [Source](https://github.com/example-org/gadgets) |
+| Find a missing page | [Missing](missing.md) |

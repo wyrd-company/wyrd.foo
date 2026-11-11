@@ -90,6 +90,15 @@ proposed-design:
     A product's pages are published inside its docs folder, so a relative
     link from a page to a file outside that folder points at a file the site
     does not have. The publisher warns about each such link, with its line.
+
+    Inside the folder, a page links to another page by its file, as on
+    GitHub: `other.md`, `guides/other.md#heading` or `../other.md`, relative
+    to the page's own file. The site sends it to that page's URL,
+    `/docs/<key>/<slug>/#heading`, a link to `CHANGELOG.md` to the docs
+    changelog, and a link to a published asset to the asset's URL. The site
+    also takes a link with no extension, `other`, for the page `other.md`
+    beside the file or else for the product's page with the slug `other`;
+    that form does not work on GitHub.
   docs-file: |
     `docs/user/docs.yml` is one file per repo. Top-level fields:
 

@@ -42,3 +42,22 @@ export function productAssetFiles(
     return { path, file };
   });
 }
+
+/**
+ * The files the assets endpoint serves for a product: each named asset
+ * (productAssetFiles), then each other published file in its docs folder that
+ * is not Markdown. The publisher publishes only the listed assets that the
+ * fields name or the pages link to, so those are the files a page links to
+ * (lib/docs-links.ts).
+ */
+export function servedAssetFiles(
+  root: string,
+  key: string,
+  data: ToolFile,
+  exists: (file: string) => boolean,
+  linked: readonly string[],
+): ProductAssetFile[] {
+  const named = productAssetFiles(root, key, data, exists);
+  const paths = new Set(named.map((asset) => asset.path));
+  return [...named, ...linked.filter((path) => !paths.has(path)).map((path) => ({ path, file: join(root, key, "docs", path) }))];
+}

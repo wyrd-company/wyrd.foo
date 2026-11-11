@@ -371,6 +371,11 @@ proposed-design:
       reading-progress dots (done, current, ahead). It scrolls on its own.
     - **Content**: breadcrumb, title, lead paragraph, prose up to 720px wide.
       Tip callouts use the accent tint. No product card above the content.
+      A relative link to a page, the docs changelog or an asset of the same
+      product goes to its site URL (`src/lib/docs-links.ts`; the
+      `publishing` design, `docs-folder`). Other links stay as written.
+      `/assets/<key>/<path>` serves each file that tool.yaml names and each
+      other published file of the docs folder that is not Markdown.
     - **"On this page"** on the right: sticky, scrolls on its own, nested
       headings. It highlights the last heading that has scrolled past the top
       of the viewport, so the highlight holds still while you read. At the

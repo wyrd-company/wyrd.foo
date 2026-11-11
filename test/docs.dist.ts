@@ -150,4 +150,19 @@ describe("docs built from the fixture content", () => {
       "/docs/sprocket",
     ]);
   });
+
+  it("sends relative links in a page to the site URLs of the pages and assets they name", () => {
+    const hrefs = (path: string) => page(path).querySelectorAll(".docs-prose a").map((a) => a.getAttribute("href"));
+    expect(hrefs("docs/gadget/getting-started")).toEqual([
+      "/docs/gadget/install/",
+      "/docs/gadget/configuration/#the-port",
+      "/docs/gadget/troubleshooting/",
+      "/docs/gadget/changelog/",
+      "/assets/gadget/assets/demo.gif",
+      "https://github.com/example-org/gadgets",
+      "missing.md",
+    ]);
+    expect(hrefs("docs/gadget/configuration")).toEqual(["/docs/gadget/install/#with-docker", "/docs/gadget/troubleshooting/", "#the-port"]);
+    expect(existsSync(join(DIST, "assets/gadget/assets/demo.gif"))).toBe(true);
+  });
 });

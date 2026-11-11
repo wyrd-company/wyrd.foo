@@ -5,6 +5,7 @@ import { defineConfig, passthroughImageService } from "astro/config";
 
 import tailwindcss from "@tailwindcss/vite";
 import { CONTENT_ROOT } from "./src/lib/content-root.ts";
+import { rehypeDocsLinks } from "./src/lib/docs-links.ts";
 import { rehypeEmbeddedHeadings } from "./src/lib/embedded-headings.ts";
 import { inSitemap } from "./src/lib/sitemap.ts";
 
@@ -20,8 +21,14 @@ export default defineConfig({
     host: "0.0.0.0",
   },
   markdown: {
-    // The README and changelog of a product page nest under its sections; docs pages are untouched.
-    processor: unified({ rehypePlugins: [[rehypeEmbeddedHeadings, { contentRoot: CONTENT_ROOT }]] }),
+    // The README and changelog of a product page nest under its sections. Relative links in docs files
+    // go to the site URLs of the pages and assets they name.
+    processor: unified({
+      rehypePlugins: [
+        [rehypeEmbeddedHeadings, { contentRoot: CONTENT_ROOT }],
+        [rehypeDocsLinks, { contentRoot: CONTENT_ROOT }],
+      ],
+    }),
   },
   integrations: [sitemap({ filter: inSitemap })],
   vite: {

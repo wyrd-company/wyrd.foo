@@ -20,3 +20,6 @@ data = "./data"
 ### Keep data between runs
 
 Mount the data folder when you run the image.
+
+See <a href="../install.md#with-docker">Install</a> to run it with Docker, [Troubleshooting](troubleshooting.md) when it
+does not start, and [the port](#the-port) above.
