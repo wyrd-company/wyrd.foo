@@ -7,7 +7,7 @@ product: xolotl
 Clients use xolotl like a provider API. They send their client key and a model
 name the key's policy exposes. The examples use `http://xolotl:8317` as the
 xolotl URL and `XOLOTL_API_KEY` for the client key (see
-[Issue a client key](policies-and-keys#issue-a-client-key)).
+[Issue a client key](policies-and-keys.md#issue-a-client-key)).
 
 Xolotl accepts the key in `Authorization` (Bearer or bare), `x-api-key` or
 `x-management-key`.
@@ -65,6 +65,21 @@ The helper prints the client key. Codex sends provider authentication when it
 fetches `model_catalog_url`; no public catalog is required. See the
 [official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
+### Usage limits in Codex
+
+Codex reads its usage limits from the headers of each reply. Through xolotl,
+`/status` and the status line show the limits of the pool account that served
+the last turn. Session affinity keeps a conversation on one account, so the
+numbers change only when xolotl moves the conversation to another account.
+When every account is cooling down, Codex shows "You've hit your usage limit"
+with the limits of the account that comes back first.
+
+Before the first turn, `/status` shows "data not available yet". Codex reads
+account usage at startup only from ChatGPT, with a ChatGPT login, so that read
+does not go through xolotl. For the same reason, T3 Code's Codex usage needs a
+[T3 Code hub](#t3-code). `xolotl accounts list` and the web UI show every
+account in the pool.
+
 ## Grok CLI
 
 The Grok CLI runs `auth_provider_command` and sends what it prints as the bearer
@@ -104,12 +119,15 @@ claude mcp add --transport http xolotl http://xolotl:8317/mcp \
   --header "Authorization: Bearer $XOLOTL_API_KEY"
 ```
 
-See [MCP gateway](mcp-gateway).
+See [MCP gateway](mcp-gateway.md).
 
 ## T3 Code
 
-Add a CLIProxyAPI usage source with URL `http://xolotl:8317` and a key whose
-policy has the `management` scope. T3 Code then shows the usage of your Codex
+Add a CLIProxyAPI usage source with xolotl's base URL, the same URL your other
+clients use (here `http://xolotl:8317`), and a key whose policy has the
+`management` scope. The hubs endpoints are under `/v0/management/` on the same
+port as everything else. A reverse proxy in front of xolotl must forward that
+path too. T3 Code then shows the usage of your Codex
 and Claude accounts, and the Codex reset credits.
 
 T3 Code redeems a Codex reset credit itself: it sends the redemption request to
@@ -125,7 +143,7 @@ clears that account's cooldown and last error and polls its usage again.
 | `POST /v1/messages`, `/v1/responses`, `/v1/chat/completions`, other `POST /v1/*` | The target the policy gives for `model` |
 | `GET /backend-api/codex/models` | Policy-filtered Codex-native metadata |
 | `GET /v1/models` | The policy's model names and their endpoints |
-| `/<provider>/<path>` | Passthrough to a gateway provider, with its key |
+| `/<provider>/<path>` | Passthrough to a provider account, with its key |
 | `/opencode-go/<path>` | Passthrough to OpenCode Go through the account pool |
 | `/mcp` | The MCP gateway |
 | `/v0/management/...` | T3 Code hubs |
@@ -163,9 +181,9 @@ the response, streams included.
 | `codex`, `grok` | Responses |
 | `opencode-go` | Messages, Responses or Chat, depending on the model |
 | `vercel` kind | All three |
-| Other gateway providers | Chat |
+| Other provider accounts | Chat |
 
-Change this with [`[catalog.wires]`](configuration#catalog).
+Change this with [`[catalog.wires]`](configuration.md#catalog).
 
 Exceptions:
 
@@ -182,7 +200,7 @@ Exceptions:
 
 Translation drops what has no match in the other format: hosted tools such as
 web search, and attachments that are not images. See
-[Known limitations](limitations).
+[Known limitations](limitations.md).
 
 ## Errors
 
@@ -195,4 +213,4 @@ Errors have the shape of the endpoint you called: Anthropic-style on
 | 403 | The key lacks the scope, or a passthrough's provider or model is not allowed |
 | 404 | The policy exposes no such model name |
 | 400 | The model is not served on this endpoint |
-| 429 | Every account is cooling down, or the key is over a [rate limit](policies-and-keys#rate-limits). `Retry-After` gives the seconds to wait |
+| 429 | Every account is cooling down, or the key is over a [rate limit](policies-and-keys.md#rate-limits). `Retry-After` gives the seconds to wait |

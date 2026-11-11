@@ -1,63 +1,111 @@
 ---
-title: Subscription accounts
+title: Accounts
 order: 4
 product: xolotl
 ---
 
-A subscription account is a login to a consumer subscription or an API-key plan.
-Xolotl holds several accounts per provider, as a pool, and sends each request to
-one of them.
+An account is a credential that xolotl uses to send requests upstream. Each
+account has a kind. The kind decides where the account serves requests and how
+you add it:
 
-| Provider | Account | How to add it |
-|---|---|---|
-| `codex` | ChatGPT subscription (Codex) | `xolotl auth login codex`, or import `~/.codex/auth.json` |
-| `claude` | Claude subscription (Claude Code) | `xolotl auth login claude`, or import `~/.claude/.credentials.json` |
-| `grok` | Grok Build (xAI) subscription | `xolotl auth login grok` |
-| `opencode-go` | OpenCode Go API key | `xolotl accounts add-key` |
+- **Pool accounts** are logins to a consumer subscription or an API-key plan.
+  Xolotl holds several accounts per provider, as a pool, and sends each request
+  to one of them.
+- **Provider accounts** are API-key upstreams, such as the Anthropic and
+  OpenAI APIs, Vercel AI Gateway, Mistral or a llama.cpp server. You give each one a name, and clients address
+  it by that name: `<name>/<model>` and `/<name>/...`. A provider account is a
+  provider of its own.
 
-You can also add accounts on the web UI's **Add account** screen.
+| Kind | Placement | Account | Web UI (**Add account**) | CLI |
+|---|---|---|---|---|
+| `codex` | pool `codex` | ChatGPT subscription (Codex) | **Codex (ChatGPT)**, or **Import a login** | `xolotl auth login codex` |
+| `claude` | pool `claude` | Claude subscription (Claude Code) | **Claude (Pro / Max)**, or **Import a login** | `xolotl auth login claude` |
+| `grok` | pool `grok` | Grok Build (xAI) subscription | **Grok Build (xAI)** | `xolotl auth login grok` |
+| `opencode-go` | pool `opencode-go` | OpenCode Go API key | **OpenCode Go** | `xolotl accounts add-key` |
+| `anthropic` | provider | Anthropic API key: personal or service account | **Provider account**, kind **Anthropic API** | `xolotl accounts add-provider <name> --kind anthropic` |
+| `openai` | provider | OpenAI API key: project or service account | **Provider account**, kind **OpenAI API** | `xolotl accounts add-provider <name> --kind openai` |
+| `vercel` | provider | Vercel AI Gateway API key | **Provider account**, kind **Vercel AI Gateway** | `xolotl accounts add-provider <name> --kind vercel` |
+| `mistral` | provider | Mistral API key | **Provider account**, kind **Mistral** | `xolotl accounts add-provider <name> --kind mistral` |
+| `openai-compatible` | provider | Any OpenAI-compatible server, such as llama.cpp | **Provider account**, kind **OpenAI-compatible** | `xolotl accounts add-provider <name> --kind openai-compatible --base-url <url>` |
+
+Credentials go straight to OpenBao. Logging in to an account that is already
+in xolotl updates it. It does not add a duplicate. Provider accounts can also
+come from the config file (see
+[`[gateway.providers.<name>]`](configuration.md#gatewayprovidersname)).
 
 ## Add an account
 
+Open **Accounts** in the [web UI](web-ui.md) and select **Add account**. The
+screen has one section per provider.
+
 ### Codex
 
+1. Under **Codex (ChatGPT)**, select **Start device login**.
+2. Open the sign-in page it links, sign in to ChatGPT and enter the code it
+   shows. You can do this on any device.
+3. The screen updates when you finish. The account is saved.
+
+**Use browser sign-in instead** starts the browser flow: approve, then paste
+the `http://localhost:1455/…` URL the browser ends on into the form, and select
+**Finish login**.
+
+With the CLI:
+
 ```sh
-xolotl auth login codex
+xolotl auth login codex             # device code
+xolotl auth login codex --browser   # browser flow: paste the URL the browser ends on
 ```
-
-The CLI prints a URL and a code. Open the URL, enter the code and approve.
-Xolotl waits for the approval and saves the account.
-
-Add `--browser` to use the browser flow instead: open the URL, approve, then
-paste the URL the browser ends on back into the CLI.
 
 ### Claude
 
-```sh
-xolotl auth login claude
-```
+1. Under **Claude (Pro / Max)**, select **Start Claude login**.
+2. Select **Open claude.ai authorization** and approve.
+3. claude.ai shows a code in the form `CODE#STATE`. Paste it into
+   **Authorization code** and select **Finish login**.
 
-Open the URL on claude.ai and approve. The page shows a code in the form
-`CODE#STATE`. Paste it into the CLI.
+With the CLI, `xolotl auth login claude` prints the URL and asks for the code.
 
 Claude subscription accounts serve only the Claude Code API path,
 `/v1/messages`. Xolotl does not translate requests to them from other formats.
 
 ### Grok Build
 
-```sh
-xolotl auth login grok
-```
+1. Under **Grok Build (xAI)**, select **Start device login**.
+2. Open the page it links, sign in to your xAI account and confirm the code.
+3. The screen updates when you finish.
 
-Open the URL, enter the code and approve. You can't import Grok logins.
+With the CLI: `xolotl auth login grok`. You can't import Grok logins.
 
 ### OpenCode Go
+
+1. Under **OpenCode Go**, enter a **Label** (optional) and the **API key**
+   from the OpenCode console.
+2. Select **Add key**.
+
+Add several keys to spread load and limits.
+
+With the CLI:
 
 ```sh
 echo "$OPENCODE_GO_KEY" | xolotl accounts add-key --label personal
 ```
 
 If you leave out the pipe, the CLI asks for the key without echo.
+
+#### Service-account keys
+
+You can add an OpenCode
+[service-account key](https://opencode.ai/docs/console/api) the same way as
+a personal key: under **OpenCode Go**, or with `xolotl accounts add-key`. Both
+are static `oc_sk_...` bearer keys, and xolotl uses them the same way.
+
+- A key can have an expiration. Xolotl can't renew an expired key. Create a new
+  key in the OpenCode console and enter it in **Replace key** on the account's
+  details page in the web UI, so that the account keeps its history.
+- OpenCode says that
+  [service accounts are not covered by Go Teams](https://opencode.ai/docs/console/go).
+  Check which plan pays for a service account's usage before you rely on it.
+- Xolotl has not been tested with a real service-account key.
 
 Every request to OpenCode Go carries a session ID in `x-opencode-session`.
 Xolotl takes it from the client's `x-opencode-session`, `x-claude-code-session-id`
@@ -67,7 +115,114 @@ to keep conversations apart. The same ID keeps the session on one account.
 
 The upstream user agent is `xolotl/<version> (<client user agent>)`.
 
+### Provider accounts
+
+```sh
+echo "$MISTRAL_KEY" | xolotl accounts add-provider mistral-team --kind mistral
+xolotl accounts add-provider llama --kind openai-compatible \
+  --base-url http://llama.example.lan:8080 --no-auth
+```
+
+| Option | Meaning |
+|---|---|
+| `--kind` | `anthropic`, `openai`, `vercel`, `mistral` or `openai-compatible` |
+| `--base-url` | Required for `openai-compatible`. Overrides the default URL of the others |
+| `--no-auth` | The server needs no key. Without it, the CLI reads the key from stdin |
+| `--header Name=value` | An extra static header sent upstream. Repeat it for more |
+
+The name is a model prefix and a path prefix, so the
+[same rules](configuration.md#gatewayprovidersname) as for the config file apply.
+A name that the config file uses is refused. Xolotl stores the account, with
+its key and headers, in OpenBao at `providers/<name>`.
+
+If a key is already stored at `providers/<name>`, for example because you moved
+the provider out of the config file, adding the account without a key keeps
+that key.
+
+```sh
+echo "$NEW_KEY" | xolotl providers set-key mistral-team   # replace the key
+xolotl accounts remove-provider mistral-team              # remove the account and its key
+```
+
+A provider account that a policy names in `providers`, `precedence` or
+`winners` can't be removed: change the policy first. You change and remove
+config-file providers in the config file.
+
+### Anthropic and OpenAI API accounts
+
+These accounts use pay-as-you-go API keys from the Claude Console or the OpenAI
+Platform, not a subscription. They serve the same endpoints as the subscription
+accounts, so a client can use either one:
+
+| Kind | Served natively | Served through translation |
+|---|---|---|
+| `anthropic` | `/v1/messages`, `/v1/messages/count_tokens` | `/v1/responses`, `/v1/chat/completions` |
+| `openai` | `/v1/responses`, `/v1/chat/completions` | `/v1/messages` |
+
+Use a service account key for a shared or automated workload:
+
+- **Anthropic:** a service account key (Claude Console, **API keys**, linked
+  account set to a service account) or a personal key. A key that is not
+  scoped to one workspace needs the workspace in a header:
+  `--header anthropic-workspace-id=wrkspc_...`.
+- **OpenAI:** a project service account key (`sk-svcacct-...`) or a project
+  key. To pick the organization or project of a key that has several, add
+  `--header OpenAI-Organization=org-...` or `--header OpenAI-Project=proj_...`.
+
+```sh
+echo "$ANTHROPIC_KEY" | xolotl accounts add-provider anthropic-team --kind anthropic
+echo "$OPENAI_KEY" | xolotl accounts add-provider openai-team --kind openai \
+  --header OpenAI-Project=proj_abc123
+```
+
+On the web UI, pick the kind **Anthropic API** or **OpenAI API** under
+**Provider account**, and put the headers in **Extra headers**.
+
+Xolotl sends the Anthropic key in `x-api-key`, adds `anthropic-version` when the
+client sends none, and drops the Claude subscription's OAuth beta flag, so a
+Claude Code request works without changes. Request bodies go upstream as the
+client sent them, so prompt cache breakpoints (`cache_control`) and OpenAI's
+`prompt_cache_key` keep working.
+
+A model that a subscription and an API account both serve is named by the
+subscription by default (see [precedence](policies-and-keys.md)). The API
+account's copy stays reachable as `<name>/<model>`. To use the API account when
+the subscription is at its limit, alias the model to both:
+
+```toml
+[aliases]
+"claude-opus-5-5" = ["claude/claude-opus-5-5", "anthropic-team/claude-opus-5-5"]
+```
+
+A 429 or 5xx from the subscription moves the request to the API account. An API
+account bills per token: allow it only in the policies that should spend money.
+
+#### Workload identity federation
+
+An Anthropic or OpenAI account in the config file can authenticate as a service
+account with workload identity federation instead of a stored key. Xolotl reads
+a JWT from your identity provider (for example a Kubernetes projected service
+account token) from a file and exchanges it for a short-lived access token. It
+exchanges again before the token expires. See
+[`workload_identity`](configuration.md#workload-identity).
+
+Set up the identity provider and the service account first:
+
+- **Anthropic:** a federation issuer, a federation rule and a service account in
+  the Claude Console. See Anthropic's Workload Identity Federation guide.
+- **OpenAI:** a Workload Identity Provider and a service account mapping in the
+  OpenAI Platform's organization security settings. See OpenAI's workload
+  identity federation guide. X.509 certificate federation is not supported.
+
 ### Import a CLI login
+
+You can move a login from the Codex CLI (`~/.codex/auth.json`) or Claude Code
+(`~/.claude/.credentials.json`) into xolotl.
+
+1. Under **Import a login**, pick the **Provider**.
+2. Choose the **Credential file** and select **Import**.
+
+With the CLI:
 
 ```sh
 xolotl accounts import codex ~/.codex/auth.json
@@ -79,17 +234,26 @@ xolotl accounts import claude ~/.claude/.credentials.json --label work
 > machine stops working, and if the local CLI refreshes first, the account in
 > xolotl stops working.
 
-Logging in to the same account again updates it. It does not add a duplicate.
-
 ## See your accounts
+
+The **Accounts** screen lists the accounts by provider, with their plan, state,
+usage windows, priority and last use. **Refresh usage** fetches the usage
+windows from the provider now. The details button at the end of a row shows
+the label, cooldown reason, last error, token expiry, reset credits and the
+date it was added.
+
+With the CLI:
 
 ```sh
 xolotl accounts list
 xolotl accounts list --provider codex
+xolotl accounts usage <id>    # fetch the usage windows now
 ```
 
-The list shows each account's ID, provider, label, plan, priority, state and
-usage windows (for example `5h 12%, 7d 40%`).
+The CLI list shows each pool account's ID, provider, label, plan, priority,
+state and usage windows (for example `5h 12%, 7d 40%`). Without `--provider`, a
+second table shows the provider accounts: name, kind, where each is defined
+(`config` or `vault`) and whether its key is stored.
 
 | CLI state | Web UI state | Meaning | What to do |
 |---|---|---|---|
@@ -99,11 +263,18 @@ usage windows (for example `5h 12%, 7d 40%`).
 | `re-login` | Key rejected | An API-key account whose key the provider refused with a 401. It is out of rotation | Replace the key |
 | `re-login` | Refused | An API-key account whose last recorded error is another 4xx | Read the last error. Replace the key, or **Retry** |
 | `UNSAVED` | | A refreshed token could not be written to OpenBao. Xolotl serves from memory and retries every 15 seconds | Fix OpenBao. Do not restart xolotl until the state clears, or the token is lost |
-| `disabled` | Disabled | You disabled it | `xolotl accounts enable <id>` |
-
-`xolotl accounts usage <id>` fetches the usage windows from the provider now.
+| `disabled` | Disabled | You disabled it | **Enable** (`xolotl accounts enable <id>`) |
 
 ## Manage accounts
+
+On the **Accounts** screen:
+
+- **Disable** and **Enable** on a row take the account out of rotation and put
+  it back.
+- In the account's details, set **Priority (higher is used first)**, select
+  **Retry** to clear a cooldown or re-login state, or **Remove** the account.
+
+With the CLI:
 
 ```sh
 xolotl accounts priority <id> 10   # higher priority is used first
@@ -155,7 +326,7 @@ do not need a new login. Then:
    where that is lowest. For example, an account at 10% in its 5-hour window
    and 99% in its 7-day window loses to an account at 40% in both.
 
-Set these in [`[subscription]`](configuration#subscription). A session's
+Set these in [`[subscription]`](configuration.md#subscription). A session's
 [context lock](#context-lock) comes before all of them.
 
 ## When an account fails
@@ -202,7 +373,7 @@ client, which sees an error it would not see without the lock. A success ends th
 count. The third failure in a row (`max_attempts`) breaks the lock and fails over
 in that same request, which then still has its `max_attempts` tries of other
 accounts. To keep failover on every request, turn the lock off with
-`lock_tokens = 0` in [`[sessions]`](configuration#sessions).
+`lock_tokens = 0` in [`[sessions]`](configuration.md#sessions).
 
 The lock belongs to the model name the client asked for. A request in the same
 session for another name, such as a smaller model for a background task, routes
@@ -271,15 +442,16 @@ Xolotl does not redeem credits itself. T3 Code can redeem a Codex credit (see
 After you add, import, reset, enable, disable or remove an account, xolotl asks
 the provider for its model list again. `xolotl models --refresh` and the web
 UI's **Refresh models** control do it at once. See
-[Providers and models](web-ui#models).
+[Models](web-ui.md#models).
 
 ## T3 Code hubs
 
 T3 Code can show your accounts' usage. Add a CLIProxyAPI usage source with the
-URL of xolotl and a client key whose policy has the `management` scope. T3 Code
-shows the Codex and Claude accounts, and the Codex reset credits.
+base URL of xolotl, the same URL your other clients use, and a client key
+whose policy has the `management` scope. T3 Code shows the Codex and Claude
+accounts, and the Codex reset credits.
 
 To redeem a Codex reset credit, T3 Code sends the redemption request to Codex
 through xolotl, which adds the account's token. Then T3 Code asks xolotl to
 reset the account's quota: xolotl clears the account's cooldown and polls its
-usage again. See [Clients](clients#t3-code).
+usage again. See [Clients](clients.md#t3-code).

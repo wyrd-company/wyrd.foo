@@ -16,8 +16,9 @@ credentials stay in OpenBao, not in the agents' containers.
   subscription accounts, and add OpenCode Go API keys. Xolotl keeps the OAuth
   tokens fresh, spreads requests over several accounts, and moves to the next
   account when one reaches its quota.
-- **AI gateway.** Send requests to Vercel AI Gateway, Mistral and
-  OpenAI-compatible servers such as llama.cpp with keys that xolotl injects.
+- **AI gateway.** Send requests to the Anthropic and OpenAI APIs, Vercel AI
+  Gateway, Mistral and OpenAI-compatible servers such as llama.cpp with keys
+  that xolotl injects, or with workload identity federation.
 - **One model namespace.** Clients send a model name. A policy decides which
   provider serves it. Xolotl translates between the Anthropic Messages, OpenAI
   Responses and Chat Completions formats, so Claude Code can use a Codex model
@@ -40,7 +41,7 @@ Claude Code, Codex CLI, Grok CLI, SDKs, MCP clients, T3 Code
         │  client key
         ▼
      xolotl ── policy ──┬── subscription accounts: codex, claude, grok, opencode-go
-        │               ├── gateway providers: vercel, mistral, openai-compatible
+        │               ├── provider accounts: anthropic, openai, vercel, mistral, openai-compatible
         │               └── /mcp ── upstream MCP servers
         ├── OpenBao: every secret
         ├── SQLite: runtime state, no secrets
@@ -49,16 +50,13 @@ Claude Code, Codex CLI, Grok CLI, SDKs, MCP clients, T3 Code
 
 ## Get started
 
-1. [Install](install) xolotl and prepare OpenBao.
-2. [Configure](configuration) the server.
-3. Add [subscription accounts](accounts) or gateway provider keys.
-4. Write a [policy and issue a client key](policies-and-keys).
-5. [Connect your clients](clients).
+1. [Install](install.md) xolotl and prepare OpenBao.
+2. [Configure](configuration.md) the server.
+3. Set up [sign-in to the web UI](web-ui.md#set-up-sign-in). You do the next
+   steps on its screens. Each page also gives the CLI commands.
+4. Add [accounts](accounts.md): subscriptions, or API-key providers.
+5. Write a [policy and issue a client key](policies-and-keys.md).
+6. [Connect your clients](clients.md).
 
-Xolotl runs as a single instance. Read [Known limitations](limitations) before
+Xolotl runs as a single instance. Read [Known limitations](limitations.md) before
 you depend on it.
-
-## Design notes
-
-How xolotl is built, and why, is in the
-[design notes](https://github.com/wyrd-company/xolotl/tree/main/docs/design).

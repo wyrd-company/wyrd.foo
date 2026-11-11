@@ -9,7 +9,29 @@ belongs to a policy. The policy decides what the key can do.
 
 ## Write a policy
 
-A policy is a TOML or JSON file:
+1. Open **Policies** in the [web UI](web-ui.md) and select **New policy**.
+2. Enter a **Name** and a **Description**, and pick the **Scopes**. The default,
+   **proxy**, lets keys use the LLM endpoints. Add **mcp (MCP gateway)** if the
+   keys use MCP servers. See [Scopes](#scopes).
+3. Under **Providers and accounts**, pick the providers the keys can use and,
+   for each subscription provider, the accounts that serve them.
+4. Set the models, the MCP servers and the rate limits. Each section folds
+   away.
+5. Select **Create policy**. Later changes take effect when you select
+   **Save policy**.
+
+The editor warns when a subscription provider has no accounts: the provider
+looks allowed, but its requests get a 403.
+
+The model list has two modes. **Rules** edits the rules in order, the default
+for other models, and the aliases. **Effective models** shows every model of
+the allowed providers as the policy decides it, with a switch per model, inline
+renames, the winner of each shared name, and the state of the accounts the
+policy uses. See [Policy model list](web-ui.md#policy-model-list).
+
+### With the CLI
+
+A policy is a TOML or JSON file, with the same fields as the editor:
 
 ```toml
 name = "devcontainer"
@@ -52,19 +74,13 @@ xolotl policies get devcontainer
 xolotl policies delete devcontainer   # refused while keys use it
 ```
 
-The web UI's policy editor has the same fields. It lists the providers with
-the accounts of each subscription provider. Its model list has two modes:
-**Rules** edits the rules in order, the default for other models, and the
-aliases; **Effective models** shows every model of the allowed providers as the
-policy decides it, with a switch per model, inline renames, the winner of each
-shared name, and the state of the accounts the policy uses. A model's switch
-writes `models`.
+A model's switch in the editor writes `models`.
 
 | Field | Meaning |
 |---|---|
 | `name` | Lowercase letters, digits, `-` and `_`, at most 63 characters |
 | `description` | Free text |
-| `providers` | Providers the key can use: `claude`, `codex`, `grok`, `opencode-go`, gateway provider names, or `*` for all |
+| `providers` | Providers the key can use: `claude`, `codex`, `grok`, `opencode-go`, provider account names, or `*` for all |
 | `accounts` | Per subscription provider, the accounts that serve the keys, or `["*"]` for every account, also accounts added later. See [Accounts](#accounts) |
 | `rules` | Allow and deny globs on `model` or `provider/model`, in order: `{ allow = "…" }` or `{ deny = "…" }`. The first that matches decides. See [Model names](#model-names) |
 | `models` | `provider/model` → `true` or `false`, for models no rule matches |
@@ -75,7 +91,7 @@ writes `models`.
 | `aliases` | Extra names. Each maps to one `provider/model`, or to a list tried in order |
 | `scopes` | What the key can do. Default `["proxy"]` |
 | `mcp_servers` | MCP servers the key can use through `/mcp`, or `*` |
-| `allow_tools`, `deny_tools` | Globs on `tool` or `server/tool`. Deny wins. See [MCP gateway](mcp-gateway#policies) |
+| `allow_tools`, `deny_tools` | Globs on `tool` or `server/tool`. Deny wins. See [MCP gateway](mcp-gateway.md#policies) |
 | `key_policies` | With the `keys` scope, the policies whose client keys the key can manage. See [Issue keys from a script](#issue-keys-from-a-script) |
 | `limits` | Request and token limits on the LLM endpoints, also per provider and per account. See [Rate limits](#rate-limits) |
 
@@ -275,9 +291,19 @@ Counters are kept in memory and rebuilt from the request log of the last
 shows it on the **Policies** and **Client keys** screens. The **Policies**
 screen also shows the consumption of each provider and account limit. The metrics are
 `xolotl.limit.consumption` and `xolotl.limit.rejections` (see
-[Telemetry](telemetry)).
+[Telemetry](telemetry.md)).
 
 ## Issue a client key
+
+1. Open **Client keys** in the web UI.
+2. Under **Issue a key**, choose the **Policy**, enter a **Client name** (for
+   example `laptop`) and a **Description**, and pick when it **Expires**.
+3. Select **Issue key**.
+
+The screen then shows the `bao` command the client reads the key with, and the
+OpenBao policy to grant the client. It never shows the key.
+
+With the CLI:
 
 ```sh
 xolotl keys issue --policy devcontainer --name laptop --ttl 90d \
@@ -296,13 +322,23 @@ path "secret/data/xolotl/keys/devcontainer/laptop" { capabilities = ["read"] }
 export XOLOTL_API_KEY=$(bao kv get -field=api_key secret/xolotl/keys/devcontainer/laptop)
 ```
 
-The web UI's **Client keys** screen shows the path, the `bao` command and the
-OpenBao policy for each key.
+The **Client keys** screen shows the OpenBao path of each key.
 
 A key issued on one instance works on another at once: an unknown key makes
 xolotl reload keys from OpenBao, at most every 10 seconds.
 
 ## Manage keys
+
+The **Client keys** screen lists each key with its state, OpenBao path, last
+rotation, expiry, requests in the last 7 days and consumption against the
+policy's rate limits. On a row:
+
+- **Rotate…** writes a new key to the same path. Pick a **Grace period**, during
+  which the old key keeps working, so the client can pick up the new one.
+- **Disable** and **Enable** stop and restart the key.
+- **Revoke** stops the key at once and destroys every stored version of it.
+
+With the CLI:
 
 ```sh
 xolotl keys list
@@ -410,6 +446,14 @@ INFO issued client key client=workspaces/a actor="provisioner/robot"
 
 ## Usage by client
 
+The web UI's **Usage** screen shows requests, errors and tokens grouped by
+client, account, provider or model. Select a row to narrow the view to it. The
+view then groups by the next of model, account, client and provider that is not
+shown or narrowed yet. Each filter shows as a chip that you can remove, and the
+URL keeps the filters. See [Usage](web-ui.md#usage).
+
+With the CLI:
+
 ```sh
 xolotl usage --group-by client --since 7d
 ```
@@ -427,8 +471,3 @@ xolotl usage --group-by client --account ""   # gateway requests (no account)
 An empty value matches rows that have no value there: `--client ""` is the
 bootstrap admin token, `--account ""` gateway requests, `--model ""` requests
 without a model.
-
-On the web UI's **Usage** screen, select a row to narrow the view to it. The
-view then groups by the next of model, account, client and provider that is not
-shown or narrowed yet. Each filter shows as a chip that you can remove, and the
-URL keeps the filters.

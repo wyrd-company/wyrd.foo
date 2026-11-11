@@ -5,7 +5,8 @@ product: xolotl
 ---
 
 `xolotl serve` runs the server. Every other command calls a running server's
-admin API. `xolotl <command> --help` shows every option.
+admin API, with the bootstrap admin token. The [web UI](web-ui.md) does the
+same; the task pages show both. `xolotl <command> --help` shows every option.
 
 ## Connection options
 
@@ -18,7 +19,7 @@ These options work on every command except `serve` and `check-config`.
 | `--json` | | off | Print raw JSON |
 
 Commands that read a secret (`providers set-key`, `accounts add-key`,
-`mcp set-secret`) read it from stdin, or ask for it without echo when stdin is
+`accounts add-provider`, `mcp set-secret`) read it from stdin, or ask for it without echo when stdin is
 a terminal.
 
 Durations are a number with `s`, `m`, `h`, `d` or `w`, for example `90d`.
@@ -36,7 +37,7 @@ Durations are a number with `s`, `m`, `h`, `d` or `w`, for example `90d`.
 | Command | Does |
 |---|---|
 | `xolotl auth login <codex\|claude\|grok> [--browser]` | Log in a subscription account. `--browser`: Codex browser flow instead of the device code |
-| `xolotl accounts list [--provider <p>]` | Accounts with state, plan, priority and usage windows |
+| `xolotl accounts list [--provider <p>]` | Pool accounts with state, plan, priority and usage windows. Without `--provider`, also provider accounts |
 | `xolotl accounts import <codex\|claude> <file> [--label <l>]` | Import a CLI credential file |
 | `xolotl accounts add-key [--provider opencode-go] [--label <l>]` | Add an API-key account |
 | `xolotl accounts priority <id> <n>` | Set the priority. Higher is used first |
@@ -44,14 +45,16 @@ Durations are a number with `s`, `m`, `h`, `d` or `w`, for example `90d`.
 | `xolotl accounts reset <id>` | Clear the cooldown and the re-login state |
 | `xolotl accounts usage <id>` | Fetch the usage windows from the provider now |
 | `xolotl accounts remove <id>` | Remove the account |
+| `xolotl accounts add-provider <name> --kind <k> [--base-url <url>] [--no-auth] [--header Name=value]...` | Add a provider account. `<k>` is `anthropic`, `openai`, `vercel`, `mistral` or `openai-compatible` |
+| `xolotl accounts remove-provider <name>` | Remove a provider account added at runtime, with its key |
+| `xolotl providers set-key <name>` | Store a provider account's API key in OpenBao |
 
-See [Subscription accounts](accounts).
+See [Accounts](accounts.md).
 
-## Gateway providers and models
+## Models
 
 | Command | Does |
 |---|---|
-| `xolotl providers set-key <name>` | Store a gateway provider's API key in OpenBao |
 | `xolotl models [--refresh]` | The models each provider serves. `--refresh` discovers them again from every provider first |
 
 ## Policies and keys
@@ -69,7 +72,7 @@ See [Subscription accounts](accounts).
 | `xolotl keys enable\|disable <p>/<n>` | Turn a key on or off |
 | `xolotl keys revoke <p>/<n>` | Revoke the key and destroy its earlier versions. Safe to repeat on a key that is already revoked or gone |
 
-See [Policies and client keys](policies-and-keys).
+See [Policies and client keys](policies-and-keys.md).
 
 ## MCP gateway
 
@@ -86,7 +89,7 @@ See [Policies and client keys](policies-and-keys).
 | `xolotl mcp logout <server>` | Forget the server's OAuth tokens |
 | `xolotl mcp usage [--group-by server\|tool\|client] [--since 24h]` | Tool calls, errors and average latency |
 
-See [MCP gateway](mcp-gateway).
+See [MCP gateway](mcp-gateway.md).
 
 ## Usage
 

@@ -60,11 +60,11 @@ xolotl --version
 ```
 
 To use it as the CLI of a server on another machine, set `XOLOTL_URL` and
-`XOLOTL_ADMIN_TOKEN`. See [CLI reference](cli#connection-options).
+`XOLOTL_ADMIN_TOKEN`. See [CLI reference](cli.md#connection-options).
 
 ## Build from source
 
-You need Rust 1.88 or later, and Node 22 with pnpm for the web UI.
+You need Rust 1.89 or later, and Node 22 with pnpm for the web UI.
 
 ```sh
 git clone https://github.com/wyrd-company/xolotl.git && cd xolotl
@@ -93,7 +93,7 @@ bao write -f -field=secret_id auth/approle/role/xolotl/secret-id
 ```
 
 Give the role ID and secret ID to xolotl in `XOLOTL_VAULT_ROLE_ID` and
-`XOLOTL_VAULT_SECRET_ID`, or in files (see [Configuration](configuration)).
+`XOLOTL_VAULT_SECRET_ID`, or in files (see [Configuration](configuration.md)).
 
 Then store the bootstrap admin token. The CLI uses it:
 
@@ -101,7 +101,7 @@ Then store the bootstrap admin token. The CLI uses it:
 bao kv put secret/xolotl/admin token="$(openssl rand -base64 32)"
 ```
 
-The [Configuration](configuration#openbao-paths) page lists every path xolotl
+The [Configuration](configuration.md#openbao-paths) page lists every path xolotl
 reads and writes.
 
 ## Run
@@ -122,7 +122,16 @@ when it starts. It does not start if it can't reach OpenBao.
 | `GET /healthz` | Liveness. Always 200 while the process runs. |
 | `GET /readyz` | Readiness. Checks SQLite and OpenBao. |
 
+## Open the web UI
+
+The web UI is at the server's root, for example `http://xolotl.example.lan:8317/`.
+It signs in with OpenID Connect: [set up sign-in](web-ui.md#set-up-sign-in)
+first. Until then, it says that sign-in is not configured.
+
 ## Point the CLI at the server
+
+The CLI does the same as the web UI, with the bootstrap admin token. Use it in
+scripts, and when the identity provider is down.
 
 ```sh
 export XOLOTL_URL=http://xolotl.example.lan:8317     # default http://127.0.0.1:8317
@@ -130,4 +139,4 @@ export XOLOTL_ADMIN_TOKEN=$(bao kv get -field=token secret/xolotl/admin)
 xolotl accounts list
 ```
 
-Next: [add accounts](accounts), or set up the [web UI](web-ui).
+Next: [add accounts](accounts.md).
