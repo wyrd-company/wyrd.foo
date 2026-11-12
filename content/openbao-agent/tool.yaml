@@ -8,12 +8,12 @@ release-unit: openbao-agent
 owner: wyrd-company/devcontainers
 licence: MIT
 release:
-  version: 2.1.0
-  date: 2026-10-31T20:38:08.000Z
+  version: 2.1.1
+  date: 2026-11-12T05:07:57.000Z
   notes: |-
-    ### Features
+    ### Fixes
 
-    - When the Ansible Feature is installed, the services of this Feature start after its `ansible-setup` oneshot succeeds. Without Ansible, startup does not change. The Feature adds the Ansible Feature to `installsAfter`.
+    - The README lists the Vector Feature among the Features that load a secret file.
 name: OpenBao Agent
 description: Installs OpenBao and runs OpenBao Agent as an s6-overlay service.
-version: 2.1.0
+version: 2.1.1

@@ -1,0 +1,21 @@
+kinds:
+  - kind: devcontainer-feature
+    ref: ghcr.io/wyrd-company/devcontainers/vector:1
+source: src/features/vector
+category: Dev Containers
+logo: logo.svg
+release-unit: vector
+owner: wyrd-company/devcontainers
+licence: MIT
+release:
+  version: 1.0.0
+  date: 2026-11-12T05:07:57.000Z
+  notes: |-
+    Graduates from `0.x` to `1.0.0`.
+
+    ### Breaking
+
+    - Adds the Vector Feature. Vector runs as an s6-overlay service and loads, reloads and unloads pipeline files in `/etc/vector/conf.d` without a restart. Pipelines read secrets as `SECRET[environment.NAME]`, including values from the OpenBao Agent secret file.
+name: Vector
+description: Installs Vector and runs it as an s6-overlay service that hot-loads and unloads pipeline files from a well-known directory.
+version: 1.0.0
