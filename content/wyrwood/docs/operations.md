@@ -32,14 +32,39 @@ behind a reverse proxy that terminates TLS.
 | **Account → Security** | Inspect sign-in details and end operator sessions. |
 | **Report an issue** | Open the GitHub form for a new Wyrwood issue in a new tab. The link sends no data about your site. |
 
+On a phone, or in a window narrower than 792 pixels, the navigation is a bar
+at the top of each page. Select **Menu** to show the destinations, their
+pending counts, the OpenBao status, **Report an issue**, and **Account**.
+Select **Menu** again, or press Escape, to hide them. Each page opens with the
+menu closed, so the page starts in the first screen.
+
+![Open navigation menu at phone width](assets/web-phone-menu.png)
+
 Follow [Getting started](getting-started.md) for agent approval, policy
 creation, and container binding with screenshots.
 
 ![OpenBao keys page with Transit keys and SSH-engine roles](assets/web-keys.png)
 
-Open **Account** at the bottom of the sidebar to select **Security** or
-**Sign out**. The account button shows the signed-in operator. Use the arrow
-keys to move between menu items and Escape to close the menu.
+When a list on **OpenBao keys** is incomplete, the page says why above the
+lists:
+
+| Message | Meaning |
+| --- | --- |
+| **OpenBao did not answer.** | The controller could not reach OpenBao, or the request timed out. Agents keep serving containers. |
+| **Transit keys could not be listed: permission refused.** | OpenBao refused the controller's list of the Transit mount. Check the `list` capability on `<transit mount>/keys` in the controller policy. SSH roles have the same message. |
+| **Transit key `name` could not be read: permission refused.** | OpenBao listed the key but refused to read it. The other keys stay listed. Check the `read` capability on `<transit mount>/keys/name`. |
+
+Another category, such as **OpenBao did not answer**, **not found**, or
+**OpenBao answered with an error**, can take the place of **permission
+refused**. When a key read gets no answer, the keys read before it stay listed
+and no further key is read. Imported Transit keys are listed
+like generated keys. The policy editor's **SSH identities** tab shows the same
+Transit messages, and keeps saved selections.
+
+Open **Account** at the bottom of the sidebar, or of **Menu** on a phone, to
+select **Security** or **Sign out**. The account button shows the signed-in
+operator. Use the arrow keys to move between menu items and Escape to close
+the menu.
 
 ![Account menu with Security and Sign out](assets/web-account-menu.png)
 
@@ -78,6 +103,9 @@ the transition is pending. The old OpenBao policy stays until the controller
 finishes. The controller retries while the work is pending, with no action from
 you and without a restart. If OpenBao refuses the new policy before the rename
 is recorded, the policy keeps its name.
+
+If you submit the current name, nothing changes. The policy page opens and says
+that the name did not change.
 
 A page opened before a save or an earlier rename cannot rename the policy:
 reload it and try again.
@@ -139,13 +167,50 @@ mount the directory on its first start. The agent revokes the token when the
 container goes. It gets a new token from the controller when a container with
 that name appears, usually within seconds of `docker create`. Until then,
 requests fail: `vault.sock` answers with status 503 and the error `no-token`.
-A binding on another key keeps its directory but not its sockets.
+A binding on another key keeps its directory but not its sockets, unless it has
+a directory name: see
+[Bind a container before it exists](#bind-a-container-before-it-exists).
 
 **Add binding** lists the reported containers that have no binding, with the
 same filters. Every container an agent reports is on one of these two pages.
 **Add binding** on a row, or a container's name, opens its bind screen. Links to
 the former `/containers` address go to **Bindings** and keep their agent filter,
 text filter, and sort. A container selected by a former link is not kept.
+
+### Bind a container before it exists
+
+Select **Bind by typed key** on **Add binding** to bind a container that no
+agent reports yet. On the **Key and policies** tab:
+
+1. Choose the **Agent**. Only approved agents are listed.
+2. Choose the **Key kind** and type the **Key value**: the local folder for a
+   dev container, `project/service` for a Compose service, or the container
+   name.
+3. For a key kind other than `name`, type the **Directory name**. The agent
+   creates this consumer directory and its sockets under its consumers root as
+   soon as you save. It is required when no agent reports a container with this
+   key. Use letters, digits, `.`, `_`, and `-`, up to 255 bytes, starting with a
+   letter or digit. A `name` key needs none: the container name names the
+   directory.
+4. Select the policies, and on **Settings** the access group: the choices are
+   the groups the selected agent reports. Then select **Bind policies**.
+
+![Bind by typed key on the Key and policies tab](assets/web-bind-typed.png)
+
+Mount `<consumers root>/<directory name>` into the container at the policy's
+mount target, then create and start the container with the key: for a Compose
+key, its project and service labels. Every container that the binding governs
+uses this directory, also when its name differs. Replicas of a Compose service
+share this directory, its sockets, and the binding's token. The agent gets a
+token when it observes the container, and revokes it when the container is
+removed; the directory and sockets stay. Another binding on the same agent
+cannot use the directory name, and the binding keeps it until you unbind. The
+**Status** tab and the binding's facts show the directory name.
+
+`wyrwood bind` takes no directory name. Its bind of a key other than `name`, for
+a container no agent reports, is stored and waits: the agent prepares nothing
+until it reports a container with the key, and then names the directory after
+that container.
 
 The policy and binding screens keep their actions at the top and split their
 content into tabs. A tab that holds something you should read says **Needs
@@ -186,10 +251,11 @@ their sockets now:
 
 The tab also shows each consumer directory with the access group applied to it
 and the sockets that listen, and the last login or renewal error. A `name`
-binding with no container shows **Waiting** with its prepared directory and
-sockets, so a wrong access group shows here before the container exists. A
-recreate that removed the container and could not create it again shows
-**Failed** until a container with the key returns.
+binding, or a binding with a directory name, with no container shows
+**Waiting** with its prepared directory and sockets, so a wrong access group
+shows here before the container exists. A recreate that removed the container
+and could not create it again shows **Failed** until a container with the key
+returns.
 
 ## After a host reboot
 
@@ -262,8 +328,8 @@ the grant:
 
 | Grant | What it means |
 | --- | --- |
-| **Agents** | The agents this key can read and bind on. Use `*` for all. |
-| **Policies** | The policies this key can read, bind, and write. Use `*` for all. |
+| **Agents** | The agents this key can read and bind on. Select approved agents, or **All agents** for `*`. Type the names of agents that are not approved yet. |
+| **Policies** | The policies this key can read, bind, and write. Select stored policies, or **All policies** for `*`. Type the names of policies the key will create. |
 | **Read** | List and read policies and bindings inside the grant. |
 | **Bind** | Create and remove bindings inside the grant. |
 | **Policy write** | Create and change policies inside the grant. |
@@ -274,6 +340,11 @@ a policy that a binding outside its grant holds, since the change reaches that
 binding. Together, **Bind** and **Policy write** can reach whatever the
 controller's OpenBao namespace can grant, so give both only to a key you would
 trust with that.
+
+Below the choices, **What this key can do** states for each action whether the
+key can do it, and on which agents and policies. It changes as you choose. Read
+it before you select **Approve key**, and compare it with what the script needs:
+a grant cannot be changed after approval.
 
 ```bash
 wyrwood policy put sample-policy --file policy.hcl

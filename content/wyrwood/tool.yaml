@@ -1,6 +1,6 @@
 name: wyrwood
-version: 0.6.1
-docs-version: 0.1.4
+version: 0.7.0
+docs-version: 0.1.5
 tagline: OpenBao-backed secrets and signing for containers, with nothing stored inside.
 blurb: "A controller that owns policy and an agent on each Docker host that gives every bound container a directory of sockets: an OpenBao endpoint carrying the container's own token and an SSH agent whose keys live in OpenBao."
 status: preview
@@ -86,6 +86,9 @@ media:
   - src: assets/web-add-binding.png
     caption: Reported containers that have no binding.
     alt: The add binding screen listing reported containers with no binding.
+  - src: assets/web-bind-typed.png
+    caption: Binding a container by typed key before it exists.
+    alt: The bind screen for a typed key with an agent, a Compose key, and a directory name entered.
   - src: assets/web-bindings.png
     caption: The bindings list with a binding and its container.
     alt: The bindings list with a binding whose container meets its contract.
@@ -94,7 +97,7 @@ media:
     alt: The keys page listing OpenBao Transit keys and SSH-engine roles.
   - src: assets/web-operator-keys.png
     caption: Operator keys, one approved with its grant and one pending.
-    alt: The Operator keys screen listing an approved key with its agents, policies, and actions, above a pending key with a form to set its grant.
+    alt: The Operator keys screen listing an approved key with its agents, policies, and actions, above a pending key with agent, policy, and action choices and a summary of what the key can do.
   - src: assets/web-events.png
     caption: Controller events, newest first.
     alt: The events page listing controller events with the newest first.
@@ -118,13 +121,69 @@ owner: wyrd-company/wyrwood
 licence: Apache-2.0
 docs-path: docs/user
 release:
-  version: 0.6.1
-  date: 2026-11-03T15:58:36.000Z
-  url: https://github.com/wyrd-company/wyrwood/releases/tag/0.6.1
+  version: 0.7.0
+  date: 2026-11-12T15:36:33.000Z
+  url: https://github.com/wyrd-company/wyrwood/releases/tag/0.7.0
   notes: |+
     ## Changelog
-    * 6a93801c368e30ff5d65097a8171690396788a70 chore(release): prepare Wyrwood 0.6.1 and docs 0.1.4
-    * 27ebe8473f506c07691614c56e3120fd3563c8b7 ci: build the controller image on every pull request
-    * 20a3ce82b5cf1921a613f39970884c2fd5717197 docs: keep the product page within the publisher's highlight limit
-    * c1114483da184b51dd58a0346a64b9b71b05bf6f fix(image): copy the operator package into the image build
+    * 755ec446618af17558100c6e80c3c52ccbc92fa9 chore(deps): align local GoReleaser runs with v2.20.1
+    * d90f594eb6241dec441b416b43afc05fe1b05c7c chore(deps): lock file maintenance
+    * aeb8afcaa32f45feae4a518955d59718d0864f77 chore(deps): record the go-jose 4.1.9 key set change
+    * 61160d36d78b4e552adc423176c4eb79cb97f5f1 chore(deps): tidy go.sum after the go-jose 4.1.9 update
+    * ffbf4880a4acfa3ec0d17666f51b12cfe7ce70bd chore(deps): tidy go.sum after the golang.org/x/mod 0.43.0 update
+    * 9928edcef4ad53bbe8d74c8d91cd3f9a9b7399e8 chore(deps): tidy go.sum after the golang.org/x/oauth2 0.38.0 update
+    * 59be5af47caec6236084370b6c411409aa4bb5c5 chore(deps): tidy go.sum after the golang.org/x/sys 0.50.0 update
+    * d2ffbbf1c682d3d94614d46edf2f5ae4ea0ba9fe chore(deps): tidy go.sum after the modernc.org/sqlite 1.62.0 update
+    * 62890762bc4e51a02e99382d42506c7aa2191593 chore(deps): update dependency @testing-library/user-event to v14.6.9
+    * d2dd51e7fd17322fff67e8fa62ee97dea916b81b chore(deps): update dependency @vitejs/plugin-react to v6.3.0
+    * 9fe80e700ba0a2486b749e716d3d37fe0487695a chore(deps): update dependency goreleaser/goreleaser to v2.20.1
+    * b47f3e2523bec4b9879447d9a342672ecc4630b3 chore(deps): update dependency jsdom to v31
+    * 49e6232ef91ab147b3c7cf31f38f08da238458ac chore(deps): update dependency prettier to v3.10.0
+    * 8c1ab3e56f50865efbd0fac7bd3a4ee27b887120 chore(deps): update dependency rumdl to v0.3.3
+    * 977471d863546f1790ac0f55c9f08d5cee96c59d chore(deps): update dependency ryl to v0.29.0
+    * e2870840d9d0491c4666811eed8b531548175b57 chore(deps): update dependency vite to v8.3.8
+    * 4c4f32c5c31ce75b8148609975f1db813d74c76e chore(deps): update dependency vitest to v5.1.0
+    * 17a0188b2963334aaba0943dea4a3382baceda9f chore(deps): update golang docker tag to v1.27.4
+    * 59f9f3a4cee73dcea1ada4a639ded70ad1651e8c chore(deps): update pnpm to v12.18.0
+    * 23f3cb77659cbc899b08f7a5969b3ff738b5d121 chore(deps): update tailwindcss monorepo to v4.3.5
+    * 1c04714cbc36ae39750e9724a9da57538f1f59d5 chore(intent): record the schema 5 and directory compatibility break
+    * 572ec95d97d32004618d86fb61c99959c69e00ab chore(release): prepare Wyrwood 0.7.0 and docs 0.1.5
+    * 518ced267e116559b86406575ea12828b732758b chore: record the operator key grant choices intent
+    * f4667dba4bcaa96ab8065dd90963e29138c81d24 chore: start the next Wyrwood release epic
+    * ca2c36c821e1f3039d2cfc2f3eec0f035b862dfe ci: check docs.yml with the pinned publisher on pull requests
+    * 69cffb2c75c9574ae056e90bec60389191408091 ci: fetch tags for the docs publisher check
+    * 417b8754479442190801c6c6d061717c0fdcbda6 docs(install): state what a 0.6.1 controller and agent do with this release
+    * 1e60a41a6fe3ae9808dfe6b0cd8e8d1c7e49a183 docs: describe binding a key that is not name before its container exists
+    * fc1217d63298967cff408db153b2675ffef2013a docs: describe operator key grant choices and the grant summary
+    * 6cf3cb30a11b52f87c6914e681a65308b2823df3 docs: describe the one row of tabs at phone width
+    * 93b53c4ae8ca5c082318d16b978d95532416230c docs: refresh screenshots after keeping keys read before an unanswered read
+    * 2736c02050b14d610c5b2ccb2e199cb2bc8ee398 docs: refresh screenshots after the typed-key access group change
+    * 9d710a6c7fcbe40d6b864f37d2bb53fe95a6718f docs: refresh screenshots for Transit key listing problems
+    * dc97c0b3c665c464f6d6814652c832e6e62e984b docs: refresh screenshots for binding by typed key
+    * ed1a8c26c042cd9a90c6e226743a026a1d65c1c1 docs: refresh screenshots for the integrated epic changes
+    * b44386a369836214fbff4953b7d9cd1788248862 docs: refresh screenshots for the integrated epic changes
+    * 77332bf90b55d0d95eee6c0d3631a5636f66ba24 docs: refresh screenshots for the one row of tabs
+    * 465fd95a292c29ad7b32f860ce9a7affb94a3dbf docs: say that Compose replicas share a typed binding's directory
+    * 8c5d64f3972bafc538d5635e80d6bea41b194a57 feat(agent): serve a binding's containers through its stored directory
+    * 66246cdefcba8d121fbf24947c0516da6ab06f28 feat(controller): store a directory name on a binding whose key is not name
+    * d933e61ffdb26969dcaf3782ad3eaf2c9249b528 feat(web): add a binding by typed key from Add binding
+    * 656c7375471e5572430bb16376d18f434e1ea085 feat(web): approve operator keys with name choices and a grant summary
+    * 78048a03067cb05173b10c03e2b5e5b091528812 feat(web): collapse the navigation into a menu at phone width
+    * 1d252c0a7887c7758292b142116bef10c4431b7e fix(deps): update module github.com/go-jose/go-jose/v4 to v4.1.9
+    * 44a20ba4ff5be89701adcac820bd9dceea922d54 fix(deps): update module golang.org/x/mod to v0.43.0
+    * 53ba6697bb3f68dac8765575230e2cb7300cfdee fix(deps): update module golang.org/x/oauth2 to v0.38.0
+    * ddc62024b645d285806a2108b55418b7456b6eed fix(deps): update module golang.org/x/sys to v0.50.0
+    * a1c6f7ac9ab973df69b2981620968f975786d1d1 fix(deps): update module modernc.org/sqlite to v1.62.0
+    * 8cc0a3d33c6c232756bfe7552d15f4d62920fcb2 fix(openbao): keep the Transit keys read before an unanswered read
+    * a69f895008d946c6a261466b42fc7f4c3306b9bc fix(web): give the typed-key text inputs the 44 px control height
+    * a1cd91214bc4458f272985ea0e9aa91379ee455b fix(web): keep the screen tabs in one row at phone width
+    * 5f07582376168eeaf643eab6c4302189e877514a fix(web): list Transit keys when the mount holds an imported key
+    * 279e9b29aa9c7583190e60a309f6da4e6007a913 fix(web): offer the selected agent's access groups on the typed-key form
+    * 7d7285cd27beb9626a2aad4c2cfc81770d5a540b fix(web): refuse in the grant summary what approval refuses
+    * fd90e8928505a31e71fe2060934fab9c24692e13 fix(web): say so when a rename keeps the current name
+    * 4ab9b9f9eba56e199d2efaa5307e0137b514f630 test(agent): recreate and start a container through its binding's directory
+    * 0fe01eb742b9be6eb6c0a85223b956a880e03bbe test(agent): wait for the binding-retired event
+    * 0bcc319e894c481579dc5e8d90e6b0a4cac4ddfd test(controller): a binding change keeps its directory name
+    * 260ea295601a83015008907dd65c5ef33f843bea test(integration): read a secret through a directory bound before its container
+    * e0d3f85071184bc3c17e7c7f365c162c1083dfeb test(web): cover an unanswered SSH role list on the keys page
 
