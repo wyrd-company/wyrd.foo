@@ -38,7 +38,9 @@ The installer verifies the release archive against the release's
 
 ## Configuration
 
-The Feature writes a starter configuration to `/etc/trowel/config.yml` with
+The Feature writes a starter configuration to `/etc/trowel/config.yml`, and
+creates an empty `/etc/trowel/conf.d` for
+[snippets](/docs/trowel/configuration#snippets), with
 one webhook, `POST /hooks/example`, that publishes to `trowel.example`. A
 JetStream stream must cover that subject before publishes succeed. Trowel
 exits when NATS is unreachable, and s6 restarts it until NATS is up.
@@ -54,7 +56,8 @@ Replace the starter configuration by bind-mounting a directory that holds a
 }
 ```
 
-Trowel reloads `config.yml` when it changes. Mount the directory rather than
+A `conf.d` directory in the mounted directory holds its snippets. Trowel
+reloads `config.yml` and the snippets when they change. Mount the directory rather than
 the file: an editor that saves by replacing the file leaves a single-file bind
 mount showing the old file until the container is recreated, and neither a
 reload nor a service restart sees the new one.
@@ -88,10 +91,22 @@ template {
 Trowel's own `*_vault` references work in a dev container too; see
 [Secrets](/docs/trowel/secrets).
 
+## Ansible
+
+With the [Ansible](https://www.ansible.com) Feature,
+`ghcr.io/wyrd-company/devcontainers/ansible`, installed in the same dev
+container, Trowel starts only after the Feature's `ansible-setup` s6-rc oneshot
+succeeds, so Ansible can provision `/etc/trowel` and the secret file first. If
+`ansible-setup` fails, Trowel does not start. Trowel's Feature installs after
+Ansible's and adds the dependency only when the `ansible-setup` service exists;
+without the Ansible Feature, Trowel starts as before. The dependency does not
+depend on the OpenBao Agent Feature, and the container environment, such as the
+Vault address and SSH agent socket variables, still reaches Trowel.
+
 ## Installed files
 
 | Path | Purpose |
 | --- | --- |
 | `/usr/local/bin/trowel` | The binary. |
 | `/usr/local/bin/trowel-service` | Launcher that loads the secret file and runs `trowel -config /etc/trowel/config.yml`. |
-| `/etc/s6-overlay/s6-rc.d/trowel` | The s6 longrun, in the `user` bundle. |
+| `/etc/s6-overlay/s6-rc.d/trowel` | The s6 longrun, in the `user` bundle. It depends on `ansible-setup` and `openbao-secrets` when those services exist. |
