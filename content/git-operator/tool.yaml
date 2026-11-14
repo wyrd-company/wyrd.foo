@@ -1,0 +1,42 @@
+name: git-operator
+version: 0.1.0
+docs-version: 0.1.0
+tagline: Keep each T3 Code thread's git commits attributed to the human operator it works for.
+blurb: A session-start hook for Claude Code and Codex in shared Wyrd workspaces. It tells the agent which operator its T3 Code thread is registered to, or asks it to have the user register one, so plain git, scripts and hooks commit and push as the right person. It needs the workspace git shim and `git operator` command from workspace-dotfiles.
+status: preview
+category: Git & Review
+kinds:
+  - kind: coding-harness-plugin
+    install:
+      - harness: Claude Code
+        command: |-
+          claude plugin marketplace add wyrd-company/agent-marketplace
+          claude plugin install git-operator@wyrd-company
+        default: true
+      - harness: Codex
+        command: |-
+          codex plugin marketplace add wyrd-company/agent-marketplace
+          codex plugin add git-operator@wyrd-company
+    provides:
+      - element: hook
+        name: SessionStart
+        description: Adds the thread's git operator, or the instruction to register one, to the model's context.
+highlights:
+  - Reminds the agent at session start, resume and compaction which operator the thread commits as.
+  - Asks the agent to have the user register an operator before the thread's first commit, push or fetch.
+  - Passes a thread's operator to the threads it starts through `git operator set --from`, never through message text.
+  - Prints nothing outside T3 Code threads, or where the workspace git shim is not installed.
+release-unit: git-operator
+owner: wyrd-company/agent-marketplace
+licence: MIT
+docs-path: docs/user/git-operator
+release:
+  version: 0.1.0
+  date: 2026-11-13T17:19:41.000Z
+  url: https://github.com/wyrd-company/agent-marketplace/releases/tag/git-operator%400.1.0
+  notes: |
+    ## 0.1.0
+
+    ### Features
+
+    - First release: a SessionStart hook for Claude Code and Codex that tells the agent which git operator its T3 Code thread commits as, or asks it to have the user register one with `git operator set`.

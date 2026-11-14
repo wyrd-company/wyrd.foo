@@ -1,0 +1,38 @@
+name: mnemonic
+version: 0.1.0
+docs-version: 0.1.0
+tagline: The mnemonic memory MCP server, with its embedding key read from Vault at start.
+blurb: Runs the mnemonic memory server for Claude Code and Codex in Wyrd workspaces. Notes are markdown in git, in a private main vault and in each project's repository. The server starts under envconsul, which reads the workspace's Xolotl key from Vault and gives it to the server alone, so no file or global variable holds it.
+status: preview
+category: Knowledge & Planning
+kinds:
+  - kind: coding-harness-plugin
+    install:
+      - harness: Claude Code
+        command: |-
+          claude plugin marketplace add wyrd-company/agent-marketplace
+          claude plugin install mnemonic@wyrd-company
+        default: true
+    provides:
+      - element: mcp-server
+        name: mnemonic
+        description: mnemonic's memory tools, started under envconsul with the workspace's Xolotl key.
+highlights:
+  - Gives Claude Code and Codex mnemonic's memory tools, such as recall, remember and relate, in every Wyrd workspace session.
+  - Reads the embedding key from Vault when the server starts and keeps it out of config files and the global environment.
+  - Commits notes as the T3 Code thread's registered git operator.
+  - Pins the mnemonic package version, so every workspace runs the same server.
+release-unit: mnemonic
+owner: wyrd-company/agent-marketplace
+licence: MIT
+docs-path: docs/user/mnemonic
+release:
+  version: 0.1.0
+  date: 2026-11-13T17:20:42.000Z
+  url: https://github.com/wyrd-company/agent-marketplace/releases/tag/mnemonic%400.1.0
+  notes: |
+    ## 0.1.0
+
+    ### Breaking
+
+    - First release: the mnemonic 1.0.0 MCP server for Claude Code and Codex, started under envconsul so its Xolotl embedding key comes from Vault.
