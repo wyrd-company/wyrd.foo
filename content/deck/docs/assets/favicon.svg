@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">deck</title>
+  <desc id="desc">A portable cyberdeck with a terminal screen, keyboard and a conversation signal.</desc>
+  <g stroke="#edf4ff" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M42 42h154l18 18v106H42z"/>
+    <path d="M42 166h172l20 37v11H22v-11z"/>
+    <path d="M59 61h136v86H59z"/>
+    <path d="M55 183h12m16 0h12m16 0h12m16 0h12m16 0h12m-115 15h12m16 0h12m16 0h57" stroke-width="5"/>
+  </g>
+  <path d="m79 86 16 15-16 15m31 0h28" stroke="#59f1e8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M166 29h41l24 24v38h-21l-16 16V91h-28z" fill="#ff71da"/>
+  <path d="M181 51h24m-24 16h13" stroke="#edf4ff" stroke-width="5" stroke-linecap="round"/>
+  <path d="M24 83v39m0 14v10M69 229h52" stroke="#59f1e8" stroke-width="5" stroke-linecap="round"/>
+</svg>

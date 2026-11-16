@@ -1,0 +1,63 @@
+name: deck
+version: 0.1.1
+docs-version: 0.1.0
+tagline: Discord conversations for agent sessions.
+blurb: An agent-friendly Discord client that posts questions, reads replies and connects each conversation to its local session. A separate service holds bot tokens and publishes activity to NATS JetStream; the CLI authenticates with an OpenBao or Vault Transit key.
+status: preview
+category: Agent Infrastructure
+kinds:
+  - kind: cli
+    install:
+      - os:
+          - macos
+          - linux
+        default: true
+        command: brew install wyrd-company/tools/deck
+        method: homebrew
+      - os:
+          - macos
+          - linux
+        command: npm install --global @wyrd-company/deck
+        method: npm
+      - os:
+          - linux
+        command: sudo apt install deck
+        method: apt
+      - os:
+          - linux
+        command: sudo dnf install deck
+        method: rpm
+      - os:
+          - linux
+        command: paru -S deck-bin
+        method: aur
+      - os:
+          - macos
+          - linux
+        command: See https://github.com/wyrd-company/deck/releases for archives and checksums.txt.
+        method: archive
+  - kind: app
+    install:
+      - command: docker pull ghcr.io/wyrd-company/deck:latest
+        method: docker
+highlights:
+  - Post forum questions or start text-channel threads with mentions, embeds, buttons, polls and files.
+  - Keep session affinity and unread cursors in a local SQLite store.
+  - Read replies or wait for activity with deck listen.
+  - Publish touched-thread activity to JetStream and resolve events to local sessions.
+  - Authenticate over SSH with Transit signing and per-client bot, server and channel grants.
+media:
+  - src: assets/demo.gif
+    caption: An offline, synthetic conversation through the real CLI, with posting, listening, unread cursors and session resolution.
+logo: assets/icon-light.svg
+logo-dark: assets/icon-dark.svg
+favicon: assets/favicon.svg
+social-image: assets/social-preview.png
+release-unit: deck
+owner: wyrd-company/deck
+licence: Apache-2.0
+docs-path: docs/user
+release:
+  version: 0.1.1
+  date: 2026-11-16T21:27:10.000Z
+  url: https://github.com/wyrd-company/deck/releases/tag/0.1.1
