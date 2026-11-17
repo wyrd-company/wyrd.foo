@@ -17,6 +17,15 @@ deck --version
 ```
 
 The formula lives in [wyrd-company/homebrew-tools](https://github.com/wyrd-company/homebrew-tools).
+Homebrew's core `deck` formula is a different program with the same name. If
+it is installed, `brew install wyrd-company/tools/deck` stops because formulae
+with the same name from different taps cannot be installed together. Remove
+the core formula first, then install ours:
+
+```sh
+brew uninstall deck
+brew install wyrd-company/tools/deck
+```
 
 ## npm
 
@@ -34,25 +43,89 @@ them, run `node install.js` in the installed package directory, or use an archiv
 
 ## APT, RPM and AUR
 
-Follow [repo.wyrd.foo](https://repo.wyrd.foo) to configure its signing key and
-APT or RPM repository, then install the `deck` package. Arch Linux uses
-`wyrd-deck-bin` from the AUR; `deck-bin` there is a different program. These
-packages install the CLI and an example client configuration; run the service
-with its container image.
+The APT and RPM packages are named `wyrd-deck`, and the AUR package
+`wyrd-deck-bin`; the command is still `deck`. Ubuntu, Debian and the AUR have
+their own `deck` and `deck-bin` packages, which are a different program;
+`wyrd-deck` conflicts with them because both install `/usr/bin/deck`.
+
+The APT and RPM packages also install an example client configuration at
+`/usr/share/doc/wyrd-deck/client.example.yml`. The AUR package installs the
+CLI only; start from the
+[annotated client example](https://github.com/wyrd-company/deck/blob/main/docs/specifications/assets/configuration/examples/client.yml).
+Run the service with its container image.
+
+### APT
+
+On Debian or Ubuntu, add the repo.wyrd.foo signing key and repository, then
+install the package:
+
+```sh
+sudo install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://repo.wyrd.foo/pubkey.asc |
+  sudo tee /etc/apt/keyrings/wyrd-company.asc >/dev/null
+echo "deb [signed-by=/etc/apt/keyrings/wyrd-company.asc] https://repo.wyrd.foo/apt stable main" |
+  sudo tee /etc/apt/sources.list.d/wyrd-company.list >/dev/null
+sudo apt update
+sudo apt install wyrd-deck
+```
+
+### RPM
+
+On Fedora, RHEL or a compatible `dnf` system, add the repository definition,
+then install the package. `dnf` asks you to accept the repository's signing key
+the first time:
+
+```sh
+sudo curl -fsSL https://repo.wyrd.foo/wyrd.repo -o /etc/yum.repos.d/wyrd.repo
+sudo dnf install wyrd-deck
+```
+
+The repository setup is maintained in
+[repo.wyrd.foo](https://github.com/wyrd-company/repo.wyrd.foo#apt).
+
+### AUR
+
+With an AUR helper:
+
+```sh
+paru -S wyrd-deck-bin
+```
+
+### Upgrading from the `deck` package
+
+Releases up to 0.1.2 published this package as `deck`. It conflicts with
+`wyrd-deck`, so switch packages in one step. On Debian or Ubuntu, `apt` lists
+`deck` for removal and removes it once you confirm:
+
+```sh
+sudo apt install wyrd-deck
+```
+
+On Fedora or another `dnf` system, a plain `dnf install wyrd-deck` stops at
+the conflict. Swap the packages instead, which removes `deck` and installs
+`wyrd-deck`:
+
+```sh
+sudo dnf swap deck wyrd-deck
+```
+
+`sudo dnf install --allowerasing wyrd-deck` does the same. Your configuration
+is not part of either package and stays in place.
 
 ## Release archives
 
 Download an archive and `checksums.txt` from the same
 [GitHub release](https://github.com/wyrd-company/deck/releases).
 Archives are named `deck_<version>_<os>_<cpu>.tar.gz`, where `os` is `linux` or
-`darwin` and `cpu` is `x86_64` or `aarch64`. Verify the archive before extracting:
+`darwin` and `cpu` is `x86_64` or `aarch64`. Verify the archive before
+extracting; each step runs only if the previous one succeeded:
 
 ```sh
 # Example for Linux x86-64, after downloading both files for 1.2.3:
-grep '  deck_1.2.3_linux_x86_64.tar.gz$' checksums.txt | sha256sum --check
-tar -xzf deck_1.2.3_linux_x86_64.tar.gz
-mkdir -p "$HOME/.local/bin"
-install -m 0755 deck "$HOME/.local/bin/deck"
+grep '  deck_1.2.3_linux_x86_64.tar.gz$' checksums.txt | sha256sum --check &&
+  tar -xzf deck_1.2.3_linux_x86_64.tar.gz &&
+  mkdir -p "$HOME/.local/bin" &&
+  install -m 0755 deck "$HOME/.local/bin/deck"
 ```
 
 On macOS use `shasum -a 256 --check` in place of `sha256sum --check`. Ensure the

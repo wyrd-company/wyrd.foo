@@ -23,7 +23,7 @@ name and a parent channel ID they can grant you. The
 1. Save the [annotated client example](https://github.com/wyrd-company/deck/blob/main/docs/specifications/assets/configuration/examples/client.yml)
    in a writable directory as `client.yml`. Homebrew and npm install only the
    executable, so use that link to obtain the example. APT/RPM packages provide
-   `/usr/share/doc/deck/client.example.yml`; release archives include
+   `/usr/share/doc/wyrd-deck/client.example.yml`; release archives include
    `client.example.yml`. Set `service.address`, `service.host_key`, `vault.address`,
    `key.mount` and `key.name`. For a direct Vault connection, also set
    `vault.auth.token_file` or `vault.auth.approle`; omit `vault.auth` only when

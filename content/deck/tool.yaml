@@ -1,6 +1,6 @@
 name: deck
-version: 0.1.2
-docs-version: 0.1.1
+version: 0.1.3
+docs-version: 0.1.2
 tagline: Discord conversations for agent sessions.
 blurb: An agent-friendly Discord client that posts questions, reads replies and connects each conversation to its local session. A separate service holds bot tokens and publishes activity to NATS JetStream; the CLI authenticates with an OpenBao or Vault Transit key.
 status: preview
@@ -21,11 +21,11 @@ kinds:
         method: npm
       - os:
           - linux
-        command: sudo apt install deck
+        command: sudo apt install wyrd-deck
         method: apt
       - os:
           - linux
-        command: sudo dnf install deck
+        command: sudo dnf install wyrd-deck
         method: rpm
       - os:
           - linux
@@ -58,13 +58,19 @@ owner: wyrd-company/deck
 licence: Apache-2.0
 docs-path: docs/user
 release:
-  version: 0.1.2
-  date: 2026-11-17T03:46:53.000Z
-  url: https://github.com/wyrd-company/deck/releases/tag/0.1.2
+  version: 0.1.3
+  date: 2026-11-17T07:31:03.000Z
+  url: https://github.com/wyrd-company/deck/releases/tag/0.1.3
   notes: |+
     
     ### Fixes
 
-    - Publish the Arch Linux package to the AUR as wyrd-deck-bin. The AUR's
-      deck-bin is a different program (Kong decK), so install wyrd-deck-bin.
+    - Publish the APT and RPM packages as wyrd-deck: install with
+      `apt install wyrd-deck` or `dnf install wyrd-deck`. Ubuntu and Debian ship a
+      different program as `deck`, which `apt install deck` would install instead.
+      The command is still `deck`, and wyrd-deck conflicts with the other `deck`
+      package because both install /usr/bin/deck. Earlier releases stay in the
+      repositories under the old name. To upgrade from the `deck` package, run
+      `sudo dnf swap deck wyrd-deck` on Fedora; `sudo apt install wyrd-deck`
+      removes `deck` once you confirm.
 
