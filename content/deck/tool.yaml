@@ -1,6 +1,6 @@
 name: deck
-version: 0.1.1
-docs-version: 0.1.0
+version: 0.1.2
+docs-version: 0.1.1
 tagline: Discord conversations for agent sessions.
 blurb: An agent-friendly Discord client that posts questions, reads replies and connects each conversation to its local session. A separate service holds bot tokens and publishes activity to NATS JetStream; the CLI authenticates with an OpenBao or Vault Transit key.
 status: preview
@@ -29,7 +29,7 @@ kinds:
         method: rpm
       - os:
           - linux
-        command: paru -S deck-bin
+        command: paru -S wyrd-deck-bin
         method: aur
       - os:
           - macos
@@ -58,6 +58,13 @@ owner: wyrd-company/deck
 licence: Apache-2.0
 docs-path: docs/user
 release:
-  version: 0.1.1
-  date: 2026-11-16T21:27:10.000Z
-  url: https://github.com/wyrd-company/deck/releases/tag/0.1.1
+  version: 0.1.2
+  date: 2026-11-17T03:46:53.000Z
+  url: https://github.com/wyrd-company/deck/releases/tag/0.1.2
+  notes: |+
+    
+    ### Fixes
+
+    - Publish the Arch Linux package to the AUR as wyrd-deck-bin. The AUR's
+      deck-bin is a different program (Kong decK), so install wyrd-deck-bin.
+

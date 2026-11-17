@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2
+
+### Fixes
+
+- Publish the Arch Linux package to the AUR as wyrd-deck-bin. The AUR's
+  deck-bin is a different program (Kong decK), so install wyrd-deck-bin.
+
 ## 0.1.1
 
 ### Fixes

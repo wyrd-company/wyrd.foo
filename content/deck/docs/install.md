@@ -36,8 +36,9 @@ them, run `node install.js` in the installed package directory, or use an archiv
 
 Follow [repo.wyrd.foo](https://repo.wyrd.foo) to configure its signing key and
 APT or RPM repository, then install the `deck` package. Arch Linux uses
-`deck-bin` from the AUR. These packages install the CLI and an example client
-configuration; run the service with its container image.
+`wyrd-deck-bin` from the AUR; `deck-bin` there is a different program. These
+packages install the CLI and an example client configuration; run the service
+with its container image.
 
 ## Release archives
 
