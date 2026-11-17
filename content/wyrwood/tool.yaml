@@ -1,6 +1,6 @@
 name: wyrwood
-version: 0.7.0
-docs-version: 0.1.5
+version: 0.7.1
+docs-version: 0.1.6
 tagline: OpenBao-backed secrets and signing for containers, with nothing stored inside.
 blurb: "A controller that owns policy and an agent on each Docker host that gives every bound container a directory of sockets: an OpenBao endpoint carrying the container's own token and an SSH agent whose keys live in OpenBao."
 status: preview
@@ -98,9 +98,18 @@ media:
   - src: assets/web-operator-keys.png
     caption: Operator keys, one approved with its grant and one pending.
     alt: The Operator keys screen listing an approved key with its agents, policies, and actions, above a pending key with agent, policy, and action choices and a summary of what the key can do.
+  - src: assets/web-operator-key-grant.png
+    caption: Editing an approved operator key's grant.
+    alt: The grant editor for an approved key, with its agents, policies, and actions, a summary of what the key can do, and Validate and Save.
+  - src: assets/web-policy-operator-keys.png
+    caption: The Operator keys tab of a policy.
+    alt: The policy editor with the Operator keys tab selected, listing an approved key with a checkbox and its actions.
   - src: assets/web-events.png
     caption: Controller events, newest first.
     alt: The events page listing controller events with the newest first.
+  - src: assets/web-events-grant.png
+    caption: A grant edit in the event history.
+    alt: The events page with an operator-key-grant-changed row open, showing the key's old and new agents, policies, and actions.
   - src: assets/web-account-menu.png
     caption: Account menu with Security and Sign out.
     alt: The account menu open to show Security and Sign out.
@@ -121,69 +130,49 @@ owner: wyrd-company/wyrwood
 licence: Apache-2.0
 docs-path: docs/user
 release:
-  version: 0.7.0
-  date: 2026-11-12T15:36:33.000Z
-  url: https://github.com/wyrd-company/wyrwood/releases/tag/0.7.0
+  version: 0.7.1
+  date: 2026-11-17T17:13:43.000Z
+  url: https://github.com/wyrd-company/wyrwood/releases/tag/0.7.1
   notes: |+
     ## Changelog
-    * 755ec446618af17558100c6e80c3c52ccbc92fa9 chore(deps): align local GoReleaser runs with v2.20.1
-    * d90f594eb6241dec441b416b43afc05fe1b05c7c chore(deps): lock file maintenance
-    * aeb8afcaa32f45feae4a518955d59718d0864f77 chore(deps): record the go-jose 4.1.9 key set change
-    * 61160d36d78b4e552adc423176c4eb79cb97f5f1 chore(deps): tidy go.sum after the go-jose 4.1.9 update
-    * ffbf4880a4acfa3ec0d17666f51b12cfe7ce70bd chore(deps): tidy go.sum after the golang.org/x/mod 0.43.0 update
-    * 9928edcef4ad53bbe8d74c8d91cd3f9a9b7399e8 chore(deps): tidy go.sum after the golang.org/x/oauth2 0.38.0 update
-    * 59be5af47caec6236084370b6c411409aa4bb5c5 chore(deps): tidy go.sum after the golang.org/x/sys 0.50.0 update
-    * d2ffbbf1c682d3d94614d46edf2f5ae4ea0ba9fe chore(deps): tidy go.sum after the modernc.org/sqlite 1.62.0 update
-    * 62890762bc4e51a02e99382d42506c7aa2191593 chore(deps): update dependency @testing-library/user-event to v14.6.9
-    * d2dd51e7fd17322fff67e8fa62ee97dea916b81b chore(deps): update dependency @vitejs/plugin-react to v6.3.0
-    * 9fe80e700ba0a2486b749e716d3d37fe0487695a chore(deps): update dependency goreleaser/goreleaser to v2.20.1
-    * b47f3e2523bec4b9879447d9a342672ecc4630b3 chore(deps): update dependency jsdom to v31
-    * 49e6232ef91ab147b3c7cf31f38f08da238458ac chore(deps): update dependency prettier to v3.10.0
-    * 8c1ab3e56f50865efbd0fac7bd3a4ee27b887120 chore(deps): update dependency rumdl to v0.3.3
-    * 977471d863546f1790ac0f55c9f08d5cee96c59d chore(deps): update dependency ryl to v0.29.0
-    * e2870840d9d0491c4666811eed8b531548175b57 chore(deps): update dependency vite to v8.3.8
-    * 4c4f32c5c31ce75b8148609975f1db813d74c76e chore(deps): update dependency vitest to v5.1.0
-    * 17a0188b2963334aaba0943dea4a3382baceda9f chore(deps): update golang docker tag to v1.27.4
-    * 59f9f3a4cee73dcea1ada4a639ded70ad1651e8c chore(deps): update pnpm to v12.18.0
-    * 23f3cb77659cbc899b08f7a5969b3ff738b5d121 chore(deps): update tailwindcss monorepo to v4.3.5
-    * 1c04714cbc36ae39750e9724a9da57538f1f59d5 chore(intent): record the schema 5 and directory compatibility break
-    * 572ec95d97d32004618d86fb61c99959c69e00ab chore(release): prepare Wyrwood 0.7.0 and docs 0.1.5
-    * 518ced267e116559b86406575ea12828b732758b chore: record the operator key grant choices intent
-    * f4667dba4bcaa96ab8065dd90963e29138c81d24 chore: start the next Wyrwood release epic
-    * ca2c36c821e1f3039d2cfc2f3eec0f035b862dfe ci: check docs.yml with the pinned publisher on pull requests
-    * 69cffb2c75c9574ae056e90bec60389191408091 ci: fetch tags for the docs publisher check
-    * 417b8754479442190801c6c6d061717c0fdcbda6 docs(install): state what a 0.6.1 controller and agent do with this release
-    * 1e60a41a6fe3ae9808dfe6b0cd8e8d1c7e49a183 docs: describe binding a key that is not name before its container exists
-    * fc1217d63298967cff408db153b2675ffef2013a docs: describe operator key grant choices and the grant summary
-    * 6cf3cb30a11b52f87c6914e681a65308b2823df3 docs: describe the one row of tabs at phone width
-    * 93b53c4ae8ca5c082318d16b978d95532416230c docs: refresh screenshots after keeping keys read before an unanswered read
-    * 2736c02050b14d610c5b2ccb2e199cb2bc8ee398 docs: refresh screenshots after the typed-key access group change
-    * 9d710a6c7fcbe40d6b864f37d2bb53fe95a6718f docs: refresh screenshots for Transit key listing problems
-    * dc97c0b3c665c464f6d6814652c832e6e62e984b docs: refresh screenshots for binding by typed key
-    * ed1a8c26c042cd9a90c6e226743a026a1d65c1c1 docs: refresh screenshots for the integrated epic changes
-    * b44386a369836214fbff4953b7d9cd1788248862 docs: refresh screenshots for the integrated epic changes
-    * 77332bf90b55d0d95eee6c0d3631a5636f66ba24 docs: refresh screenshots for the one row of tabs
-    * 465fd95a292c29ad7b32f860ce9a7affb94a3dbf docs: say that Compose replicas share a typed binding's directory
-    * 8c5d64f3972bafc538d5635e80d6bea41b194a57 feat(agent): serve a binding's containers through its stored directory
-    * 66246cdefcba8d121fbf24947c0516da6ab06f28 feat(controller): store a directory name on a binding whose key is not name
-    * d933e61ffdb26969dcaf3782ad3eaf2c9249b528 feat(web): add a binding by typed key from Add binding
-    * 656c7375471e5572430bb16376d18f434e1ea085 feat(web): approve operator keys with name choices and a grant summary
-    * 78048a03067cb05173b10c03e2b5e5b091528812 feat(web): collapse the navigation into a menu at phone width
-    * 1d252c0a7887c7758292b142116bef10c4431b7e fix(deps): update module github.com/go-jose/go-jose/v4 to v4.1.9
-    * 44a20ba4ff5be89701adcac820bd9dceea922d54 fix(deps): update module golang.org/x/mod to v0.43.0
-    * 53ba6697bb3f68dac8765575230e2cb7300cfdee fix(deps): update module golang.org/x/oauth2 to v0.38.0
-    * ddc62024b645d285806a2108b55418b7456b6eed fix(deps): update module golang.org/x/sys to v0.50.0
-    * a1c6f7ac9ab973df69b2981620968f975786d1d1 fix(deps): update module modernc.org/sqlite to v1.62.0
-    * 8cc0a3d33c6c232756bfe7552d15f4d62920fcb2 fix(openbao): keep the Transit keys read before an unanswered read
-    * a69f895008d946c6a261466b42fc7f4c3306b9bc fix(web): give the typed-key text inputs the 44 px control height
-    * a1cd91214bc4458f272985ea0e9aa91379ee455b fix(web): keep the screen tabs in one row at phone width
-    * 5f07582376168eeaf643eab6c4302189e877514a fix(web): list Transit keys when the mount holds an imported key
-    * 279e9b29aa9c7583190e60a309f6da4e6007a913 fix(web): offer the selected agent's access groups on the typed-key form
-    * 7d7285cd27beb9626a2aad4c2cfc81770d5a540b fix(web): refuse in the grant summary what approval refuses
-    * fd90e8928505a31e71fe2060934fab9c24692e13 fix(web): say so when a rename keeps the current name
-    * 4ab9b9f9eba56e199d2efaa5307e0137b514f630 test(agent): recreate and start a container through its binding's directory
-    * 0fe01eb742b9be6eb6c0a85223b956a880e03bbe test(agent): wait for the binding-retired event
-    * 0bcc319e894c481579dc5e8d90e6b0a4cac4ddfd test(controller): a binding change keeps its directory name
-    * 260ea295601a83015008907dd65c5ef33f843bea test(integration): read a secret through a directory bound before its container
-    * e0d3f85071184bc3c17e7c7f365c162c1083dfeb test(web): cover an unanswered SSH role list on the keys page
+    * 3d3747dfa979bf198559eeb596fa6f7215b29287 chore(deps): refresh Go and release toolchain pins
+    * 3b982e7708d7eda23321dd4081556728bb28e290 chore(deps): refresh frontend dependencies with UI captures
+    * b1708dee265db9c925f9e0d75ecd21277eec1384 chore(release): prepare Wyrwood 0.7.1 and docs 0.1.6
+    * 90cf5d6ed7eac98c03d6eee86da09dacf0f8bde9 chore: record the binding change intent
+    * 618560773450e47d811d5c5451c6ad86061e2afd chore: start epic templates and policies
+    * 18b9b83f50fe5f5b782d06115fda8f41cc0fc5fe ci: check the templates and policies epic branch
+    * 533f2cbfa117dfaad7f750caed0092439a858b36 ci: remove redundant epic push trigger
+    * b234147331ce3fc1666375cba91b20e9a6144fab docs(mockup): prototype editable operator key grants
+    * 7997e51f4eb3506bab8cdca466965c54e9047968 docs(mockup): simplify grants after operator feedback
+    * 07278be012ba5dcf7118641a7374d5f4c74a8e94 docs(operator): say how a pending ChangeBinding finishes
+    * 698821a25eb197a4df992a1a566a1f3994ba9115 docs(operator): say that ActionBind also changes bindings
+    * 278b3753534b092bc5ec1ff983e59a7dcd71b7e9 docs(spikes): record the secret-file-gate spike as a spike document (#160)
+    * 229d12c144da837082ab201d6364214979181344 docs: describe changing a binding over the operator protocol
+    * d949adb8afb35b17c6e4b9b96d27c3aa2c14cfe9 docs: describe editable operator key grants
+    * 9fd9186f429b8040812a9c9ba1811f5754103c81 docs: record screenshots with a generic agent hostname
+    * f9f409e665db744217794854b37cfd7d05d66dc7 docs: record the grant editor, a policy's Operator keys tab and a grant edit on Events
+    * ba5aa1d3fc09b28631be0b6b4f5232a6cfc60964 docs: record the screenshots after the grant history fix
+    * c549ff8dba52bd588551c4c63a8bf506933fd50f docs: refresh screenshots after setup changes
+    * e94c670bb0a7ccf62ba9fdb4b8cd01fb4abf0c45 docs: refresh screenshots for the binding change
+    * eef3a4f29963547ba2de183c7f57150ef3366e2c feat(controller): edit an approved operator key's grant, and choose keys from a policy
+    * 9acee64e1bd13300c876565735cad8927b945bb3 feat(events): add an event for each entry of an operator key grant edit
+    * bb1edea356664cd162e773da5e633a920422cc00 feat(events): record each policy of a binding change before and after
+    * 6420970f65d0a75890b506f0d7114b5cc5642f3d feat(operator): change a binding over the operator protocol
+    * 8bcb178b317cc545e8558bd6d55521809c103275 feat(store): replace approved operator keys' grants from the grant they read
+    * edb8fd681c33a8f8c9b48a825205ae013d8f7f2a feat(web): choose a policy's operator keys on its Operator keys tab
+    * e01e570dca993fecfe2e3a41570367d9d5dfb855 feat(web): edit an approved operator key's grant
+    * 9f231c05391f430455d874a7e85b506c1ea504a4 feat(web): show a grant edit as one Events row with the old and new grant
+    * a7c2f6dd539716e8999d4af77113a9e568a34e33 fix(controller): close a grant change only when every entry is recorded
+    * add0fd7817149374c89e3c62cba1bda96499cd75 fix(operator): check the revision of every binding change
+    * 1ec3e241bbac6cfef69b3c858be238009f32f9fc fix(operator): record every refused binding change with the key
+    * 3d194b62274efff4f4715fb9f01c96dea03b3877 fix(web): keep the Events columns and the grant editor's halves in place
+    * 33080f90083e456e52ddeb4e70371e2e7843e6b2 fix(web): match setup examples to Compose binding key
+    * da8bda6b275c5df3d8fedb9e1f8e316dffac09d8 fix(web): never show a cut-off grant edit as a whole one
+    * 5e5d247e7d6efa2bb8d76c88af19ea8212a2d845 fix(web): say so when a grant edit does not name the grant it started from
+    * f6eb8e1999ea71046fcff93c8ea03ab303c1a757 fix(web): say that the bind action changes bindings
+    * 1f21500f62e26744a252b492bf54368ee6543559 refactor(controller): change a binding as it is stored, and name a stale revision
+    * 59e131f9a057347ef7783bab61a006de637b46da test(agent): join recreate workers before fixture cleanup
+    * f85f1496aa568db1d1daae1de980e3cb9a76f4eb test(integration): change a running container's binding with the operator client
+    * ef89d86caa1b325b849318718fb2cd927d2ac7fd test(mockup): wait for route renders before measuring layouts
+    * 25b80e7db5eba8fc83268377985c6a0276aa5315 test(web): make session expiry independent of render speed
 

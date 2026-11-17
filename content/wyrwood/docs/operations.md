@@ -228,6 +228,11 @@ actual container name. The agent manages this directory. Let the agent create
 it before starting the container; the Compose fragment disables automatic
 host-path creation. The examples do not include application commands, ports,
 networks, or unrelated mounts. They do not change an existing container.
+For a Compose key, the fragment sets the project name and service from the
+key, and the `docker run` example supplies matching Compose labels. Compose
+command-line project options or environment variables can override the project
+name; use the project's name from the key when starting the service. Replicas
+share the binding.
 
 ![Container setup examples on the binding screen](assets/web-container-setup.png)
 
@@ -291,19 +296,23 @@ events cover container observation, bindings, contract checks and recreates,
 container starts after a reboot,
 token login and renewal, vault requests by mount category, and SSH identity
 listing, signing, and certificate issuance. Controller events cover operator
-sign-in and sign-out, agent approval, operator key approval and revocation,
-sessions, policy saves, deletes, and renames, bindings, and credential issuance,
-and name the operator who acted. A change made by an operator key names it as
-`key:<label>`. Events
-contain no tokens, secret values, request bodies, paths, signatures, or raw
-upstream errors.
+sign-in and sign-out, agent approval, operator key approval, revocation, and
+grant edits, sessions, policy saves, deletes, and renames, bindings, and
+credential issuance, and name the operator who acted. A change made by an
+operator key names it as `key:<label>`. A binding change lists each policy as
+the binding held it before and after: `alpha → alpha` for a policy it keeps,
+`– → beta` for one it adds, and `gamma → –` for one it removes. A grant edit is
+one `operator-key-grant-changed` row, which names the key and who edited it:
+open **Old and new grant** to compare its agents, policies, and actions before
+and after. Events contain no tokens, secret values, request bodies, paths,
+signatures, or raw upstream errors.
 
 ![Controller events, newest first](assets/web-events.png)
 
 ## Manage policies and bindings from a script
 
 An operator key lets a script or a program do what the web interface does for
-policies and bindings, inside a grant that you set when you approve the key. The
+policies and bindings, inside a grant that you set in the web interface. The
 private key stays on the machine that holds it, and it can stay behind an SSH
 agent. An operator key is not an agent key: it has its own list, and neither
 kind can act as the other.
@@ -331,7 +340,7 @@ the grant:
 | **Agents** | The agents this key can read and bind on. Select approved agents, or **All agents** for `*`. Type the names of agents that are not approved yet. |
 | **Policies** | The policies this key can read, bind, and write. Select stored policies, or **All policies** for `*`. Type the names of policies the key will create. |
 | **Read** | List and read policies and bindings inside the grant. |
-| **Bind** | Create and remove bindings inside the grant. |
+| **Bind** | Create, change, and remove bindings inside the grant. |
 | **Policy write** | Create and change policies inside the grant. |
 
 A binding that holds any policy outside the list is outside the grant, and the
@@ -343,8 +352,8 @@ trust with that.
 
 Below the choices, **What this key can do** states for each action whether the
 key can do it, and on which agents and policies. It changes as you choose. Read
-it before you select **Approve key**, and compare it with what the script needs:
-a grant cannot be changed after approval.
+it before you select **Approve key**, and compare it with what the script needs.
+You can [change it later](#change-what-a-key-can-do).
 
 ```bash
 wyrwood policy put sample-policy --file policy.hcl
@@ -358,15 +367,15 @@ wyrwood unbind --agent sample-host \
 
 Each command is safe to run again. A `bind` with the selection the key already
 has returns that binding. A `bind` with another selection fails with exit status
-10 and changes nothing, so unbind first to change it. An `unbind` of a binding
-that is not there succeeds. A binding reports the same readiness as its
+10 and changes nothing. To change a binding without taking its container's
+sockets away, a program changes it with the Go package, below. An `unbind` of a
+binding that is not there succeeds. A binding reports the same readiness as its
 **Status** tab, so a script can wait for `ready` before it starts the container.
 
 A key has no expiry. To end one, use **Revoke** on the **Operator keys** screen.
 Its next request fails, also on a connection that is open. A revoked key cannot
 be approved again, and its label stays with it in the event history, so present
-a new key with a new label to replace it. A grant cannot be edited: replace the
-key to change it.
+a new key with a new label to replace it.
 
 Exit status 5 means the key is pending, rejected, or revoked. Status 8 means the
 request is outside the key's grant. Status 9 means the policy or binding does
@@ -391,6 +400,67 @@ if errors.Is(err, operator.ErrNotApproved) {
     // The key is recorded as pending. An operator approves it in the web interface.
 }
 ```
+
+`ChangeBinding` changes a binding's policies and settings, including the values
+its policies read. The command line does not have it. The change applies at
+once, as an edit in the web interface does: the container's old token is
+revoked and the container reads with the new selection with no restart. Its
+directory and sockets stay in place. The key needs **Bind**, and a grant that
+covers the binding and every policy the change selects. A program reads the
+binding's revision first, which needs **Read**.
+
+```go
+binding, err := client.GetBinding(ctx, "b-sample")
+if err != nil {
+    return err
+}
+_, err = client.ChangeBinding(ctx, operator.BindingChange{
+    ID:       binding.ID,
+    Revision: binding.Revision,
+    Policies: append(binding.Policies, "sample-extra"),
+    Settings: binding.Settings,
+})
+if errors.Is(err, operator.ErrRevisionDiffers) {
+    // Another change came first. Read the binding again and decide again.
+}
+```
+
+The settings replace the binding's settings whole, so start from the settings
+you read and change what should change. The revision is the one you read: when
+another change came first, the change fails with `ErrRevisionDiffers` and
+changes nothing, as a stale edit in the web interface does, even when it selects
+what the binding already holds. A change that fails with `ErrPending` is saved
+with a new revision: read the binding again and send the same change with that
+revision to finish it.
+
+### Change what a key can do
+
+To change what an approved key can do, select **Edit grant** beside it. The
+editor starts from the key's grant and shows **What this key can do** as you
+change it. **Validate** checks the grant without saving it, and **Save** applies
+it. The key keeps its fingerprint and label, and its next request uses the new
+grant, also on a connection that is already open. So to let a script bind one
+more policy, add the policy to its key's grant: the script needs no new key,
+configuration change, restart, or revocation. A save made after someone else
+changed the key's grant is refused and changes nothing; reload to see the grant
+the key holds now.
+
+![Grant editor of an approved operator key](assets/web-operator-key-grant.png)
+
+You can also choose a policy's keys from the policy. On its **Operator keys**
+tab, check each key that may use the policy, and clear a key to take the policy
+away; **Save and validate** saves both. This changes only the key's policies:
+the key keeps its actions, and its **Read**, **Bind**, and **Policy write** then
+reach this policy too. A key that holds all policies stays checked there; edit
+its grant to narrow it. Both screens change the same grant.
+
+![Operator keys tab of a policy](assets/web-policy-operator-keys.png)
+
+Each edit is recorded with who made it, when, and the old and new grant, and
+appears on **Events**. Only the web interface changes a grant: a key cannot
+change its own, so a stolen key cannot widen itself.
+
+![A grant edit on Events, with the old and new grant](assets/web-events-grant.png)
 
 ## Commands
 
