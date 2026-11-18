@@ -1,6 +1,6 @@
 name: toha
-version: 0.4.1
-docs-version: 0.1.1
+version: 0.4.2
+docs-version: 0.1.2
 tagline: Generate projects and files from templates.
 blurb: Toha uses one interview for terminal users, scripts, agents, and Rust callers.
 status: preview
@@ -9,71 +9,71 @@ order: 4
 kinds:
   - kind: cli
     install:
-      - method: homebrew
-        os:
+      - os:
           - macos
           - linux
         default: true
         command: brew install wyrd-company/tools/toha
-      - method: apt
-        os:
+        method: homebrew
+      - os:
           - linux
         label: Debian, Ubuntu
         command: sudo apt install toha
-      - method: rpm
-        os:
+        method: apt
+      - os:
           - linux
         label: Fedora, DNF
         command: sudo dnf install toha
-      - method: aur
-        os:
+        method: rpm
+      - os:
           - linux
         command: paru -S toha-bin
-      - method: cargo
-        os:
+        method: aur
+      - os:
           - macos
           - linux
           - windows
         command: cargo install toha
-      - method: archive
-        os:
+        method: cargo
+      - os:
           - linux
         label: Linux x86_64
         command: |
           gh release download --repo wyrd-company/toha --pattern 'toha_*_linux_x86_64.tar.gz'
           tar -xzf toha_*_linux_x86_64.tar.gz
           sudo install toha /usr/local/bin/toha
-      - method: archive
-        os:
+        method: archive
+      - os:
           - linux
         label: Linux aarch64
         command: |
           gh release download --repo wyrd-company/toha --pattern 'toha_*_linux_aarch64.tar.gz'
           tar -xzf toha_*_linux_aarch64.tar.gz
           sudo install toha /usr/local/bin/toha
-      - method: archive
-        os:
+        method: archive
+      - os:
           - macos
         label: macOS arm64
         command: |
           gh release download --repo wyrd-company/toha --pattern 'toha_*_macos_aarch64.tar.gz'
           tar -xzf toha_*_macos_aarch64.tar.gz
           sudo install toha /usr/local/bin/toha
-      - method: archive
-        os:
+        method: archive
+      - os:
           - macos
         label: macOS x86_64
         command: |
           gh release download --repo wyrd-company/toha --pattern 'toha_*_macos_x86_64.tar.gz'
           tar -xzf toha_*_macos_x86_64.tar.gz
           sudo install toha /usr/local/bin/toha
-      - method: archive
-        os:
+        method: archive
+      - os:
           - windows
         label: Windows x86_64
         command: |
           gh release download --repo wyrd-company/toha --pattern 'toha_*_windows_x86_64.zip'
           Expand-Archive -Path toha_*_windows_x86_64.zip -DestinationPath toha
+        method: archive
 highlights:
   - Runs one interview from a terminal, a script, an agent or the Rust crate.
   - Resumes an interview later, or takes its answers from a JSON file, including whole documents.
@@ -132,21 +132,15 @@ favicon: assets/favicon.svg
 social-image: assets/social-image.png
 release-unit: toha
 owner: wyrd-company/toha
+licence: Apache-2.0
 docs-path: docs/user
 release:
-  version: 0.4.1
-  date: 2026-10-31T20:50:18.000Z
-  url: https://github.com/wyrd-company/toha/releases/tag/0.4.1
+  version: 0.4.2
+  date: 2026-11-18T00:49:37.000Z
+  url: https://github.com/wyrd-company/toha/releases/tag/0.4.2
   notes: |-
     ## What's Changed
-    * ci(cd): publish crates through Trusted Publishing and recover the 0.4.0 crate by @mmenm-claude[bot] in https://github.com/wyrd-company/toha/pull/40
-    * ci(cd): remove the 0.4.0 crate recovery path by @mmenm-claude[bot] in https://github.com/wyrd-company/toha/pull/41
-    * chore(deps): update taiki-e/install-action digest to 68a389c by @renovate[bot] in https://github.com/wyrd-company/toha/pull/23
-    * chore(release): upgrade intentional config to contract-2 by @mmenm-codex[bot] in https://github.com/wyrd-company/toha/pull/44
-    * chore(deps): update rust crate jiff to v0.2.38 by @renovate[bot] in https://github.com/wyrd-company/toha/pull/54
-    * chore(release): prepare Toha 0.4.1 and docs 0.1.1 by @mmenm-codex[bot] in https://github.com/wyrd-company/toha/pull/63
+    * fix!: refuse git URLs that hold a password by @wyrd-claude[bot] in https://github.com/wyrd-company/toha/pull/83
 
-    ## New Contributors
-    * @renovate[bot] made their first contribution in https://github.com/wyrd-company/toha/pull/23
 
-    **Full Changelog**: https://github.com/wyrd-company/toha/compare/0.4.0...0.4.1
+    **Full Changelog**: https://github.com/wyrd-company/toha/compare/0.4.1...0.4.2
