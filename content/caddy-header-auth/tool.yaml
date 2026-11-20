@@ -1,0 +1,21 @@
+kinds:
+  - kind: devcontainer-feature
+    ref: ghcr.io/wyrd-company/devcontainers/caddy-header-auth:1
+source: src/features/caddy-header-auth
+category: Dev Containers
+logo: logo.svg
+release-unit: caddy-header-auth
+owner: wyrd-company/devcontainers
+licence: MIT
+release:
+  version: 1.0.0
+  date: 2026-11-20T19:32:05.000Z
+  notes: |-
+    Graduates from `0.x` to `1.0.0`.
+
+    ### Breaking
+
+    - Add caddy-header-auth feature for Unix-socket forward_auth header helpers
+name: Caddy Header Auth
+description: Runs a Unix-socket forward_auth service under s6-overlay that invokes registered header-helper commands and returns their JSON headers to Caddy.
+version: 1.0.0

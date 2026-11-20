@@ -1,0 +1,20 @@
+kinds:
+  - kind: devcontainer-feature
+    ref: ghcr.io/wyrd-company/devcontainers/antigravity-cli:1
+source: src/features/antigravity-cli
+category: Dev Containers
+release-unit: antigravity-cli
+owner: wyrd-company/devcontainers
+licence: MIT
+release:
+  version: 1.0.0
+  date: 2026-11-20T19:32:05.000Z
+  notes: |-
+    Graduates from `0.x` to `1.0.0`.
+
+    ### Breaking
+
+    - Add the Antigravity CLI Feature: installs agy for the Dev Container user with Google's native installer.
+name: Antigravity CLI
+description: Installs the Antigravity CLI (`agy`) for the Dev Container user using Google's native installer and ensures `agy` is on the PATH.
+version: 1.0.0

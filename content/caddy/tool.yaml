@@ -8,12 +8,12 @@ release-unit: caddy
 owner: wyrd-company/devcontainers
 licence: MIT
 release:
-  version: 1.1.0
-  date: 2026-10-31T20:38:08.000Z
+  version: 1.2.0
+  date: 2026-11-20T19:32:05.000Z
   notes: |-
     ### Features
 
-    - When the Ansible Feature is installed, the services of this Feature start after its `ansible-setup` oneshot succeeds. Without Ansible, startup does not change. The Feature adds the Ansible Feature to `installsAfter`.
+    - Add root-owned /etc/caddy/system.d import and hot-reload watch directory
 name: Caddy Reverse Proxy
 description: Installs Caddy with an s6-supervised config watcher for dynamically managed development reverse proxies.
-version: 1.1.0
+version: 1.2.0
