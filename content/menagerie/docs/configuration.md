@@ -23,15 +23,6 @@ oidc:
   client-id: menagerie
   redirect-url: https://menagerie.example.test/auth/callback
 
-templates:
-  - id: sample-workspace-1
-    name: Sample workspace 1.0
-    address: gh:example-org/workspace-templates@1.0.0#sample-workspace
-  - id: sample-workspace-2
-    name: Sample workspace 2.0
-    address: gh:example-org/workspace-templates@2.0.0#sample-workspace
-    runner-image: ghcr.io/example-org/sample-workspace-runner:2.0.0
-
 registry-credentials:
   kv-mount: kv
   registries:
@@ -86,9 +77,9 @@ the container, `/run/wyrwood` in the deployment example.
 
 ## Templates
 
-`templates` is the approved list; a manager can use only these. Each entry
-has a unique `id` (lower-case letters and digits, separated by single
-dashes), a display `name`, and a Toha `address`:
+Templates are registered in the interface, not in configuration; see
+[Templates](usage.md#templates). A registration takes the template's
+address, in one of these forms:
 
 - `gh:<owner>/<repository>@<ref>#<path>`, a GitHub repository over HTTPS,
   for public templates;
@@ -99,14 +90,68 @@ dashes), a display `name`, and a Toha `address`:
   [GitHub App](#github-app) token for private templates on its server.
 
 `#<path>` names the template's folder in the repository and is optional.
+`@<ref>` is optional too and, when given, is a version's tag such as `1.2.0`;
+without it the template takes the repository's newest version. Menagerie
+refuses an address that holds a password, such as
+`https://user:token@host/repo`, and stores, shows and logs it nowhere. It
+also refuses an address a password could hide in, since Git reads
+`https://user:12/token@host` as host `user`, port 12, path `/token` and ref
+`host`. So in an `https://` or `ssh://` address no `:` may come before an
+`@`: a host with a port, such as `https://git.example.com:8443/repo`, takes
+no `@<ref>`; register it without one, and it takes the newest version. User
+information with no `:` is a user name, not a password. An address must
+also be written plainly: a user name and path of letters, digits and `.`
+`_` `~` `-` (a path also `/`), a ref of letters, digits and `.` `_` `-`, a
+`#` folder of those and `/`, a host in lower case, and no `%` escapes; and a
+ref that holds a `.`, or follows `git@host:path`, is a version's tag, such
+as `1.2.0`. Use the GitHub App or the SSH agent for private templates;
+see [Git hosts](install.md#git-hosts). It also refuses a local
+folder, a `file://`, `git://` or `http://` address and a Toha template name.
 
-An entry's optional `runner-image` is the image its hooks run in; see
-[Runner images](#runner-images).
+### Version checks
 
-Pin each entry to a tag. To move workspaces to a new template version, add
-an entry for that version; **Upgrade** then asks only the questions the new
-version adds and keeps the answers and local edits the workspace has, or
-every question with **Ask every question again**. The list can be empty.
+Menagerie checks every registered template for new versions when it starts,
+then once every `every`; without `template-versions`, every hour:
+
+```yaml
+template-versions:
+  every: 30m
+```
+
+A check lists the tags of the template's repository with the credentials a
+fetch of its address uses, and a version is a tag `MAJOR.MINOR.PATCH`, with
+an optional leading `v`. A manager can also check one template at any time;
+see [Check for new versions](usage.md#check-for-new-versions). `every` is a
+duration such as `45m`, `2h` or `1h30m`, and is required when
+`template-versions` is given.
+
+### The templates key
+
+Earlier releases approved templates in a `templates` list, one entry per
+template version. The first start of this release imports it once into
+Menagerie's data, and a later edit of the key imports nothing:
+
+- The entries of one repository and folder become one template, at the
+  newest entry whose ref is a version. It keeps that entry's `id`, `name` and
+  `runner-image`, and its address without the ref.
+- An entry whose address Menagerie refuses, a password in it included, is
+  skipped. The start's log names the entry's `id` and the refusal, never its
+  address. So is an entry on a host with a port that names a ref, as every
+  entry does: [register the template](usage.md#register-a-template) without
+  the ref instead, which takes its repository's newest version.
+- A repository none of whose entries names a version, such as one pinned to
+  a branch, a commit or a tag like `v1`, is not imported, and the log names
+  its entries' `id`s. Its workspaces keep working. Tag a version in its
+  repository and [register the template](usage.md#register-a-template),
+  which joins its workspaces.
+- Each workspace whose applied record names an imported template joins it.
+
+The import waits up to one minute for the template service; a start that
+does not reach it, or that it answers with a fault rather than a refusal,
+fails and imports nothing, and the next start imports. Every start that finds
+the key logs a warning that it is no longer read. The key keeps its rules, so
+a file that still has it starts; remove it once the import has run. A later
+release will refuse it.
 
 ## Runner images
 
@@ -120,8 +165,9 @@ workspace folder themselves.
 It cannot reach the Docker socket, the Wyrwood sockets or Menagerie's
 environment, and it is removed when its command ends.
 
-- A template's hooks run in its `runner-image`, else the top-level
-  `runner-image`.
+- A template's hooks run in its own runner image, set when the template
+  is registered and changed with **Edit** in the interface, else the
+  top-level `runner-image`.
 - `initializeCommand` runs in the top-level `runner-image`.
 - Without either, both run in Menagerie's own image, which has `sh`, `git`,
   `ssh` and `curl`.
@@ -236,7 +282,7 @@ provisioning:
 ```
 
 `provisioning.wyrwood` lets Menagerie manage the bindings of workspaces. Menagerie
-needs Wyrwood 0.6.1 or later. [Prepare the host](install.md#provisioning) first.
+needs Wyrwood 0.7.1 or later. [Prepare the host](install.md#provisioning) first.
 
 - `controller` is the controller's `ssh://host[:port]`. The port defaults to 22.
 - `host-key` is the controller's SHA256 fingerprint, as
@@ -247,9 +293,39 @@ needs Wyrwood 0.6.1 or later. [Prepare the host](install.md#provisioning) first.
   name, its public key or its SHA256 fingerprint. Menagerie offers the controller
   only this key, so the Git key is not recorded as pending.
 
+The policies inside this operator key's grant are the policies managers choose
+from in [**Policies**](usage.md#policies). Menagerie reads the grant and the
+policies Wyrwood lists for each request. A referenced policy outside the grant
+remains visible, and adding one to settings is refused by name. Required
+policies and groups are stored in Menagerie's data, alongside each workspace's
+selection; changing them takes no configuration edit or restart.
+
 Each connection and each request has 30 seconds. An operator key with no approval,
 or a call outside its grant, fails the job with the operation and the container
-name, and an operator key with no approval also with the key's fingerprint.
+name. An operator key with no approval also names the key's fingerprint. Wyrwood
+records a newly offered key as pending under `menagerie-<agent>`. If `ssh-agent.sock`
+does not offer the configured key, the error identifies the configured key
+(and its fingerprint when selected by public key or fingerprint); check that
+Menagerie's Wyrwood policy offers it.
+
+When Menagerie needs another policy, open **Operator keys** in the Wyrwood web
+interface, choose **Edit grant** on Menagerie's key, add the policy to
+**Policies**, and **Save**. The next job uses the wider grant with the same key;
+no new Transit key, Menagerie configuration change, restart or revocation is
+needed.
+
+### Upgrading Wyrwood
+
+When upgrading from Wyrwood 0.6.1, follow Wyrwood's
+[upgrade order](https://wyrd.foo/docs/wyrwood/install/#upgrade-order) and
+[backup procedure](https://wyrd.foo/docs/wyrwood/install/#back-up-before-an-upgrade).
+Wyrwood 0.7.0 migrates the controller database to schema 5 and sends binding
+directories that 0.6.1 agents reject; rolling back requires the pre-upgrade
+controller backup.
+
+Upgrading from 0.7.0 needs no database migration. Upgrade the controller to
+0.7.1 before Menagerie: workspace policy changes use `binding-change`, which
+requires a 0.7.1 or later controller. Follow Wyrwood's upgrade order for agents.
 
 ### Xolotl
 
@@ -257,16 +333,23 @@ name, and an operator key with no approval also with the key's fingerprint.
 provisioning:
   xolotl:
     url: http://xolotl:8317
+    key-policy: host-sample
     key-secret:
       kv-mount: kv
       path: menagerie/xolotl
 ```
 
 `provisioning.xolotl` lets Menagerie issue and revoke the client key a
-workspace's definition declares. Menagerie needs Xolotl 0.6.0 or later.
+provisioned workspace uses. Menagerie needs Xolotl 0.6.0 or later.
+The key is named `<key-policy>/<workspace name>` and its identity is recorded
+once. Existing workspaces keep their imported key.
 
 - `url` is an http or https URL with a host and no user information, query or
   fragment.
+- `key-policy` names the policy for new workspace client keys: 1 to 63 lower
+  case letters, digits, `_` or `-`, starting with a letter or digit. Without it,
+  Menagerie warns at startup and a job needing a new key fails as
+  `provisioning-unavailable`.
 - `key-secret` names the OpenBao secret whose string field `api_key` holds
   Menagerie's scoped key. `kv-mount` is a KV version 2 mount and `path` is the
   secret's path in the mount.
@@ -332,7 +415,8 @@ once the cancelled work has stopped.
 
 - `default` limits every operation.
 - `operations` gives `start`, `stop`, `rebuild`, `create`, `upgrade`,
-  `commit`, `apply-branch` or `delete` its own limit, which replaces `default`.
+  `commit`, `apply-branch`, `apply-policies` or `delete` its own limit, which
+  replaces `default`.
 - `phases` limits each stay in a phase, inside any operation:
   `read-definition`, `issue-key`, `bind`, `initialize-command`, `build`,
   `unbind`, `remove-container`, `revoke-key`, `remove-folder`,
@@ -342,9 +426,39 @@ once the cancelled work has stopped.
   `backup-local-changes` or `backup`. Template hooks run inside `generate`
   and `apply`; a hook
   still running when its job is cancelled has its container killed and
-  removed before the job ends. A template fetch cannot be interrupted, so it
-  runs until the remote or the network ends it; if the job has ended by
-  then, it writes nothing to the workspace folder.
+  removed before the job ends.
+
+When a template request ends, its template fetch, document schema load,
+generation or upgrade stops, its request worker returns, and it writes
+no further file. Two narrower limits remain:
+
+gix cannot interrupt a transfer that waits for a remote, so the transfer a
+stop abandons keeps running, without blocking the caller, until the remote
+acts. Over HTTP(S) it keeps its Toha thread, gix's curl thread and the
+connection until the remote answers or closes the connection, or Git's
+`http.lowSpeedLimit` and `http.lowSpeedTime` end the transfer. Over SSH
+and `file://` it keeps its Toha thread and the `ssh` or `git-upload-pack`
+process until that process answers or exits. The transfer then ends: it
+writes nothing more and removes its temporary folder
+([Toha #78](https://github.com/wyrd-company/toha/issues/78)).
+
+A document schema fetch's stop aborts it and closes its connection within
+a fraction of a second (Toha checks the signal at least every 100 ms),
+also while the schema endpoint sends nothing. One part of it can't be
+interrupted: a name lookup still pending at the stop, either the schema
+host's or the target's that curl looks up itself behind a `socks4://` or
+`socks5://` proxy. The fetch still returns within 2 s, but the threads
+that wait on the lookup run on. Those are curl's resolver threads,
+detached instead of joined, and, behind such a proxy, one
+`toha-schema-release` thread that finishes releasing curl's handles and
+is waited for at most 250 ms. They hold no connection and end by
+themselves when the system resolver returns
+([Toha #81](https://github.com/wyrd-company/toha/issues/81)). With a
+libcurl that supports neither curl's transfer nor its multi-handle
+quick-exit option, the stop waits for the lookup instead.
+
+Neither limit holds a job, request worker or workspace in Menagerie's
+image, which builds curl with quick-exit support.
 
 A duration is whole hours, minutes and seconds, such as `2h`, `45m` or
 `1h30m`. A key without a value, such as `rebuild:` or `default: ""`, is an
@@ -376,7 +490,8 @@ send nothing.
 
 `event` is `job-failed` or `job-long-running`; a long-running alert has
 `"state": "running"` and `"error": null`. `console` opens the job's console
-at the origin of `oidc.redirect-url`. The body suits a generic webhook such
+at the origin of `oidc.redirect-url`. For `apply-policies` the console address
+is `/?job={id}`, and its phase is `bind`. The body suits a generic webhook such
 as ntfy, Slack through a relay, or Dagu.
 
 Menagerie makes one attempt per alert with a 10 second limit and does not

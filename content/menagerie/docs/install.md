@@ -148,9 +148,10 @@ group Wyrwood's sockets are open only to Wyrwood's own user.
 
 To let Menagerie provision workspaces, prepare the host once. After this, a
 [create](usage.md#a-workspace-with-a-provisioning-declaration) needs no step in a
-CLI or a web interface. Keep Menagerie's data volume: the retirement records are
-in its `provisioning` folder, and what a lost record named stays until an operator
-removes it.
+CLI or a web interface. Keep Menagerie's data volume in the host's backup:
+Menagerie's data, in its `state` folder, holds each binding and key Menagerie
+provisioned for a workspace, and what lost data named stays until an operator
+removes it in the Wyrwood and Xolotl web interfaces.
 
 1. Create an Ed25519 Transit key, here `menagerie-operator`, and offer it in
    Menagerie's policy beside any SSH key. Also grant `read` on the secret that
@@ -201,16 +202,27 @@ removes it.
    | Grant | Value |
    | --- | --- |
    | **Agents** | Only this host's agent |
-   | **Policies** | Only the policies your templates declare, such as `host-sample-workspace` |
+   | **Policies** | Only the policies managers may select, such as `host-sample-workspace` |
    | **Read** and **Bind** | On |
    | **Policy write** | Off |
 
 Approve the key once. It has no expiry, so that provisioning does not stop in
-silence, and **Revoke** ends it. A grant cannot be edited: a wider allowlist needs
-a new Transit key and a new approval under a new label. A binding that holds a
-policy outside the allowlist is outside the grant, so Menagerie cannot change it.
+silence, and **Revoke** ends it. When Menagerie needs another policy, open
+**Operator keys** in Wyrwood, choose **Edit grant** on Menagerie's key, add the
+policy to **Policies**, and **Save**. The next job can bind it: no new Transit
+key, Menagerie configuration change, restart or revocation is needed. A binding
+that holds a policy outside the allowlist is outside the grant, so Menagerie
+cannot change it.
 Keep Menagerie's own policy out of the allowlist, so that Menagerie cannot change
 its own binding.
+
+Workspace policy changes require Wyrwood 0.7.1 or later, whose controller
+supports `binding-change`. Configure `provisioning.xolotl.key-policy` with the
+policy of this host's workspace client keys. Menagerie supplies the values and
+key identity; templates declare only the binding's access group. New or rebuilt
+containers get `MENAGERIE_XOLOTL_KEY` as `policy/name`; a start of an existing
+container keeps its environment until rebuild, and an explicit `containerEnv`
+value wins.
 
 ## The host
 
@@ -226,7 +238,7 @@ edit both files.
 | `SSH_AUTH_SOCK=/run/wyrwood/ssh-agent.sock` | With an SSH identity: Toha's Git transport runs the image's `ssh` client with this agent. Leave it out with only a GitHub App. |
 | `config.yml` at `/etc/menagerie/config.yml` | Both services read it. |
 | `SSL_CERT_FILE` and the bundle it names | Optional: a Git server whose certificate a private authority signed. See [Git hosts](#git-hosts). |
-| A volume at `/var/lib/menagerie` | Toha's template cache, the template service's session key, the services' home and the folder Toha builds an upgrade's candidate in. Without it they are lost when the container is recreated. |
+| A volume at `/var/lib/menagerie` | Menagerie's data in `state/menagerie.db`: each binding and key Menagerie provisioned for a workspace. Also Toha's template cache, the template service's session key, the services' home and the folder Toha builds an upgrade's candidate in. Without it they are lost when the container is recreated. Keep the volume in the host's backup. |
 | `restart: unless-stopped` | Docker restarts Menagerie after either service stops. After a host restart the Wyrwood agent starts it: see [After a host restart](#after-a-host-restart). |
 | Port `8080` | The web UI and workspace API. Publish it on a private address only. |
 
@@ -344,7 +356,9 @@ a Docker Hub access token as the password. See
 ## After a host restart
 
 Menagerie and its workspaces come back with no host unit and no step by hand.
-This needs Wyrwood 0.6.1 or later.
+This needs Wyrwood 0.7.1 or later. See the
+[configuration guide](configuration.md#upgrading-wyrwood) for the stopped
+rollout when upgrading from 0.6.1.
 
 A host restart empties `/run`, and Docker starts containers before the Wyrwood
 agent runs. Docker's start of a bound container fails on its missing consumer
@@ -371,8 +385,107 @@ rules.
 
 Pull the new image tag and recreate the container. Running jobs end with the
 container, and job history starts empty; workspace folders, their answers in
-`.toha.json`, their containers and the sign-in configuration remain.
-Everyone signs in again.
+`.toha.json`, their containers, Menagerie's data and the sign-in configuration
+remain. Everyone signs in again.
+
+Back up the `/var/lib/menagerie` volume before an upgrade, with the rest of the
+host. Menagerie's data in it holds what Menagerie provisioned for each workspace,
+and a release refuses to start on data that a newer release wrote, so going back
+needs the backup. A start that finds no data takes back what the workspaces,
+their definitions, their containers and Wyrwood still hold, as the first start
+after an upgrade does.
+
+### Upgrading from 0.4.2
+
+Release 0.5.0 changes what a 0.4.2 install relies on. Before you pull the
+image:
+
+1. Upgrade the Wyrwood controller and agents to 0.7.1 first, in Wyrwood's
+   upgrade order; from 0.6.1 that is a [stopped
+   rollout](configuration.md#upgrading-wyrwood).
+2. Back up the `/var/lib/menagerie` volume. Going back needs it.
+3. Repair every workspace whose definition no longer parses, as
+   the section below says.
+4. With `provisioning.xolotl`, set
+   [`provisioning.xolotl.key-policy`](configuration.md#xolotl) before the first
+   start. A template's declaration no longer names the policy of a workspace's
+   client key, and this covers your existing workspaces too: every workspace
+   whose definition has a `customizations.menagerie` block and no Xolotl key
+   gets a new client key `<key-policy>/<name>` at its next **Start** or
+   **Rebuild**. 0.4.2 issued one only when the template declared `xolotl`,
+   and the keys a 0.4.2 template declared are imported at the first start.
+   Without `key-policy`, that **Start** or **Rebuild** fails as
+   `provisioning-unavailable`.
+5. With `provisioning.xolotl`, list the workspaces with a
+   `customizations.menagerie` block and no `customizations.menagerie.xolotl`
+   whose names are not 1 to 63 lower case letters, digits, `_` or `-`,
+   starting with a letter or digit. After the upgrade, and once `key-policy` is
+   set, every **Start** and **Rebuild** of one fails as `provisioning-invalid`.
+   Create each again under a valid name, move its work into the new workspace
+   and delete the old one; **Delete** still works after the upgrade. Menagerie
+   does not rename a workspace.
+6. Make each entry of the `templates` key name a `MAJOR.MINOR.PATCH` tag, with a
+   leading `v` if you like. The first start imports the entries once, as
+   [The templates key](configuration.md#the-templates-key) says: it skips a
+   repository with no such tag, an entry on a host with a port that names a
+   ref (register that template in the interface with no ref instead), and an
+   address Menagerie now refuses. It keeps one template for each repository
+   and folder, with the newest entry's `id`, so point clients and scripts at
+   the id that is kept: a create naming another entry's id is refused as
+   `unknown-template`.
+
+After the first start:
+
+7. Read the start log for each skipped entry and register that template in the
+   interface, then remove the `templates` key.
+8. With `provisioning.wyrwood`, mark as required, or put in groups, on the
+   [Policies](usage.md#policies) screen the policies your templates used to
+   declare, before anyone creates a workspace. Menagerie no longer reads
+   `policies`, `values` or `xolotl` from a template's
+   `customizations.menagerie`, and a new workspace gets only the policies a
+   manager chose or marked required.
+9. Stop sending `templateId` on an upgrade. Menagerie refuses it with
+   `invalid-request`; an upgrade without it applies the current version of the
+   workspace's template.
+
+On a host with provisioning, the name of a new workspace is 1 to 63 lower case
+letters, digits, `_` or `-`, starting with a letter or digit.
+
+### The first start that keeps Menagerie's data
+
+The first start of a release that keeps Menagerie's data, after a release that
+did not, takes over what the earlier release kept elsewhere, before it serves and
+with no step by hand:
+
+- every workspace folder;
+- the container names and Xolotl keys in the retirement records of the volume's
+  `provisioning` folder, which it then removes;
+- the container name and the Xolotl key each workspace's definition declares in
+  `customizations.menagerie`, a block that is not valid included. The declared
+  name becomes the workspace's current one, unless a container outside the
+  workspace has it;
+- the configuration's `templates` entries, once, as registered templates at
+  their newest version, each workspace joining its template, as
+  [The templates key](configuration.md#the-templates-key) says. The template
+  service must answer within a minute, with a reading or a refusal of each
+  address rather than a fault, or the start fails and the next one imports.
+  From then on templates are registered in the interface, and each start
+  that finds the key logs that it is no longer read.
+
+When two workspaces would hold one name or key, the start log names both and
+the one that has it, and a provisioning job of the other fails until it is gone.
+Without [`provisioning.wyrwood`](configuration.md#wyrwood-operator-key), the names
+are kept with no Wyrwood agent: a job that would bind or unbind one fails as
+`provisioning-unavailable` until the first start with that section records the
+agent.
+
+Before the upgrade, repair every workspace whose `.devcontainer/devcontainer.json`
+cannot be read, such as one edited by hand so that it no longer parses. At the
+first start, such a workspace keeps the names of its containers,
+when `provisioning.wyrwood` is configured, so that a later job or its delete
+retires them, but its policies are not imported. If you upgrade without the
+repair, pick that workspace's policies again in the interface once its definition
+is repaired.
 
 ## What Menagerie can do to the host
 
@@ -389,8 +502,9 @@ network. Keep these limits in place:
   end their session at once.
 - Publish the UI on a private address behind your HTTPS reverse proxy, never
   on the public internet.
-- Approve only templates you trust; Menagerie uses only the templates its
-  configuration lists.
+- Register only templates you trust: any manager can register a template from a
+  Git address in the interface, and its hooks and `initializeCommand` run in
+  throwaway containers on the host.
 - Without `job-limits`, a job has no time limit, and a hook or build that
   never ends keeps its workspace busy until Menagerie restarts. Set
   [job time limits](configuration.md#job-time-limits) and an alert webhook
