@@ -1,6 +1,6 @@
 name: menagerie
 version: 0.5.0
-docs-version: 0.2.5
+docs-version: 0.2.6
 tagline: Manage workspaces and fleets of development containers through a web UI.
 blurb: One container that creates workspaces from Toha templates through their interviews, provisions the Wyrwood binding and Xolotl key a template declares, shows every workspace with its devcontainer, starts, stops, rebuilds, upgrades and deletes them, and backs each one up to its own Git branch. Managers sign in through OpenID Connect; Wyrwood supplies its SSH key and registry credentials.
 status: preview
@@ -10,7 +10,7 @@ kinds:
   - kind: app
     install:
       - default: true
-        command: docker pull ghcr.io/wyrd-company/menagerie:0.4.2
+        command: docker pull ghcr.io/wyrd-company/menagerie:0.5.0
         method: docker
 highlights:
   - Creates a workspace from a Toha template through its interview in the browser. When the template declares what it needs and the host is prepared, the job issues its Xolotl key and makes its Wyrwood binding, so the container has its credentials on its first start, with no step in a CLI or another web interface.
