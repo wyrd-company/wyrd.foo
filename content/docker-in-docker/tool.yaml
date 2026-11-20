@@ -8,12 +8,12 @@ release-unit: docker-in-docker
 owner: wyrd-company/devcontainers
 licence: MIT
 release:
-  version: 1.1.0
-  date: 2026-10-31T20:38:08.000Z
+  version: 1.1.1
+  date: 2026-11-20T06:55:42.000Z
   notes: |-
-    ### Features
+    ### Fixes
 
-    - When the Ansible Feature is installed, the services of this Feature start after its `ansible-setup` oneshot succeeds. Without Ansible, startup does not change. The Feature adds the Ansible Feature to `installsAfter`.
+    - Retry cgroup v2 setup when concurrent startup leaves processes in the root cgroup.
 name: Docker (Docker-in-Docker)
 description: Creates child containers using Docker daemons supervised as native s6-overlay services.
-version: 1.1.0
+version: 1.1.1
