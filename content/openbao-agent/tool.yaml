@@ -8,12 +8,12 @@ release-unit: openbao-agent
 owner: wyrd-company/devcontainers
 licence: MIT
 release:
-  version: 2.1.1
-  date: 2026-11-12T05:07:57.000Z
+  version: 2.1.2
+  date: 2026-11-21T05:04:58.000Z
   notes: |-
     ### Fixes
 
-    - The README lists the Vector Feature among the Features that load a secret file.
+    - Deprecate this Feature; it is no longer maintained or supported.
 name: OpenBao Agent
 description: Installs OpenBao and runs OpenBao Agent as an s6-overlay service.
-version: 2.1.1
+version: 2.1.2
