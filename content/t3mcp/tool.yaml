@@ -1,6 +1,6 @@
 name: t3mcp
-version: 0.1.4
-docs-version: 0.1.4
+version: 0.1.5
+docs-version: 0.1.5
 release-unit: t3code-mcp
 tagline: Inspect and control T3 Code through complementary MCP tools.
 blurb: A stdio MCP server for direct webhook addresses, delivery diagnostics, thread inspection, queue recovery, provider status and historical usage. Connect through the same saved profiles as t3c, beside the built-in T3 Code MCP server.
@@ -243,13 +243,13 @@ owner: wyrd-company/t3code-client
 licence: MIT
 docs-path: docs/user/t3mcp
 release:
-  version: 0.1.4
-  date: 2026-11-11T15:49:23.000Z
-  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-mcp%400.1.4
+  version: 0.1.5
+  date: 2026-11-21T09:12:29.000Z
+  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-mcp%400.1.5
   notes: |+
-    ## 0.1.4
+    ## 0.1.5
 
-    ### Fixes
+    ### Features
 
-    - Target stock T3 Code 0.1.9, orchestration protocol 2. `TARGET_T3_CODE_VERSION` is `0.1.9`, and `t3c version` compares the server with 0.1.9.
+    - Target stock T3 Code 0.1.10 with orchestration protocol 2. The `usage_summary` tool adds the optional `provisional` input for returning the last scan while sources refresh. The existing `awaitRefresh` option takes precedence when both are true. Usage results can include unpriced token counts and a physical source ID.
 

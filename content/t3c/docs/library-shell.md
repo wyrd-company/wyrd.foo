@@ -1,7 +1,7 @@
 ---
 product: t3c
 title: "Shell API"
-order: 17
+order: 18
 relationships:
   references: [library, api]
 ---
@@ -122,7 +122,16 @@ olderSettledThreads(
 
 ### shellApi.watch()
 
-Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped socket.
+Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped socket from the
+last cursor and yields `reconnected` first. The cursor moves only on a snapshot without
+`resolvedRepositoryIdentityRoots` and on sequenced items.
+
+Options: `afterSequence` replays the changes after that cursor instead of sending a snapshot;
+`httpSnapshotFallback` (with a cursor) answers a gap the server cannot replay with one
+`snapshot-required` item, after which the subscription ends: read `snapshot()` and watch again
+from its `snapshotSequence`. Without it the server sends a socket snapshot instead.
+`omitIdleSubagents` and `omitOlderSettled` leave rows out as `snapshot` does; `signal` ends
+the watch quietly.
 
 ```ts
 watch(options: ShellWatchOptions = {}): AsyncIterable<ShellWatchItem>;

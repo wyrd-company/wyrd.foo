@@ -18,7 +18,7 @@ The [native command surface](https://github.com/wyrd-company/t3code-client/blob/
 commands, positional arguments, options and input relationships. This guide
 explains their use. `t3c` runs on Node >=22.16. Startup checks the Node minimum
 and prints a clear error when it is unmet. Argument parsing uses commander.
-The target server is stock T3 Code 0.1.9 with orchestration protocol 2.
+The target server is stock T3 Code 0.1.10 with orchestration protocol 2.
 
 ## Connection and profiles
 
@@ -141,7 +141,7 @@ account details. `--json` returns `{environment, providers}` as the server
 returns them.
 
 ```text
-server	sample-environment	0.1.9	protocol 2
+server	sample-environment	0.1.10	protocol 2
 environment	00000000-0000-4000-8000-000000000000
 platform	linux	x64
 capabilities	64 of 65 enabled	disabled agentActivityPublishing
@@ -150,6 +150,58 @@ provider	codex	codex	ready enabled	0.167.0	Codex
   model	sample-model	Sample Model	default
     option	reasoningEffort	low|medium*|high
 ```
+
+## Watch pending requests
+
+`requests watch` follows approvals and questions across the selected server.
+It requires `orchestration:read`. It reports requests it sees pending, including
+those pending when it starts and those still pending after a reconnect. Each
+request is reported once per invocation. Threads created or archived during
+the watch can report requests. Requests already pending in archived threads
+at startup and requests that settle before the watch sees them pending are
+outside the watch.
+
+```sh
+t3c requests watch --project project-1 --kind approval --exclude-tag reviewer
+```
+
+Repeat `--project <id>` to include several projects. With no project filter
+the watch covers all projects. Use `--kind approval` or `--kind user-input`
+to select one kind. Repeat `--exclude-thread <id>` and `--exclude-tag <tag>`
+to exclude specific threads. Ids match exactly. Tags match case-sensitively
+after trimming. A subagent's thread has its own id and tags.
+
+When the server matches a profile, the watch uses its saved filters for
+any filter flag you omit. Use `--ignore-defaults` to use only the flags you
+supply. See [Set request watch defaults](auth.md#set-request-watch-defaults).
+
+Stdout carries one JSON line per report in either output mode. The line has
+`type: "request"`, `kind`, `requestId`, the thread's id, title and tags, the
+project's id and title, the runtime `request` record, and its timeline card
+as `item`. An unknown project title or an absent card is null. User-input
+reports also carry `questions`. Check `request.status` before responding
+because a request can settle while the watcher waits for its card. Use
+`thread respond` to answer a request explicitly.
+
+```sh
+t3c requests watch --kind approval --exclude-thread thread-1 --exec ./notify-reviewer.sh
+```
+
+`--exec <command>` runs your command through the platform shell in the
+current directory. The hook gets the exact request line on stdin, followed
+by EOF. Its arguments come from your command and its environment inherits
+the watcher's values with `T3_SERVER_URL` set to the server's origin. If the
+watcher used `--credentials`, pass that option explicitly to any t3c command
+inside the hook. Hook output and failures go to stderr. Use
+`--exec-concurrency <n>` to change the default of four simultaneous hooks
+and `--exec-timeout <duration>` to change the default of ten minutes per
+run. A failed or timed-out hook leaves the watch running.
+
+Use `--log-level info` to see readiness and reconnect messages. Ctrl-C
+stops reporting and drains hooks for lines already printed. A second
+interrupt stops active hooks immediately. See [Output, exits and requests](policy.md)
+for the final result event and exit codes. Follow the [worked approval hook](watch-approvals.md)
+to send approvals to a reviewer thread.
 
 ## Stop and queue recovery
 
