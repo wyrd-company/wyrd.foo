@@ -8,12 +8,12 @@ release-unit: caddy
 owner: wyrd-company/devcontainers
 licence: MIT
 release:
-  version: 1.2.1
-  date: 2026-11-21T07:03:13.000Z
+  version: 1.2.2
+  date: 2026-11-22T23:31:01.000Z
   notes: |-
     ### Fixes
 
-    - Resolve the latest Caddy release through the GitHub redirect before using the API.
+    - Report Docker readiness after the DNS wait and Caddy configuration load.
 name: Caddy Reverse Proxy
 description: Installs Caddy with an s6-supervised config watcher for dynamically managed development reverse proxies.
-version: 1.2.1
+version: 1.2.2

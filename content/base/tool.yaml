@@ -1,6 +1,6 @@
 name: Wyrd base image
-version: 1.1.0
-docs-version: 0.1.1
+version: 1.2.0
+docs-version: 0.1.2
 tagline: Microsoft's Ubuntu Dev Container base with s6-overlay as PID 1.
 blurb: A Dev Container image that keeps the tools, non-root vscode user and metadata of Microsoft's Ubuntu base, adds s6-overlay as PID 1 for long-running services, and limits the vscode user's sudo to package installs and service control.
 status: stable
@@ -57,12 +57,12 @@ owner: wyrd-company/devcontainers
 licence: MIT
 docs-path: docs/user
 release:
-  version: 1.1.0
-  date: 2026-11-16T03:35:01.000Z
-  url: https://github.com/wyrd-company/devcontainers/releases/tag/base%401.1.0
+  version: 1.2.0
+  date: 2026-11-22T23:31:26.000Z
+  url: https://github.com/wyrd-company/devcontainers/releases/tag/base%401.2.0
   notes: |+
     
     ### Features
 
-    - A D-Bus session bus for the `vscode` user runs as the `dbus-session` s6 service, and `DBUS_SESSION_BUS_ADDRESS` points every process at it. D-Bus clients such as `gh`'s keyring lookup and VS Code no longer start a new `dbus-daemon` on each call that never exits, which used up the host's per-user inotify instances and froze long-running containers. The image installs `dbus-daemon` but not `dbus-launch`.
+    - Report Docker health from s6 startup, service state, and readiness notifications.
 
