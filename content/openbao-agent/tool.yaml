@@ -8,12 +8,12 @@ release-unit: openbao-agent
 owner: wyrd-company/devcontainers
 licence: MIT
 release:
-  version: 2.1.2
-  date: 2026-11-21T05:04:58.000Z
+  version: 2.1.3
+  date: 2026-11-24T01:01:40.000Z
   notes: |-
     ### Fixes
 
-    - Deprecate this Feature; it is no longer maintained or supported.
+    - The README no longer lists the Vector Feature as a consumer of `/run/openbao/secrets/<feature-id>.env`: Vector 2 reads secrets with the base image's `bao-secret`. Remove any template that still writes `vector.env`.
 name: OpenBao Agent
 description: Installs OpenBao and runs OpenBao Agent as an s6-overlay service.
-version: 2.1.2
+version: 2.1.3
