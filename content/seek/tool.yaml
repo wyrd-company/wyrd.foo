@@ -1,6 +1,6 @@
 name: seek
-version: 0.3.1
-docs-version: 0.1.0
+version: 0.3.2
+docs-version: 0.1.1
 release-unit: seek-cli
 tagline: Agent-friendly web search, research & scraping.
 blurb: One CLI over many provider APIs — Parallel, Exa, Brave, Perplexity, Gemini, Firecrawl. Commands group providers by intent so an agent or human picks the right trade-off between speed, cost, and output type.
@@ -10,47 +10,47 @@ order: 3
 kinds:
   - kind: cli
     install:
-      - method: homebrew
-        os:
+      - os:
           - macos
           - linux
         default: true
         command: brew install wyrd-company/tools/seek-cli
-      - method: archive
-        os:
+        method: homebrew
+      - os:
           - linux
         label: Linux x86_64
         command: |
           curl -LO https://github.com/wyrd-company/seek-cli/releases/latest/download/seek-linux-x86_64.tar.gz
           tar -xzf seek-linux-x86_64.tar.gz
           sudo install seek /usr/local/bin/seek
-      - method: archive
-        os:
+        method: archive
+      - os:
           - linux
         label: Linux arm64
         command: |
           curl -LO https://github.com/wyrd-company/seek-cli/releases/latest/download/seek-linux-arm64.tar.gz
           tar -xzf seek-linux-arm64.tar.gz
           sudo install seek /usr/local/bin/seek
-      - method: archive
-        os:
+        method: archive
+      - os:
           - macos
         label: macOS arm64
         command: |
           curl -LO https://github.com/wyrd-company/seek-cli/releases/latest/download/seek-macos-arm64.tar.gz
           tar -xzf seek-macos-arm64.tar.gz
           sudo install seek /usr/local/bin/seek
-      - method: archive
-        os:
+        method: archive
+      - os:
           - macos
         label: macOS x86_64
         command: |
           curl -LO https://github.com/wyrd-company/seek-cli/releases/latest/download/seek-macos-x86_64.tar.gz
           tar -xzf seek-macos-x86_64.tar.gz
           sudo install seek /usr/local/bin/seek
-      - method: docker
-        label: Server image
+        method: archive
+      - label: Server image
         command: docker run --rm -p 8787:8787 -e SEEK_SERVER_TOKEN="$(openssl rand -hex 32)" -e EXA_API_KEY="$EXA_API_KEY" ghcr.io/wyrd-company/seek-server:latest
+        method: docker
 highlights:
   - "Groups providers under three intent-shaped commands: web search, research and scrape."
   - Searches the web in real time through Parallel, Exa, Brave Search, Brave Answers or Perplexity.
@@ -60,8 +60,73 @@ highlights:
   - Runs as a back-end with seek serve, so provider API keys stay on one server, and ships as a single native binary or a container image.
 media:
   - src: assets/demo.gif
-    caption: seek runs a web search and prints the results.
-    alt: Terminal recording of the seek command running a web search and printing the results.
+    caption: seek searches the web, starts a research job and extracts a page.
+    alt: Terminal recording of seek, against its practice server, printing two search results, accepting a research job and reporting its status, and printing the text of a page.
+nav:
+  - section: Users
+    groups:
+      - group: Tutorials
+        pages:
+          - first-search
+      - group: How-to guides
+        pages:
+          - install
+          - config
+          - web
+          - research
+          - scrape
+          - connect-to-a-server
+          - server
+          - agent-skill
+      - group: Explanation
+        pages:
+          - overview
+          - providers
+          - credentials
+          - research-jobs
+      - group: Reference
+        pages:
+          - seek
+          - seek-skill
+          - seek-web
+          - seek-web-parallel
+          - seek-web-exa
+          - seek-web-brave
+          - seek-web-brave-search
+          - seek-web-brave-answers
+          - seek-web-perplexity
+          - seek-research
+          - seek-research-status
+          - seek-research-get
+          - seek-research-brave
+          - seek-research-parallel
+          - seek-research-google
+          - seek-research-perplexity
+          - seek-scrape
+          - seek-scrape-exa
+          - seek-scrape-parallel
+          - seek-scrape-firecrawl
+          - seek-config
+          - seek-config-path
+          - seek-config-init
+          - seek-config-show
+          - seek-serve
+          - configuration
+  - section: Developers
+    groups:
+      - group: Tutorials
+        pages:
+          - server-client
+      - group: How-to guides
+        pages:
+          - script-research-jobs
+      - group: Explanation
+        pages:
+          - server-proxy
+      - group: Reference
+        pages:
+          - http-api
+          - research-job-envelope
 logo: assets/logo.svg
 logo-dark: assets/logo-dark.svg
 favicon: assets/favicon.svg
@@ -69,7 +134,7 @@ social-image: assets/social-image.png
 owner: wyrd-company/seek-cli
 docs-path: docs/user
 release:
-  version: 0.3.1
-  date: 2026-10-26T13:43:16.000Z
-  url: https://github.com/wyrd-company/seek-cli/releases/tag/0.3.1
-  notes: Release 0.3.1
+  version: 0.3.2
+  date: 2026-11-24T01:58:40.000Z
+  url: https://github.com/wyrd-company/seek-cli/releases/tag/0.3.2
+  notes: Release 0.3.2
