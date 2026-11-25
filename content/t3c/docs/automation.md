@@ -112,6 +112,9 @@ selects `new_thread`. Update keeps the stored mode, but a thread bound to a
 JSON input accepts `threadMode`. JSON objects use the
 library's `workspaceStrategy` and `modelSelection` types.
 
+Scheduled worktrees keep Unicode whitespace in the Git ref names supplied
+through `--base-ref`, `--branch` or a JSON workspace strategy.
+
 ## Webhook endpoints and deliveries
 
 ```sh

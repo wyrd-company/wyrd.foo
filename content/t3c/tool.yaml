@@ -1,6 +1,6 @@
 name: t3c
-version: 0.2.5
-docs-version: 0.4.6
+version: 0.2.6
+docs-version: 0.4.7
 release-unit: t3code-cli
 tagline: Run T3 Code conversations from your terminal and automation.
 blurb: A Node command-line client and TypeScript library for stock T3 Code. Pair named servers, run or continue conversations, inspect threads, and preserve clear output and exit codes in automation.
@@ -100,13 +100,17 @@ owner: wyrd-company/t3code-client
 licence: MIT
 docs-path: docs/user/t3c
 release:
-  version: 0.2.5
-  date: 2026-11-22T17:43:20.000Z
-  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-cli%400.2.5
+  version: 0.2.6
+  date: 2026-11-25T19:31:37.000Z
+  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-cli%400.2.6
   notes: |+
-    ## 0.2.5
+    ## 0.2.6
+
+    ### Features
+
+    - Target stock T3 Code 0.1.12 with orchestration protocol 2. Use `t3c thread diff <id> --json` and read `data.repositories` for patches from changed tracked repositories, including projects whose root is outside Git. Plain text and the JSON `data.diff` field show the thread folder's own patch.
 
     ### Fixes
 
-    - Target stock T3 Code 0.1.11, orchestration protocol 2. The t3c version command reports this target. The complementary MCP inventory is checked against the expanded stock issue, pull request and CI tool set.
+    - Worktree launches and schedules preserve Unicode whitespace in `--base-ref`, `--branch` and scheduled JSON workspace strategies. Pass Git ref names exactly as stored on the server.
 

@@ -1,6 +1,6 @@
 name: t3mcp
-version: 0.1.6
-docs-version: 0.1.5
+version: 0.1.7
+docs-version: 0.1.6
 release-unit: t3code-mcp
 tagline: Inspect and control T3 Code through complementary MCP tools.
 blurb: A stdio MCP server for direct webhook addresses, delivery diagnostics, thread inspection, queue recovery, provider status and historical usage. Connect through the same saved profiles as t3c, beside the built-in T3 Code MCP server.
@@ -243,13 +243,13 @@ owner: wyrd-company/t3code-client
 licence: MIT
 docs-path: docs/user/t3mcp
 release:
-  version: 0.1.6
-  date: 2026-11-22T17:41:48.000Z
-  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-mcp%400.1.6
+  version: 0.1.7
+  date: 2026-11-25T19:29:46.000Z
+  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-mcp%400.1.7
   notes: |+
-    ## 0.1.6
+    ## 0.1.7
 
-    ### Fixes
+    ### Features
 
-    - Target stock T3 Code 0.1.11, orchestration protocol 2. The t3c version command reports this target. The complementary MCP inventory is checked against the expanded stock issue, pull request and CI tool set.
+    - Target stock T3 Code 0.1.12 with orchestration protocol 2. Read `repositories` in the `thread_diff` response for patches from changed tracked repositories, including when the thread folder is outside Git. The `diff` field shows the thread folder's own patch.
 
