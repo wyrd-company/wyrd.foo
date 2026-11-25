@@ -24,6 +24,8 @@ is stable; the message names what failed and what was left behind.
 | `upgrade-failed` | Toha or a template hook failed while applying an upgrade. Files written before the failure remain; the state before the upgrade is on the backup branch, and the message names its commit. Recovery is manual. An upgrade's hooks run in Toha's candidate, so a failed hook wrote nothing to the workspace folder. A container failure has the same console line as for `generation-failed`. |
 | `merge-conflicted` | The upgrade wrote conflict markers. Resolve them in the named files, then **Rebuild**. |
 | `backup-failed` | A commit or push of the workspace failed. The message says what was changed: before an upgrade, nothing; after it, the devcontainer was not rebuilt. Check the workspace repository, that Menagerie's SSH key, or the [GitHub App](configuration.md#github-app) for an `https` repository, may push to it, and the Wyrwood binding. |
+| `backup-move-failed` | A [move of a workspace's backups](usage.md#move-a-workspaces-backups) could not check, write or read back the destination, or the workspace's create has not finished. The message names the step and says the workspace still backs up to its earlier repository. Fix the cause and move again. |
+| `backup-branch-conflict` | The destination already has a branch with the workspace's name, from another history, such as another host's workspace of that name. Nothing was pushed. Rename or remove that branch in the destination, or choose another repository. |
 | `timed-out` | The job passed a configured [time limit](configuration.md#job-time-limits); the message names the phase and the limit. A hook still running was stopped and its container removed before the job ended. A create keeps its folder, as every failed create does. A build or up can leave a half-created container: **Start** reuses it and **Rebuild** removes it. |
 | `host-prerequisites-missing` | The host lacks bind sources outside the workspace folder or the networks of `runArgs` that the new workspace's definition needs. The message names them all, and nothing was committed or started. Prepare the host, then **Start** the workspace, which finishes the create. |
 | `provisioning-invalid` | The definition's `customizations.menagerie` block cannot be used: it is not valid, the definition has no `--name` in `runArgs`, it is a Compose definition, or Menagerie holds the container name or the Xolotl key for another workspace, or a container of another workspace has the name, or, with `provisioning.xolotl`, the workspace needs a new Xolotl key and its name is not 1 to 63 lower case letters, digits, `_` or `-`, starting with a letter or digit. The message names the field, the holder or the rule. Correct the template or the definition; a workspace whose name breaks the rule is created again under a valid name. |
@@ -103,10 +105,10 @@ A push or fetch over `https` names a fixed reason too:
 | --- | --- |
 | the workspace repository did not accept the credentials | The App's installation and permissions. |
 | the workspace repository denied access | The App has Contents read and write. |
-| the workspace repository was not found | `workspace-repository`. |
+| the workspace repository was not found | The workspace's backup repository URL, on [Backup repositories](usage.md#backup-repositories). |
 | the workspace repository answered status N | The server's status for that code. |
-| the workspace repository answered with a redirect; set workspace-repository to its current address | The repository moved: give its current address. |
-| the workspace repository address is not a valid Git URL | `workspace-repository`. |
+| the workspace repository answered with a redirect; register the repository at its current address | The repository moved: give its current address. |
+| the workspace repository address is not a valid Git URL | The workspace's backup repository URL. |
 | the workspace repository's credentials could not be prepared | The credential source for that URL. |
 | the workspace repository could not be reached or refused the transfer | Network access, and the remote's text in the job console. |
 
