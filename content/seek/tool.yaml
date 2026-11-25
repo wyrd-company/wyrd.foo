@@ -1,6 +1,6 @@
 name: seek
-version: 0.3.2
-docs-version: 0.1.1
+version: 0.4.0
+docs-version: 0.1.2
 release-unit: seek-cli
 tagline: Agent-friendly web search, research & scraping.
 blurb: One CLI over many provider APIs — Parallel, Exa, Brave, Perplexity, Gemini, Firecrawl. Commands group providers by intent so an agent or human picks the right trade-off between speed, cost, and output type.
@@ -49,7 +49,7 @@ kinds:
           sudo install seek /usr/local/bin/seek
         method: archive
       - label: Server image
-        command: docker run --rm -p 8787:8787 -e SEEK_SERVER_TOKEN="$(openssl rand -hex 32)" -e EXA_API_KEY="$EXA_API_KEY" ghcr.io/wyrd-company/seek-server:latest
+        command: docker run --rm -p 8787:8787 -e SEEK_SERVER_TOKENS_VALUE="$(openssl rand -hex 32)" -e SEEK_PROVIDERS_EXA_API_KEY_VALUE="$EXA_API_KEY" ghcr.io/wyrd-company/seek-server:latest
         method: docker
 highlights:
   - "Groups providers under three intent-shaped commands: web search, research and scrape."
@@ -71,12 +71,12 @@ nav:
       - group: How-to guides
         pages:
           - install
+          - upgrade-from-0-3
           - config
           - web
           - research
           - scrape
           - connect-to-a-server
-          - server
           - agent-skill
       - group: Explanation
         pages:
@@ -84,7 +84,25 @@ nav:
           - providers
           - credentials
           - research-jobs
-      - group: Reference
+  - section: Administration
+    groups:
+      - group: How-to guides
+        pages:
+          - server
+  - section: Developers
+    groups:
+      - group: Tutorials
+        pages:
+          - server-client
+      - group: How-to guides
+        pages:
+          - script-research-jobs
+      - group: Explanation
+        pages:
+          - server-proxy
+  - section: References
+    groups:
+      - group: Command line
         pages:
           - seek
           - seek-skill
@@ -110,20 +128,12 @@ nav:
           - seek-config-path
           - seek-config-init
           - seek-config-show
+          - seek-config-validate
           - seek-serve
+      - group: Configuration
+        pages:
           - configuration
-  - section: Developers
-    groups:
-      - group: Tutorials
-        pages:
-          - server-client
-      - group: How-to guides
-        pages:
-          - script-research-jobs
-      - group: Explanation
-        pages:
-          - server-proxy
-      - group: Reference
+      - group: API
         pages:
           - http-api
           - research-job-envelope
@@ -134,7 +144,7 @@ social-image: assets/social-image.png
 owner: wyrd-company/seek-cli
 docs-path: docs/user
 release:
-  version: 0.3.2
-  date: 2026-11-24T01:58:40.000Z
-  url: https://github.com/wyrd-company/seek-cli/releases/tag/0.3.2
-  notes: Release 0.3.2
+  version: 0.4.0
+  date: 2026-11-25T07:39:01.000Z
+  url: https://github.com/wyrd-company/seek-cli/releases/tag/0.4.0
+  notes: Release 0.4.0

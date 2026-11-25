@@ -36,12 +36,12 @@ Leave it running. Each request it answers adds a line to this terminal.
 ## Point seek at the server
 
 Open a second terminal. seek sends its searches to a seek server when
-`SEEK_SERVER_URL` is set, with the token in `SEEK_SERVER_TOKEN`, so we set
-both:
+`SEEK_SERVER_URL` is set, with the token in `SEEK_SERVER_TOKEN_VALUE`, so we
+set both:
 
 ```sh
 export SEEK_SERVER_URL=http://127.0.0.1:8788
-export SEEK_SERVER_TOKEN=practice-token
+export SEEK_SERVER_TOKEN_VALUE=practice-token
 ```
 
 These commands print nothing. They last until we close this terminal.
@@ -113,7 +113,7 @@ Press Ctrl+C in the first terminal. In the second, unset
 the two variables, so that seek goes back to calling providers itself:
 
 ```sh
-unset SEEK_SERVER_URL SEEK_SERVER_TOKEN
+unset SEEK_SERVER_URL SEEK_SERVER_TOKEN_VALUE
 ```
 
 ## What we did
@@ -125,7 +125,10 @@ same way: a group, a provider, the question or URLs, and options.
 Next:
 
 - [Set up provider keys](config.md) to search the real web.
+- [Use a seek server from the CLI](connect-to-a-server.md) to search through
+  a server your team runs.
 - [Search the web](web.md) with each search provider.
 - [Run a research job](research.md), which the practice server also answers.
-- Read [how seek is organized](overview.md), and look up every option in the
-  [command reference](reference/commands/seek.md).
+- Look up the options we used in the
+  [`seek web parallel` reference](reference/commands/seek-web-parallel.md),
+  or read [how seek is organized](overview.md).
