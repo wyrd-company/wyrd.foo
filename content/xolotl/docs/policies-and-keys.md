@@ -18,7 +18,10 @@ belongs to a policy. The policy decides what the key can do.
 4. Set the models, the MCP servers and the rate limits. Each section folds
    away.
 5. Select **Create policy**. Later changes take effect when you select
-   **Save policy**.
+   **Save policy**. A model you exclude keeps serving the sessions already
+   on it; see [Exclude a model](#exclude-a-model).
+
+![New policy with the build-agents name, proxy scope and local provider selected](assets/new-policy.png)
 
 The editor warns when a subscription provider has no accounts: the provider
 looks allowed, but its requests get a 403.
@@ -101,11 +104,34 @@ A model's switch in the editor writes `models`.
 |---|---|
 | `proxy` | The LLM endpoints (`/v1/...`) and the passthroughs |
 | `mcp` | The MCP gateway at `/mcp` |
+| `egress` | HTTPS CONNECT on the [forward proxy](forward-proxy.md) |
 | `management` | The T3 Code hubs endpoints (`/v0/management/...`) |
 | `keys` | Issue, revoke, disable and list client keys under the policies in `key_policies` |
 | `admin` | The admin API, the same as the bootstrap admin token |
 
 A policy that allows MCP servers or lists `key_policies` needs no `providers`.
+
+A forward proxy key may use a policy with `egress` alone and empty provider and
+MCP server lists. To share a key, add `egress` to a policy with `proxy` or `mcp`.
+The policy editor offers **egress (forward proxy)** under **Scopes**.
+`egress` is incompatible with `admin`, `management` and `keys`.
+
+For a T3 Code hub credential, use only the `management` scope. This minimal
+policy needs no providers, MCP servers or delegated key policies:
+
+```toml
+name = "hub"
+scopes = ["management"]
+```
+
+Save it as `hub.toml` and run `xolotl policies put hub.toml`. Check the saved
+policy with `xolotl policies get hub`. In the existing policy editor, select
+only **management (T3Code hubs)** under **Scopes**, leave providers and MCP
+servers unchecked, and select **Create policy**.
+
+Issue its client key as described below. The key can call the management API;
+it cannot call inference, MCP, key administration or other admin endpoints.
+Adding other scopes still requires the corresponding access entries.
 
 ### Accounts
 
@@ -123,7 +149,8 @@ claude = ["*"]                                    # every account, also new ones
   with the accounts it has now.
 - Saving a policy still succeeds in that case, but tells you. `xolotl policies put`
   prints a warning to stderr, `PUT /admin/policies/{name}` adds a `warnings` list
-  to its answer, and the web UI's policy editor shows the warning under the
+  to its answer. The web UI keeps every server warning under **Policy saved
+  with warnings**, and also shows the empty-pool warning under the
   provider. `PUT` ignores `warnings` in its input, so a saved answer can be sent
   back. Each warning names one subscription provider. `providers = ["*"]`
   allows them all, so it warns for each one with no entry. A policy whose scopes
@@ -133,7 +160,7 @@ claude = ["*"]                                    # every account, also new ones
   listed accounts are disabled, cooling down or at a limit, the pool answers
   as it does for a pool with no usable accounts.
 
-![The policy editor warning under claude, which has an account that is not checked](assets/policy-no-accounts.png)
+![The policy editor warns that keys cannot use Codex while its Team subscription account is unchecked](assets/policy-no-accounts.png)
 
 ### Policies from before 0.4.0
 
@@ -179,7 +206,11 @@ for each refused request. The policy shows up:
 - in `unloaded_policies` of `GET /admin/status`
 - under **Needs action** on the web UI's Overview page, and on its Policies page
 
-To repair it, save a valid policy with the same name.
+To repair it, save a valid policy with the same name. To remove it instead, select
+**Delete policy…** beside its error on **Policies** and confirm. A policy with
+keys cannot be deleted; revoke those keys first. Deletion waits until the key
+list loads. If the stored-policy status or key list cannot load, its error and
+**Retry** appear above the editor.
 
 ## Model names
 
@@ -217,6 +248,17 @@ is still `opencode-go/claude-haiku-5-5`, or `haiku-go` with the rename above.
 
 ### See what a key sees
 
+Select a policy in **Policies** and open **Resolved routes**. Each row shows the
+model name, whether it is an alias, its targets in fallback order, and native
+and translated endpoints for the first target. **Subscription accounts** lists
+the allowed accounts of each pool, or **No accounts** for an empty pool. A failed
+account read is shown separately with **Retry accounts**; routes remain visible.
+The preview includes unsaved changes.
+
+![Resolved policy routes show an alias with ordered fallback targets, native and translated endpoints, and empty subscription pools](assets/policy-routes.png)
+
+With the CLI:
+
 ```sh
 xolotl policies view devcontainer
 ```
@@ -226,6 +268,45 @@ natively and through translation. It lists the accounts that exist now and that
 keys can use for each subscription provider the policy allows, and says
 `no accounts` where there are none. With MCP servers, it also lists the tools a
 key can call. A client gets the same names from `GET /v1/models`.
+
+### Exclude a model
+
+Excluding a model is for maintenance: it stops new use of the model without
+breaking sessions that already use it. The policy checks a model when a session
+first uses it. Once an answer from the model completes, the session keeps it.
+When you exclude the model later, with a rule, its `models` switch or
+`deny_other_models`:
+
+- A session that has used the model can go on using it in any way, with no
+  error. That covers switching to another model and back, subagents, background
+  requests, and the conversation after any number of compactions. A session
+  that stays on one account ([Context lock](accounts.md#context-lock)) stays
+  there.
+- A session that never used the model can't use it. It gets a 404, or a 403
+  through a passthrough.
+
+Xolotl tells sessions apart by the session ID each client sends: Claude Code,
+Codex, Grok and OpenCode all send one. A client that sends no session ID gets a
+session from its system prompt and first message. There, only a request that
+continues the conversation keeps the model, so a script that repeats one
+request doesn't.
+
+- Only a completed answer counts: if the provider answers with an error, the
+  session hasn't used the model. Counting tokens doesn't count.
+- A key you rotate keeps its sessions. A key you revoke and issue again under
+  the same name starts with none, which stops a model for all of that key's
+  sessions at once.
+- A session keeps the models it used until it goes `database.retention_days`
+  ([configuration](configuration.md#database)) without a completed answer,
+  on any model, through any name.
+- A session that was running when you upgraded xolotl keeps a model only from
+  its first completed answer from that model after the upgrade. If you
+  exclude the model before then, that session is refused it.
+- Removing a provider from `providers`, or an account from `accounts`, applies
+  to every session at once.
+
+This covers only what xolotl decides: if the provider stops serving the model,
+the session fails there too.
 
 ## Rate limits
 
@@ -297,11 +378,18 @@ screen also shows the consumption of each provider and account limit. The metric
 
 1. Open **Client keys** in the web UI.
 2. Under **Issue a key**, choose the **Policy**, enter a **Client name** (for
-   example `laptop`) and a **Description**, and pick when it **Expires**.
+   example `laptop`) and an optional **Description**, and pick when it **Expires**.
+   The default is **Never**. Choose **Custom** for a positive duration such as
+   `36h`; units are `s`, `m`, `h`, `d` or `w`, or seconds without a unit.
 3. Select **Issue key**.
 
 The screen then shows the `bao` command the client reads the key with, and the
-OpenBao policy to grant the client. It never shows the key.
+OpenBao policy to grant the client. It never shows the key. If deployment
+status cannot load, retrieval instructions stay unavailable; use **Retry**
+to load the correct vault mount and prefix. If policies cannot load, retry
+the policy list before issuing a key.
+
+![Issued client key shows its expiry, the OpenBao retrieval command and the read policy](assets/client-key-issued.png)
 
 With the CLI:
 
@@ -329,14 +417,29 @@ xolotl reload keys from OpenBao, at most every 10 seconds.
 
 ## Manage keys
 
-The **Client keys** screen lists each key with its state, OpenBao path, last
-rotation, expiry, requests in the last 7 days and consumption against the
-policy's rate limits. On a row:
+The **Client keys** screen lists each key with its description, state, OpenBao
+path, creation time, last rotation, expiry and any rotation grace end. A key
+that has never rotated uses its creation time as the rotation reference.
+Current requests and tokens per minute and per day are shown even without
+limits. Limited windows show consumption against the policy limit, labelled
+when shared by the policy. Requests in the last 7 days appear separately;
+a failed query says **Unavailable** and offers **Retry**. On a row:
 
 - **Rotate…** writes a new key to the same path. Pick a **Grace period**, during
   which the old key keeps working, so the client can pick up the new one.
+  The default is zero: the old key stops immediately. Choose **Custom** for
+  a nonnegative duration such as `45m` or `0s`, using the same units as expiry.
+
+  ![Rotate client key dialog with a custom grace period of 45 minutes](assets/client-key-rotate.png)
+
 - **Disable** and **Enable** stop and restart the key.
 - **Revoke** stops the key at once and destroys every stored version of it.
+
+To repeat a revocation, or revoke a key whose row is absent, enter
+`policy/name` under **Revoke by client ID**, select **Revoke…** and confirm.
+The result distinguishes **Revoked**, **Already revoked** and **No key found**.
+If revocation fails, its error is shown; retry to ensure every stored version
+is destroyed.
 
 With the CLI:
 
@@ -396,10 +499,9 @@ its bearer token.
 itself. Give each host or tool its own policy to issue under, so that it can't
 reach the keys of another.
 
-A key can't manage keys of a listed policy that has any scope other than `proxy`
-or `mcp`. Such a key could do more than the key that issued it. The request gets
-a 403, also if you change the listed policy later. The same applies to a listed
-policy that did not load, because its scopes can't be read.
+A key can manage keys of a listed policy whose scopes are limited to `proxy`,
+`mcp` and `egress`. A request for a listed policy with other scopes or a policy
+that failed to load gets a 403, including after a policy change.
 
 ### Safe to repeat
 

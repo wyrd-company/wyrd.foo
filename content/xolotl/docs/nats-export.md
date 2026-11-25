@@ -28,6 +28,13 @@ tables: this page gives the commands, and you run them once.
    at-least-once. The target table is a `ReplacingMergeTree` with `id` in its
    sort key, so a message delivered twice is merged into one row.
 
+Each captured forward-proxy model request publishes one message under the
+proxy key's client ID. Its `account_kind` is `forward-proxy`, its `provider`
+is the upstream hostname, and `account_id` is empty. The row carries the
+model, the Code Assist session digest when present and the observed usage, plus
+the decoded bodies and assembled reply when the NATS destination takes bodies.
+[Forward-proxy exchange fields](clickhouse-export.md#forward-proxy-exchanges)
+
 Needs:
 
 - NATS 2.10 or later, with JetStream.
@@ -203,10 +210,15 @@ max_body_bytes = 4194304         # longer bodies are cut, and the row says so
 queue_mb = 32                    # rows waiting while NATS is unreachable; rows past this are dropped
 ```
 
-At startup xolotl connects to NATS and checks that the stream exists and that
-its subjects cover `xolotl.exchanges.>`. If not, it stops with an error that
-says which. Start NATS before xolotl, or let your service manager restart
-xolotl until NATS is up.
+At startup xolotl validates the server URL, the CA file's presence and the
+vault credentials' format. An error in these local inputs stops startup.
+If NATS is unreachable, xolotl serves proxy and admin requests, logs a warning,
+and retries the connection while rows wait in its memory queue.
+
+After connecting, xolotl checks that the stream exists and that its subjects
+cover `xolotl.exchanges.>`, even when there are no queued rows. A missing stream
+or wrong subjects produces an error log. Rows stay queued while xolotl retries
+the check; fix the stream to resume publishing without restarting xolotl.
 
 You can keep `[export.clickhouse]` too. Each destination then has its own
 queue, and gets the bodies its own `bodies` and `max_body_bytes` allow.
@@ -233,6 +245,11 @@ queue, and gets the bodies its own `bodies` and `max_body_bytes` allow.
 | `published` | The stream stored the row |
 | `dropped` | The queue was full |
 | `refused` | The row is too large for the stream, even without its bodies |
+
+`xolotl.export.connected` with `sink = nats` is 0 before a connection and while
+disconnected, and 1 while connected to NATS. It reports connectivity; the stream
+check can still be failing while it is 1. Check the error logs for stream
+configuration problems.
 
 See [Telemetry](telemetry.md).
 

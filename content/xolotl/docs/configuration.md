@@ -48,23 +48,73 @@ upstream_timeout_secs = 600    # maximum idle time while reading an upstream res
 # public_url = "https://xolotl.example.lan"
 ```
 
-`listen` is the only address xolotl serves on. The LLM endpoints, the
-passthroughs, `/mcp`, the T3 Code hubs endpoints (`/v0/management/...`), the
-admin API and the web UI all use it. Port 8317 is only the default.
+The main listener serves the LLM endpoints, the passthroughs, `/mcp`, the
+T3 Code hubs endpoints (`/v0/management/...`), the admin API and the web UI.
+Its default port is 8317.
 
 Set `public_url` to the URL where browsers reach xolotl. Then MCP OAuth logins
 come back to xolotl and finish without a pasted URL.
+
+## `[forward_proxy]`
+
+Add this section to enable an HTTPS forward proxy on a separate listener.
+Omit the section to keep it off.
+
+```toml
+[forward_proxy]
+listen = "0.0.0.0:8318"
+ports = [443]
+capture_hosts = ["daily-cloudcode-pa.googleapis.com"]
+
+[forward_proxy.tls]
+cert_file = "/etc/xolotl/forward-proxy.pem"
+key_file = "/etc/xolotl/forward-proxy-key.pem"
+
+[forward_proxy.pki]
+mount = "pki_xolotl_proxy"
+role = "xolotl-forward-proxy"
+```
+
+- `listen` is required and must differ from `server.listen`.
+- `ports` lists the permitted destination ports and defaults to `[443]`.
+  List one or more ports between 1 and 65535.
+- `capture_hosts` lists the hosts whose traffic Xolotl reads, and defaults to
+  none. Each entry is a lowercase DNS name of at least two labels, made of
+  letters, digits, `-` and `.`, listed once: no wildcard, port, trailing dot or
+  IP address. Every other host passes through an encrypted tunnel. A non-empty
+  list needs `[forward_proxy.pki]` and an export destination,
+  [`[export.clickhouse]`](clickhouse-export.md) or [`[export.nats]`](nats-export.md).
+  Change the list in the file and restart Xolotl.
+- `cert_file` and `key_file` are required PEM files for a valid certificate
+  chain and its matching private key. Use a certificate for the proxy hostname
+  issued by a CA your clients trust. Restart Xolotl after replacing the files.
+- `[forward_proxy.pki]` names the OpenBao PKI mount and the role on it that
+  signs a certificate for each capture host. Xolotl signs with the AppRole it
+  already logs in with, so that role's policy needs `update` on
+  `<mount>/sign/<role>`. [Forward proxy](forward-proxy.md) gives the OpenBao
+  setup.
+- `server.upstream_timeout_secs` also sets the idle timeout for a tunnel, and
+  how long an intercepted request waits for the upstream.
+
+Point the client’s `HTTPS_PROXY` at
+`https://client:<client-key>@xolotl.example.lan:8318`. Replace `<client-key>`
+with a client key from a policy with [the `egress` scope](policies-and-keys.md#scopes).
+The proxy uses the password from the URL as the key. It permits CONNECT to public
+addresses on the configured ports. Traffic through each tunnel stays encrypted
+end to end and bypasses Xolotl’s exchange exports. Traffic to a capture host is
+intercepted, forwarded unchanged and captured, as [Forward proxy](forward-proxy.md)
+explains.
 
 ## `[database]`
 
 ```toml
 [database]
 path = "xolotl.db"      # the container image uses /data/xolotl.db
-retention_days = 90     # request log, MCP call log, sessions and tool counts
+retention_days = 90     # request log, MCP call log, sessions and their models, tool counts
 ```
 
 The database holds cooldowns, usage snapshots, the account index, the request
-log, the MCP call log, sessions and tool counts. It holds no secrets. If you lose it, xolotl rebuilds
+log, the MCP call log, sessions and the models they keep, and tool counts. It holds no secrets. If you lose it, xolotl rebuilds
 the account index from OpenBao.
 
 ## `[vault]`
@@ -288,7 +338,11 @@ override `claude`. See [Clients](clients.md#wire-formats-and-translation).
 `catalog.metadata_url` defaults to LiteLLM's public model registry. Set it to an
 empty string to disable network refresh. Refresh uses `catalog.refresh_secs`
 and `xolotl models --refresh`. The last validated snapshot is cached in SQLite;
-failed fetches keep its values and age. Models need no metadata to route.
+failed downloads and registries with no usable limits or prices keep its values
+and age and expose a refresh error. Missing provider information does not prevent
+prices from loading. Invalid limits or rates become unknown while valid fields
+and other models still load. A successful refresh clears the error. Models need
+no metadata to route.
 
 Map or override an individual model with its full `provider/model` key:
 

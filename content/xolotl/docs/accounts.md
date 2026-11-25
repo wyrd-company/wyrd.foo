@@ -38,6 +38,15 @@ come from the config file (see
 Open **Accounts** in the [web UI](web-ui.md) and select **Add account**. The
 screen has one section per provider.
 
+![Add an account shows the Codex, Claude, Grok Build and OpenCode Go subscription forms](assets/add-account.png)
+
+For Codex and Grok device logins, **Waiting for authorization…** means xolotl
+is checking the login. If **Could not check login status** appears, the check
+failed and polling stops. The reason is shown, and a successful login has not
+been confirmed. Select **Start new login** to get a fresh device code and
+start checking that login, or **Cancel** to leave it. The same feedback appears
+in **Log in again** in account details.
+
 ### Codex
 
 1. Under **Codex (ChatGPT)**, select **Start device login**.
@@ -117,6 +126,11 @@ The upstream user agent is `xolotl/<version> (<client user agent>)`.
 
 ### Provider accounts
 
+Under **Providers** on the **Add an account** screen, choose the **Kind** and
+enter the provider name, base URL and authentication details.
+
+![OpenAI-compatible provider account form with name, base URL, API key and extra headers](assets/add-provider-account.png)
+
 ```sh
 echo "$MISTRAL_KEY" | xolotl accounts add-provider mistral-team --kind mistral
 xolotl accounts add-provider llama --kind openai-compatible \
@@ -138,6 +152,28 @@ its key and headers, in OpenBao at `providers/<name>`.
 If a key is already stored at `providers/<name>`, for example because you moved
 the provider out of the config file, adding the account without a key keeps
 that key.
+
+To store or rotate a key in the web UI, open **Accounts** → **Providers** and
+select **Set key** or **Replace key** on the provider row. Enter the key in the
+password field and select **Save key**. The dialog confirms the OpenBao write
+and reports how many models the catalog found. If discovery fails, the dialog
+shows the upstream error, and any cached or static models remain available.
+Select **Refresh models** in the dialog to retry discovery using the saved key.
+
+You can store a key for a disabled provider. The dialog confirms the save
+without a discovery result. For a no-auth provider, Xolotl stores the key and
+continues to call the upstream without key authentication. Workload identity
+uses the provider configuration. If you submit a key for that provider, the
+dialog shows the server's rejection and points you to that configuration.
+
+![Saved provider key with an upstream discovery error and a Refresh models button](assets/provider-key-discovery-error.png)
+
+The recording shows a key save, a replacement that returns a discovery error,
+and a successful discovery retry. It also shows the workload identity rejection.
+
+![Saving and replacing a provider key, retrying discovery, and seeing a workload identity rejection](assets/provider-key-workflow.gif)
+
+To store or rotate a key from the CLI, use `providers set-key`.
 
 ```sh
 echo "$NEW_KEY" | xolotl providers set-key mistral-team   # replace the key
@@ -220,7 +256,23 @@ You can move a login from the Codex CLI (`~/.codex/auth.json`) or Claude Code
 (`~/.claude/.credentials.json`) into xolotl.
 
 1. Under **Import a login**, pick the **Provider**.
-2. Choose the **Credential file** and select **Import**.
+2. Enter a **Label (optional)**, such as `Work subscription`. Leave it blank to
+   use the identity from the credential file.
+3. Choose the **Credential file** and select **Import**. The label appears in
+   **Accounts**. If the file is invalid or the import fails, the entered label
+   and file stay in the form so you can correct them and retry.
+
+![Import a login with the optional Work subscription label and auth.json selected](assets/account-import.png)
+
+The result shows the saved account's label or identity, account ID and provider,
+plus how many models were found, including zero. If model discovery fails,
+the imported credentials are still saved. Read the discovery error and select
+**Refresh models** to retry discovery without importing the file again. The
+current discovery result appears below the original import outcome.
+
+![Saved import with its model discovery error and Refresh models recovery](assets/account-import-discovery.png)
+
+![Device login polling error showing that success is unconfirmed and offering a new login](assets/account-login-polling.png)
 
 With the CLI:
 
@@ -237,10 +289,25 @@ xolotl accounts import claude ~/.claude/.credentials.json --label work
 ## See your accounts
 
 The **Accounts** screen lists the accounts by provider, with their plan, state,
-usage windows, priority and last use. **Refresh usage** fetches the usage
-windows from the provider now. The details button at the end of a row shows
-the label, cooldown reason, last error, token expiry, reset credits and the
-date it was added.
+usage windows, priority and last use.
+
+![Accounts lists a Codex subscription with its state and actions above the provider accounts](assets/accounts-list.png)
+
+Select **Refresh usage** on the row or in **Details** to fetch usage for an
+enabled or disabled account. Details shows the
+fetch age, public usage windows and reset credits for Claude and Codex. Expand
+**Provider usage diagnostics (returned JSON)** to inspect the full snapshot,
+including any provider-specific fields.
+
+If the provider poll fails, open **Details** to see the reason. The last fetched
+usage stays visible if available. Select **Retry usage fetch** to try again.
+
+![Disabled account details with usage windows, reset credits and provider diagnostics](assets/account-recovery.png)
+
+The recording shows how to refresh usage on a disabled account, open its
+details and expand the returned JSON.
+
+![Refreshing usage on a disabled account and expanding its provider diagnostics](assets/account-recovery.gif)
 
 With the CLI:
 
@@ -262,7 +329,7 @@ second table shows the provider accounts: name, kind, where each is defined
 | `re-login` | Re-login needed | An OAuth account whose refresh token the provider refused. It is out of rotation | Log in to the account again |
 | `re-login` | Key rejected | An API-key account whose key the provider refused with a 401. It is out of rotation | Replace the key |
 | `re-login` | Refused | An API-key account whose last recorded error is another 4xx | Read the last error. Replace the key, or **Retry** |
-| `UNSAVED` | | A refreshed token could not be written to OpenBao. Xolotl serves from memory and retries every 15 seconds | Fix OpenBao. Do not restart xolotl until the state clears, or the token is lost |
+| `UNSAVED` | Unsaved token | A refreshed token could not be written to OpenBao. Xolotl serves from memory and retries every 15 seconds | Fix OpenBao and wait for the unsaved state to clear before restarting Xolotl. Restarting while the token is unsaved loses the refreshed token. |
 | `disabled` | Disabled | You disabled it | **Enable** (`xolotl accounts enable <id>`) |
 
 ## Manage accounts
@@ -272,7 +339,21 @@ On the **Accounts** screen:
 - **Disable** and **Enable** on a row take the account out of rotation and put
   it back.
 - In the account's details, set **Priority (higher is used first)**, select
-  **Retry** to clear a cooldown or re-login state, or **Remove** the account.
+  **Save priority** to save it, **Retry** to clear a cooldown or re-login state,
+  or **Remove** the account.
+
+Priority accepts whole numbers from `-9223372036854775808` to
+`9223372036854775807`, including negative values. Every digit is saved and
+shown exactly. Fractions, exponent notation such as `1e3`, blank values and
+values outside that range show an error beside the field. Your entry stays
+in place when validation or saving fails.
+
+![Account details showing the maximum signed 64-bit priority without rounding](assets/account-priority.png)
+
+This recording imports a labeled login, opens its details, saves an exact
+priority and shows the validation error for a value outside the accepted range.
+
+![Importing a labeled account and saving an exact priority, followed by an invalid priority error](assets/account-forms.gif)
 
 With the CLI:
 
@@ -294,10 +375,10 @@ The web UI's overview lists accounts that need attention. Each entry has a
 - **API-key accounts** (OpenCode Go) show the last error and a
   **Replace key** form. The account keeps its ID, label, priority, enabled
   state and usage history.
-- **Retry** clears the cooldown and the re-login state, so xolotl tries the
-  account again with the same credential. It does not change the credential
-  and does not reset the provider's quota. A disabled account stays disabled.
-  `xolotl accounts reset <id>` does the same.
+- **Retry** clears Xolotl’s cooldown and re-login state on any account. It
+  preserves the account’s enabled state, credential and provider quota. Select
+  **Enable** to put a disabled account back in rotation. The CLI equivalent
+  of **Retry** is `xolotl accounts reset <id>`.
 
 Adding an OpenCode Go key that another account already has updates that
 account instead of adding a second one. A replacement key that another account

@@ -85,7 +85,16 @@ Names are lowercase and start with a letter. In code, `-` becomes `_`, so
 
 A header such as `Authorization = "Bearer {token}"` takes `{token}` from the
 server's secret in OpenBao. On the **MCP servers** screen, each server card
-lists its secret fields as **set** or **not set**. Enter a value and save it.
+lists the header placeholder fields as **set** or **not set**. Enter a value and
+select **Save secret**. Surrounding whitespace is removed; stored values are never
+shown, and the password field clears after a successful save.
+
+![The project-notes server card marks its token secret as set and shows the empty entry field](assets/mcp-header-secret.png)
+
+Use **Other secret field name** to save or remove any named field, including one
+that is not used by a header yet. To delete a stored value, select **Remove
+secret…** and confirm. Headers that use that field will then have no value.
+A failed update shows the error and keeps the entered value so you can retry.
 
 With the CLI:
 
@@ -118,10 +127,19 @@ Xolotl gets a client ID in this order: `oauth.client_id`; a Client ID Metadata
 Document, when `server.public_url` is HTTPS or `mcp.oauth.client_metadata_url`
 is set; Dynamic Client Registration.
 
-Xolotl refreshes the tokens itself. **Sign out** on the card, or `xolotl mcp
+Xolotl refreshes the tokens itself. **Forget tokens** on the card, or `xolotl mcp
 logout linear`, forgets them. When the server refuses the tokens, the card
 shows **Sign-in needed** (`SIGN-IN` in `xolotl mcp servers`), and calls fail
 until you sign in again.
+
+If checking the callback status fails, the page shows the underlying error and
+states that sign-in has not been confirmed. Select **Retry status**, or cancel
+and start a new sign-in if the flow expired. An authorization rejection also
+shows the reason and asks you to start again.
+
+To delete OAuth tokens, select **Forget tokens** and confirm. This action is
+available even when the stored token was rejected or expired and sign-in is
+already needed. Sign in again to resume authorized tool calls.
 
 ## Policies
 
@@ -206,8 +224,27 @@ timers. The only way out is a tool call.
 ## Inspect and monitor
 
 Each card on the **MCP servers** screen shows the server's state and tool
-count; **Show tools** lists the tools. **Recent calls**, below the cards, lists
-the latest tool calls of every server as `server/tool`.
+count; **Show tools** lists full multiline descriptions. Expand a tool's **full
+tool definition** to inspect the returned JSON, including its input schema,
+annotations and metadata.
+
+**Refresh tools** reports each server's outcome. When one fails, the result
+shows its error and the number of tools retained from its previous list; other
+servers can still refresh successfully. Use the card's **Refresh** to retry one
+server.
+
+On **MCP servers**, **Tool calls** shows the call count, error count and average
+latency for the last 24 hours. Use **Group by** to switch between server, tool and
+client. To change the window, enter a positive whole-number duration in
+**Look back** and select **Apply period**. Use seconds or a suffix such as
+`30s`, `15m`, `36h`, `7d` or `2w`. If the query fails, read the error and
+select **Retry totals** to rerun the current query.
+
+![Tool calls grouped by tool for the last 36 hours with one call to project-notes/find_notes](assets/mcp-tool-calls.png)
+
+**Recent calls** lists the latest tool calls of every server as `server/tool`.
+Both views include recorded calls from removed servers, even when the deployment
+has no configured MCP servers. The look-back period applies to the totals.
 
 With the CLI:
 
