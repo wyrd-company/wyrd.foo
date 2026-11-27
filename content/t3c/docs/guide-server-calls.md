@@ -119,8 +119,8 @@ if (status.supported && status.state === "ready") {
 
 `voice.transcribeCloud` sends the recording to the provider in `params`. Set the
 provider's key first with `voice.setCloudKey`, as a literal or a secret
-reference. The route needs `settings:write`. On T3 Code 0.1.12 it also needs
-`providers:manage` for a secret reference. Set `key` to `null` to remove it.
+reference. The route needs `settings:write`. Starting with T3 Code 0.1.12,
+a secret reference also needs `providers:manage`. Set `key` to `null` to remove it.
 A cloud failure is a `T3HttpError` with
 status 422 and tag `CloudSpeechError`; `schemas.speech.CloudSpeechError` decodes
 its `body`. A local failure has reason `invalid_audio`, `speech_unavailable` or
@@ -186,6 +186,70 @@ start one. `subscribeTerminalMetadata` lists every terminal and then follows the
 and `client.terminal.list` returns every terminal; both close their stream after
 the first item.
 
+For input tied to one terminal process, read its snapshot and send
+`expectedPid` when `supportsConditionalWrites` is true. Handle
+`TerminalProcessChangedError` if the process exits or changes before the write.
+
+```ts
+const terminal = { threadId, terminalId: "term-1" };
+const snapshot = await client.terminal.read(terminal);
+if (snapshot.supportsConditionalWrites && snapshot.pid !== null) {
+  await client.terminal.write({ ...terminal, data: "hello", expectedPid: snapshot.pid });
+}
+```
+
+Mark a paste sent in chunks with `bracketedPaste` or `plainWrite`, using
+`start`, `continue`, `end` or `abort`. Include the terminal's bracket
+markers in bracketed-paste data. Starting with T3 Code 0.1.13, send an empty
+`data` string with `plainWrite: "abort"`. Send a nonempty string for other writes.
+
+Terminal renderers that can skip the continuation of a discarded control
+sequence can set `supportsSnapshotSequenceState` when attaching or observing.
+The snapshot may then return `historySequenceState`. A `cleared` event can
+carry `pendingControlSequence` to carry over an incomplete sequence.
+
+## Issue details
+
+Call `issues.detail` with the same issue reference you use for other issue
+reads. Add `refresh: true` to read directly from the tracker.
+
+```ts
+import { projectId, schemas } from "@wyrd-company/t3code-lib";
+
+const detail = await client.rpc.call("issues.detail", {
+  projectId: projectId("sample-project"),
+  tracker: schemas.issues.IssueTrackerKind.parse("github"),
+  scope: "sample/repository",
+  key: "12",
+  refresh: true,
+});
+```
+
+Starting with T3 Code 0.1.13, tagged issue and pull request operation failures
+returned over HTTP use status 503. T3 Code 0.1.12 uses status 502 for those
+failures. Inspect the tag to distinguish the operation failure from server
+startup and other temporarily unavailable responses.
+
+## Provider runtime modes
+
+For the workspace's runtime-mode restrictions, use
+`client.server.getProviderRuntimeModeLimits` with `orchestration:read`.
+Each limit contains a mode and a reason, such as `project-settings`.
+
+```ts
+import { providerInstanceId } from "@wyrd-company/t3code-lib";
+
+const { limits } = await client.server.getProviderRuntimeModeLimits({
+  instanceId: providerInstanceId("claudeAgent"),
+  cwd: "/workspace/sample",
+});
+```
+
+In provider snapshots, `modelsIncomplete` indicates that a ready probe may
+omit models the provider still offers. A provider's select or boolean option
+with `role: "mode"` controls its own session mode. Select options can also
+carry `role: "reasoning"`.
+
 ## Settings
 
 `server.updateSettings` takes a patch of only the keys to change, and answers with
@@ -193,8 +257,8 @@ the whole settings. Ordinary settings need `settings:write`. Provider keys,
 `providerInstanceMutation` and secret references need `providers:manage`.
 Changes to `requireConnectDeviceApproval` or `enablePreviewTunnel` need
 `access:write`. Removing a secret provider also needs `settings:write`.
-On T3 Code 0.1.12, the server also requires `orchestration:operate` for a patch
-that writes project scripts, including `defaultProjectScripts`, a script
+Starting with T3 Code 0.1.12, a patch that writes project scripts also needs
+`orchestration:operate`. This includes `defaultProjectScripts`, a script
 override or a project's `defaultProjectScripts`. Include the scopes for all
 the changes in the patch.
 
@@ -219,14 +283,27 @@ and needs `orchestration:operate`. To save a card with `fields`, pass
 `{ type: "save", values }` with one value per field name. A single-value card
 takes `{ type: "save", secret }`. Send `{ type: "decline" }` to decline.
 To use `{ type: "reference", reference }`,
-the server must advertise `secretRequestReferences`. On T3 Code 0.1.12,
+the server must advertise `secretRequestReferences`. Starting with T3 Code 0.1.12,
 reference answers also need `providers:manage`. The server keeps the saved
 values, and the thread learns only the status.
 
 A credential setting, such as a usage limit source's `managementKey` or an EAS
 host's `accessToken`, takes either the literal or a secret provider reference
 (`schemas.providerInstance.SettingsSecretValue`). The client tells the server it
-reads references, so settings show a reference as written:
+reads references, so settings show a reference as written.
+
+On T3 Code 0.1.13, changing a normalized destination clears a kept credential
+to an empty string. This applies to OpenCode `serverUrl` / `serverPassword`,
+usage limit source `url` / `managementKey`, text generator `baseUrl` / `apiKey`,
+and Simlock `gatewayUrl` / `agentToken`. A redacted value or the same secret
+provider reference counts as kept. Supply a new literal or a different secret
+provider reference in the same patch as the destination change. URL normalization
+ignores equivalent spellings and trailing path slashes; a changed path or query
+can identify a different destination. On 0.1.12, Simlock already clears a kept
+token when the gateway origin changes; 0.1.13 also considers the full normalized
+URL, including its path.
+
+For example, save a usage limit source with a secret provider reference:
 
 ```ts
 await client.rpc.call("server.updateSettings", {

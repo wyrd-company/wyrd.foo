@@ -76,6 +76,14 @@ true` starts a new provider session without the thread's earlier context. The
 earlier runs stay visible, and the message never steers. The run and its user
 message report `freshContext`.
 
+An explicit `queue` request sets `run.explicitQueue`. The server can steer a
+later automatic agent message into the active run while that queue entry waits.
+Mention paths and review comment paths keep their leading and trailing spaces.
+
+When a push needs approval to run repository hooks, an `approval-requested`
+event can carry `item.pushHooks` with the branch, hook files and configured
+commands. Show those details with the approval prompt.
+
 Pass a JSON Schema object as `outputSchema` to ask a new run for structured
 data. A message with `outputSchema` cannot steer an active run. If the agent
 submits a value the server accepts, read it from `run.output.value`.
@@ -142,7 +150,7 @@ needs `orchestration:operate`. Read these cards from thread turn items.
 
 ## Scheduled tasks
 
-To clear a scheduled task's thread binding on T3 Code 0.1.12, send
+Starting with T3 Code 0.1.12, you can clear a scheduled task's thread binding. Send
 `unbindThread: true` with no `threadId` to `client.scheduledTasks.upsert`
 along with the task's configuration. The next run starts a thread.
 An omitted or null `threadId` alone can preserve the thread bound by a first
@@ -174,6 +182,22 @@ Call `workflows.get` with `{ runId }` to read the result, steps and
 references. Use the `workflows.counts` stream for `needsYou`, `active`
 and `total` counts. Both calls and the subscription need
 `orchestration:read`.
+
+`workflows.about` finds up to 500 runs for a subject, newest first, with
+their open questions. Pass a web address or thread ID as `subject`. For an
+issue or pull request, you can also pass its `issue` or `pullRequest`
+reference so that different URLs for the same item can match.
+
+```ts
+const { runs, questions } = await client.rpc.call("workflows.about", {
+  subject: "https://example.test/work/1",
+});
+console.log(runs[0]?.subject?.title, questions.length);
+```
+
+A waiting pool step has `kind: "queue"`. Its optional `ahead` counts the
+requests for that pool that came before it. Runs that declare a subject
+expose it as `run.subject` in detail, list and subscription responses.
 
 With `orchestration:operate`, answer an open question through
 `workflows.answer` with `{ runId, name, choice }`. Use

@@ -1,6 +1,6 @@
 name: t3c
-version: 0.2.6
-docs-version: 0.4.7
+version: 0.2.7
+docs-version: 0.4.8
 release-unit: t3code-cli
 tagline: Run T3 Code conversations from your terminal and automation.
 blurb: A Node command-line client and TypeScript library for stock T3 Code. Pair named servers, run or continue conversations, inspect threads, and preserve clear output and exit codes in automation.
@@ -100,17 +100,18 @@ owner: wyrd-company/t3code-client
 licence: MIT
 docs-path: docs/user/t3c
 release:
-  version: 0.2.6
-  date: 2026-11-25T19:31:37.000Z
-  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-cli%400.2.6
+  version: 0.2.7
+  date: 2026-11-27T08:33:35.000Z
+  url: https://github.com/wyrd-company/t3code-client/releases/tag/t3code-cli%400.2.7
   notes: |+
-    ## 0.2.6
+    ## 0.2.7
 
     ### Features
 
-    - Target stock T3 Code 0.1.12 with orchestration protocol 2. Use `t3c thread diff <id> --json` and read `data.repositories` for patches from changed tracked repositories, including projects whose root is outside Git. Plain text and the JSON `data.diff` field show the thread folder's own patch.
+    - Target stock T3 Code 0.1.13 and use `t3c usage summary --provisional` for budget polls that can use a potentially stale scan. Check the source refresh markers before acting on it. The flag conflicts with `--await-refresh`. Omitting both uses the server default.
 
     ### Fixes
 
-    - Worktree launches and schedules preserve Unicode whitespace in `--base-ref`, `--branch` and scheduled JSON workspace strategies. Pass Git ref names exactly as stored on the server.
+    - On T3 Code 0.1.13, `t3c thread status --json` can show `explicitQueue: true` on a run, and `t3c thread requests --json` can report `item.pushHooks` on a pending push-hook approval.
+    - Install the current `t3c` with `brew install wyrd-company/tools/t3c`. To upgrade an existing Homebrew install, run `brew update` and `brew upgrade wyrd-company/tools/t3c`. The tap tracks the latest CLI version and now updates automatically after each CLI package is published to npm.
 
