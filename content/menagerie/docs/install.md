@@ -54,21 +54,25 @@ container a directory of sockets:
   when `registry-credentials` is configured. Both use the binding's own
   token.
 - `ssh-agent.sock` signs Toha's SSH template fetches and Menagerie's SSH
-  backup pushes with Menagerie's SSH key, when the policy offers one. With
+  backup pushes with the SSH key each template or backup repository names,
+  when the policy offers it. With
   [provisioning](#provisioning) it also signs with the operator key.
 
 ### Git identity
 
 Choose how Menagerie authenticates to its Git hosts:
 
-- **GitHub App**: the recommended way for GitHub. Install one App on the
-  backup repository and on each private template repository, with the
-  Contents permission set to read and write. Menagerie mints a short-lived
-  token for one repository at a time: write for backups, read for
-  templates. No machine user is needed. Backups and private templates use
-  `https://` URLs. See [Configuration](configuration.md#github-app).
-- **SSH identity**: for other Git hosts, or for GitHub without an App. One
-  SSH key must reach every repository Menagerie uses over SSH; see below.
+- **GitHub App**: the recommended way for GitHub. Install an App on the
+  backup repositories and on each private template repository, with the
+  Contents permission set to read and write. Each organization can have an
+  App of its own; each backup repository and template names the App it
+  uses. Menagerie
+  mints a short-lived token for one repository at a time: write for
+  backups, read for templates. No machine user is needed. Backups and
+  private templates use `https://` URLs. See
+  [Configuration](configuration.md#github-app).
+- **SSH identity**: for other Git hosts, or for GitHub without an App. Each
+  backup repository and template names the SSH key it uses; see below.
 - **Both**: the App for repositories on GitHub, and SSH for other hosts.
   Each URL uses the identity its scheme and host select.
 
@@ -90,32 +94,42 @@ rm app-key.b64 app.private-key.pem
 The `vault` CLI takes the same arguments. The importing token needs `read`
 on `transit/wrapping_key` and `update` on
 `transit/keys/menagerie-github-app/import`. If the key is lost, generate a
-new one in the App's settings and import it again. Set `github-app.app-id`
-and `github-app.transit-key` in the configuration.
+new one in the App's settings and import it again. Set the App's `name`,
+`app-id` and `transit-key` in the configuration's `github-apps`, and repeat
+these steps for each further App, under a Transit key of its own.
 
 #### SSH identity
 
-Toha's template fetches and Menagerie's backup pushes use the same agent, so
-the agent must offer one Git key, and that key must reach every repository
-Menagerie uses over SSH. An SSH client offers its keys in turn, and the Git
-host signs it in with the first key it knows, whether or not that key can
-reach the repository. A second key in the agent does not select a second
-repository. GitHub accepts a deploy key on one repository only, and the same
-key cannot be registered twice.
+Each backup repository and each template names the key it is reached with,
+chosen from the keys Wyrwood's agent offers, and Menagerie offers that
+repository its key alone. So each repository can have a key of its own,
+such as a deploy key with write access on a backup repository, or a read-only
+deploy key on a template's: offer each key in the policy below, and choose it
+when you register the repository or template. The registration form shows
+the key's public key to give the Git host. GitHub accepts a deploy key on one
+repository only, and the same key cannot be registered twice, so give each
+repository its own Transit key. One key can also serve several repositories
+as a machine user's SSH key, with the machine user given write access to the
+backup repositories and read access to the template repositories.
 
-- **Only the backup repository is on SSH**: add the Transit key's public
-  key to the backup repository as a deploy key with write access.
-- **A private template is on SSH too**: create a machine user, an account
-  for automation, and add the Transit key's public key as that account's
-  SSH key. Give the machine user write access to the backup repository and
-  read access to each private template repository. Do not also add the key
-  as a deploy key.
+A backup repository or template registered by an earlier release is offered
+every key the agent holds until you choose its key. An SSH client offers its
+keys in turn, and the Git host signs it in with the first key it knows,
+whether or not that key can reach the repository. So while one remains, the
+agent must offer one Git key, which reaches every such repository: a machine
+user's key, not a deploy key.
+
+Menagerie's template version check pins the template's key on the `ssh`
+command itself, and does not check, as Toha's fetches do, that the SSH
+configuration adds no other identity. Menagerie's image sets no SSH
+configuration, so this holds unless you add one, such as an `IdentityFile`
+in the container's SSH configuration.
 
 ### Policy
 
 Write a Wyrwood policy for Menagerie. It grants `update` on
-`transit/sign/<key>/sha2-256` for the GitHub App's key, offers exactly one
-Transit key as Menagerie's SSH key, grants `read` on
+`transit/sign/<key>/sha2-256` for each GitHub App's key, offers the Transit
+keys that are Menagerie's SSH keys, grants `read` on
 `<kv-mount>/data/<path>` for each configured registry secret, and mounts the
 consumer directory at `/run/wyrwood`. This example uses both identities:
 
@@ -136,7 +150,9 @@ contract:
 ```
 
 With only the GitHub App, leave out the SSH key's two paths and the `ssh`
-section. With only SSH, leave out the App key's path.
+section. With only SSH, leave out the App key's path. For each further App,
+add its key's `transit/sign` path; for each further SSH key, add its two
+paths and list it under `transit-keys`.
 
 You bind the container `menagerie` (the name `deploy/compose.yml` gives it) to
 the policy as you [install it](#the-host). Give the binding an **access group**
@@ -296,7 +312,7 @@ group. The template service never talks to Docker. For a non-root owner:
 | Host | Identity | What the container needs |
 | --- | --- | --- |
 | GitHub, `https://` | GitHub App | Nothing more: the image trusts GitHub's certificates. |
-| GitHub Enterprise Server, `https://` | GitHub App, with `github-app.server` | The server's certificate authority, when it is not a public one; see below. |
+| GitHub Enterprise Server, `https://` | GitHub App, with the App's `server` | The server's certificate authority, when it is not a public one; see below. |
 | GitHub, SSH | SSH identity | Nothing more: `/etc/ssh/ssh_known_hosts` holds GitHub's published SSH host keys. |
 | Another host, SSH | SSH identity | A known hosts file that also names the host. |
 | Another host, `https://` | None | Public templates only: Menagerie gives these URLs no credential. |
